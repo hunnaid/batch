@@ -1,0 +1,9 @@
+# User Journey
+
+A user wants to make their mom's biryani recipe, but the recipe is spread across several iMessage texts in Urdu that are saved on the user's phone as screenshots. Before cooking, they have to find these screenshots, work out their order, match the ingredients with the instructions, and so on. They also want to remember any adjustments or tips their mom gave them verbally that aren't saved as a text or screenshot anywhere.
+
+They open Batch and create a collection called "Family Recipes" from the Collections screen. Inside the collection, they select Add Recipe and organize the information from the screenshots into ingredients and ordered instructions. They can keep the text in Urdu and enter "Mom, through iMessage" as the source. They include the tips that their mom had described to them verbally in the instructions before saving the recipe as "Mom's Biryani." The recipe screen now gives one place to follow the instructions. They can add an entry for translation into English.
+
+While cooking, they decide to use less chili and leave the rice steaming for an extra few minutes. From the recipe screen, they open the cooking entry form to enter a new entry and add the changes and adjustments on the new entry. The original instructions remain available alongside their entry, so they can distinguish their mom's original recipe from their adjustments. They add the results of their adjustments after finishing the cooking and trying it.
+
+A friend asks how they made the biryani, so they use the collection's sharing controls to give them access through their own account. They can read the original recipe and the cooking entry together. The next time they make it themselves, they return to the entry to see what worked, without having to search through screenshots and messages or trying to remember the adjustments.
