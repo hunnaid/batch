@@ -4,10 +4,10 @@ Batch keeps original recipes, cooking adjustments, and results together so home 
 
 ## P1: Design
 
-- [Problem framing and stakeholders](docs/problem-framing.md)
-- [Application pitch](docs/pitch.md)
-- [Concept specifications, essential reactions, and concept roles](docs/concepts.md)
-- [UI Sketches and interaction notes](docs/ui-sketches.md)
-- [User journey](docs/user-journey.md)
+- [Problem framing and stakeholders](design/docs/problem-framing.md)
+- [Application pitch](design/docs/pitch.md)
+- [Concept specifications, essential reactions, and concept roles](design/docs/concepts.md)
+- [UI Sketches and interaction notes](design/docs/ui-sketches.md)
+- [User journey](design/docs/user-journey.md)
 
 This repository contains the public project design and implementation work. The chronological design notebook is kept separately in a private repository.
