@@ -89,4 +89,9 @@ authorize(user: User, resource: Resource) : returns ()
 ## Queries
 
 ```queries
+_accessible(user: User) : many (resource: Resource, owner: User)
+  Return one row for each resource where the user is the owner or a member.
+  Include the resource identifier and its owner.
+  Sort rows by resource identifier in ascending order.
+  Return no rows when the user has access to no resources.
 ```

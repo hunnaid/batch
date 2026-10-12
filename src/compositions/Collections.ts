@@ -1,7 +1,26 @@
-import { reaction, when } from "@mit-sdg/sync-engine/language";
+import {
+    each,
+    form,
+    former,
+    no,
+    reaction,
+    when,
+    where,
+} from "@mit-sdg/sync-engine/language";
 import { concepts } from "../concepts.ts";
+import {
+    endpoint,
+    receive,
+    respond,
+} from "@mit-sdg/sync-engine/boundary";
 
-const { Collecting, Sharing } = concepts;
+const {
+    Collecting,
+    Sharing,
+    Sessioning,
+    PasswordAuthenticating,
+    RecipeRecording,
+} = concepts;
 
 /**
  * Give each newly created collection an owner and an empty membership set.
@@ -16,6 +35,179 @@ const InitializeCollectionSharing = reaction(({ creator, collection }) =>
     )
 );
 
+/**
+ * Create a collection using the authenticated user's identity.
+ * Wait for sharing initialization before returning success.
+ */
+const CreateCollection = endpoint(
+    "/collections/create",
+    ({ session, name, user, collection }) =>
+        receive({ session, name })
+        .then(Sessioning.resolve({ session }).responds({ user }))
+        .then(
+            Collecting.create({ creator: user, name })
+            .responds({ collection })
+        )
+        .afterFlowSettles()
+        .then(Sharing.authorize({ user, resource: collection }))
+        .then(respond({ collection }))
+);
+
+/**
+ * Give a registered user access to a collection.
+ * Sharing verifies that the signed-in user owns the collection.
+ */
+const ShareCollection = endpoint(
+    "/collections/share",
+    ({ session, collection, username, owner, member }) =>
+        receive({ session, collection, username })
+            .then(Sessioning.resolve({ session }).responds({ user: owner }))
+            .then(Sharing.authorize({ user: owner, resource: collection }))
+            .then(
+        where(
+            PasswordAuthenticating._byUsername({ username })
+                .is({ user: member })
+        )
+            .then(
+                Sharing.grant({
+                    owner,
+                    resource: collection,
+                    member,
+                })
+            )
+            .then(respond({ collection }))
+            .named("registered-recipient"),
+
+            where(no(PasswordAuthenticating._byUsername({ username })))
+                .then(respond({ error: "RECIPIENT_NOT_FOUND" }))
+                .named("unknown-recipient")
+        ),
+    {
+        validators: {
+            input: (value: unknown) => {
+                if (
+                    typeof value !== "object" ||
+                    value === null ||
+                    Array.isArray(value)
+                ) {
+                    return { ok: false };
+                }
+
+                const input = value as Record<string, unknown>;
+
+                return {
+                    ok:
+                        typeof input.collection === "string" &&
+                        typeof input.username === "string",
+                };
+            },
+        },
+    }
+);
+
+/**
+ * Build the collections screen from resources the user can access.
+ * Include recipe identifiers and titles without loading full cooking histories.
+ */
+const accessibleCollections = former(
+    "the accessible collections of (user)",
+    ({ user }, { collection, owner, name, recipe, title }) =>
+        form({
+            collections: each(
+                Sharing._accessible({ user }).is({
+                    resource: collection,
+                    owner,
+                })
+            )
+            .where(Collecting._get({ collection }).is({ name }))
+            .form({
+                collection,
+                owner,
+                name,
+                recipes: each(
+                    Collecting._items({ collection }).is({ item: recipe })
+                )
+                    .where(RecipeRecording._get({ recipe }).is({ title }))
+                    .form({
+                        recipe,
+                        title,
+                    }),
+            }),
+        })
+);
+
+/**
+ * List collections using the identity established by the session.
+ */
+const ListCollections = endpoint(
+    "/collections/list",
+    ({ session, user }) =>
+        receive({ session })
+        .then(Sessioning.resolve({ session }).responds({ user }))
+        .then(
+            respond({
+                overview: accessibleCollections({ user }),
+            })
+        )
+);
+
+/**
+ * Remove a registered user's access to a collection.
+ * Sharing enforces that only the owner can revoke membership.
+ */
+const RevokeCollectionAccess = endpoint(
+    "/collections/revoke",
+    ({ session, collection, username, owner, member }) =>
+        receive({ session, collection, username })
+            .then(Sessioning.resolve({ session }).responds({ user: owner }))
+            .then(Sharing.authorize({ user: owner, resource: collection }))
+            .then(
+                where(
+                PasswordAuthenticating._byUsername({ username })
+                    .is({ user: member })
+                )
+                    .then(
+                        Sharing.revoke({
+                        owner,
+                        resource: collection,
+                        member,
+                        })
+                    )
+                    .then(respond({ collection }))
+                    .named("registered-recipient"),
+
+                where(no(PasswordAuthenticating._byUsername({ username })))
+                    .then(respond({ error: "RECIPIENT_NOT_FOUND" }))
+                    .named("unknown-recipient")
+        ),
+    {
+        validators: {
+            input: (value: unknown) => {
+                if (
+                    typeof value !== "object" ||
+                    value === null ||
+                    Array.isArray(value)
+                ) {
+                    return { ok: false };
+                }
+
+                const input = value as Record<string, unknown>;
+
+                return {
+                    ok:
+                        typeof input.collection === "string" &&
+                        typeof input.username === "string",
+                };
+            },
+        },
+    }
+);
+
 export const composition = {
     InitializeCollectionSharing,
+    CreateCollection,
+    ShareCollection,
+    ListCollections,
+    AccessibleCollections: accessibleCollections,
+    RevokeCollectionAccess,
 };

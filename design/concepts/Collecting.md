@@ -63,4 +63,7 @@ _get(collection: Collection) : optional (creator: User, name: String, items: Ite
   Return one row containing the collection's creator, name, and item identifiers.
   Return the item identifiers sorted in ascending string order.
   Return no rows when the collection does not exist.
+_items(collection: Collection) : many (item: Item)
+  Return one row per item in the collection, sorted by item identifier.
+  Return no rows when the collection is empty or does not exist.
 ```

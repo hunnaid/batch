@@ -118,4 +118,20 @@ export class PasswordAuthenticatingConcept {
 
         return { user: user._id };
     }
+
+    /**
+     * Find a registered user by their exact username.
+     *
+     * @param input - The username to look up.
+     * @returns One row containing the user identifier, or no rows if unknown.
+     */
+    async _byUsername({
+        username,
+    }: {
+        username: string;
+    }): Promise<{ user: string }[]> {
+        const document = await this.users.findOne({ username });
+
+        return document ? [{ user: document._id }] : [];
+    }
 }

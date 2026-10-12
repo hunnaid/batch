@@ -56,4 +56,8 @@ authenticate(username: String, password: String) : returns (user: User)
 ## Queries
 
 ```queries
+_byUsername(username: String) : optional (user: User)
+  Return the identifier of the user with the exact given username.
+  Return no rows when the username is not registered.
+  Do not return credential information.
 ```

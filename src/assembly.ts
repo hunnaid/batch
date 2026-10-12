@@ -5,7 +5,10 @@ import { PasswordAuthenticatingConcept } from "./concepts/PasswordAuthenticating
 import { CollectingConcept } from "./concepts/Collecting.ts";
 import { CookingLogConcept } from "./concepts/CookingLog.ts";
 import { SharingConcept } from "./concepts/Sharing.ts";
+import { SessioningConcept } from "./concepts/Sessioning.ts";
 import { composition as collectionsComposition } from "./compositions/Collections.ts";
+import { composition as accountsComposition } from "./compositions/Accounts.ts";
+import { composition as recipesComposition } from "./compositions/Recipes.ts";
 import { db } from "./db.ts";
 
 /**
@@ -22,11 +25,14 @@ export function assembleApplication() {
       Collecting: new CollectingConcept(db),
       CookingLog: new CookingLogConcept(db),
       Sharing: new SharingConcept(db),
+      Sessioning: new SessioningConcept(db),
     },
 
     // Endpoints and reactions will be added here next.
     composition: {
       Collections: collectionsComposition,
+      Accounts: accountsComposition,
+      Recipes: recipesComposition,
     },
   });
 }

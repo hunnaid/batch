@@ -217,3 +217,38 @@ test("editing can leave either text field empty", async () => {
     { changes: "Try less chili next time.", result: "" },
   ]);
 });
+
+test("lists only the entries belonging to the requested recipe", async () => {
+  const recipe = crypto.randomUUID();
+
+  expect(await log._forRecipe({ recipe })).toEqual([]);
+
+  const first = await log.record({
+    ...example,
+    recipe,
+  });
+
+  const second = await log.record({
+    ...example,
+    recipe,
+    changes: "Used the original amount of chili.",
+  });
+
+  await log.record({
+    ...example,
+    recipe: crypto.randomUUID(),
+  });
+
+  const rows = await log._forRecipe({ recipe });
+
+  expect(rows).toHaveLength(2);
+  expect(rows.map((row) => row._id).sort()).toEqual(
+    [first.entry, second.entry].sort()
+  );
+
+  expect(rows.every((row) => row.recipe === recipe)).toBe(true);
+
+  expect(rows[0]!.createdAt.getTime()).toBeGreaterThanOrEqual(
+    rows[1]!.createdAt.getTime()
+  );
+});

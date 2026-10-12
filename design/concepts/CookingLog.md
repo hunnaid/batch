@@ -67,4 +67,8 @@ edit(author: User, entry: Entry, changes: String, result: String) : returns ()
 _get(entry: Entry) : optional (_id: Entry, author: User, recipe: Recipe, changes: String, result: String, createdAt: DateTime)
   Return one row containing the entry's identifier and recorded details.
   Return no rows when the entry does not exist.
+_forRecipe(recipe: Recipe) : many (_id: Entry, author: User, recipe: Recipe, changes: String, result: String, createdAt: DateTime)
+  Return all entries associated with the given recipe, newest first.
+  Break ties in createdAt by sorting entry identifiers in ascending order.
+  Return no rows when the recipe has no entries.
 ```

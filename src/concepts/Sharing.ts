@@ -214,4 +214,31 @@ export class SharingConcept {
 
         return {};
     }
+
+    /**
+     * List resources a user can access through ownership or membership.
+     *
+     * @param input - The user whose accessible resources should be returned.
+     * @returns One row per resource, including its owner.
+     */
+    async _accessible({
+        user,
+    }: {
+        user: string;
+    }): Promise<{ resource: string; owner: string }[]> {
+        const documents = await this.resources
+            .find({
+                $or: [
+                    { owner: user },
+                    { members: user },
+                ],
+            })
+            .sort({ _id: 1 })
+            .toArray();
+
+        return documents.map((document) => ({
+            resource: document._id,
+            owner: document.owner,
+        }));
+    }
 }

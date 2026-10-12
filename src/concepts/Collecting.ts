@@ -117,4 +117,26 @@ export class CollectingConcept {
             items: [...document.items].sort(),
         }];
     }
+
+    /**
+     * Lists the items belonging to a collection as individual rows.
+     *
+     * @param input - The collection whose items should be returned.
+     * @returns One row per item, or no rows for an empty or unknown collection.
+     */
+    async _items({
+        collection,
+    }: {
+        collection: string;
+    }): Promise<{ item: string }[]> {
+        const document = await this.collections.findOne({ _id: collection });
+
+        if (!document) {
+            return [];
+        }
+
+        return [...document.items]
+            .sort()
+            .map((item) => ({ item }));
+    }
 }

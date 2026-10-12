@@ -18,6 +18,8 @@ import {
   AccessDenied,
   SharingConcept,
 } from "../src/concepts/Sharing.ts";
+import { SessioningConcept } from "../src/concepts/Sessioning.ts";
+import { composition as accountsComposition } from "../src/compositions/Accounts.ts";
 
 /** Use a temporary database separate from the application's data. */
 const url = process.env.MONGODB_URL;
@@ -61,9 +63,11 @@ const app = assemble({
     Collecting: collecting,
     CookingLog: new CookingLogConcept(db),
     Sharing: sharing,
+    Sessioning: new SessioningConcept(db),
   },
   composition: {
     Collections: collectionsComposition,
+    Accounts: accountsComposition,
     Test: { CreateCollection },
   },
 });
@@ -129,4 +133,117 @@ test("creating a collection automatically gives its creator access", async () =>
       resource: collection,
     })
   ).rejects.toBeInstanceOf(AccessDenied);
+});
+
+test("registration, login, current user, and logout work together", async () => {
+  const credentials = {
+    username: `cook-${crypto.randomUUID()}`,
+    password: "test-password",
+  };
+
+  const registered = await app.invoker.invoke(
+    "/accounts/register",
+    credentials
+  );
+
+  if (!registered.ok) {
+    throw new Error(JSON.stringify(registered.error));
+  }
+
+  const { user } = registered.value as { user: string };
+
+  const loggedIn = await app.invoker.invoke(
+    "/sessions/start",
+    credentials
+  );
+
+  if (!loggedIn.ok) {
+    throw new Error(JSON.stringify(loggedIn.error));
+  }
+
+  const login = loggedIn.value as {
+    user: string;
+    session: string;
+  };
+
+  expect(login.user).toBe(user);
+  expect(typeof login.session).toBe("string");
+  expect(login.session.length).toBeGreaterThan(0);
+
+  expect(
+    await app.invoker.invoke("/sessions/current", {
+      session: login.session,
+    })
+  ).toEqual({
+    ok: true,
+    value: { user },
+  });
+
+  expect(
+    await app.invoker.invoke("/sessions/end", {
+      session: login.session,
+    })
+  ).toEqual({
+    ok: true,
+    value: {},
+  });
+
+  // A logged-out session must produce a domain error, not a timeout.
+  expect(
+    await app.invoker.invoke(
+      "/sessions/current",
+      { session: login.session },
+      { timeoutMs: 2000 }
+    )
+  ).toEqual({
+    ok: false,
+    error: { kind: "domain", value: "INVALID_SESSION" },
+  });
+});
+
+test("account refusals return domain errors rather than timing out", async () => {
+  const credentials = {
+    username: `cook-${crypto.randomUUID()}`,
+    password: "test-password",
+  };
+
+  const registered = await app.invoker.invoke(
+    "/accounts/register",
+    credentials
+  );
+
+  expect(registered.ok).toBe(true);
+
+  expect(
+    await app.invoker.invoke(
+      "/accounts/register",
+      credentials,
+      { timeoutMs: 2000 }
+    )
+  ).toEqual({
+    ok: false,
+    error: { kind: "domain", value: "USERNAME_TAKEN" },
+  });
+
+  expect(
+    await app.invoker.invoke(
+      "/sessions/start",
+      { ...credentials, password: "wrong-password" },
+      { timeoutMs: 2000 }
+    )
+  ).toEqual({
+    ok: false,
+    error: { kind: "domain", value: "INVALID_CREDENTIALS" },
+  });
+
+  expect(
+    await app.invoker.invoke(
+      "/accounts/register",
+      { username: "", password: "" },
+      { timeoutMs: 2000 }
+    )
+  ).toEqual({
+    ok: false,
+    error: { kind: "domain", value: "INVALID_REGISTRATION" },
+  });
 });

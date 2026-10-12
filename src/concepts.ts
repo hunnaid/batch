@@ -54,6 +54,13 @@ import {
     SharingConcept,
 } from "./concepts/Sharing.ts";
 
+import sessioningSpec from "@design/concepts/Sessioning.md" with { type: "text" };
+
+import {
+    InvalidSession,
+    SessioningConcept,
+} from "./concepts/Sessioning.ts";
+
 /**
  * Connect the implementation to its specification and declared refusal.
  */
@@ -126,6 +133,17 @@ const sharing = registerConcept({
 });
 
 /**
+ * Connect session behavior to its specification and declared refusal.
+ */
+const sessioning = registerConcept({
+    class: SessioningConcept,
+    spec: sessioningSpec,
+    refusals: {
+        INVALID_SESSION: InvalidSession,
+    },
+});
+
+/**
  * Declare the concepts available to the application.
  */
 export const applicationConceptSet = conceptSet({
@@ -134,6 +152,7 @@ export const applicationConceptSet = conceptSet({
     Collecting: collecting,
     CookingLog: cookingLog,
     Sharing: sharing,
+    Sessioning: sessioning,
 });
 
 export const { concepts } = applicationConceptSet;

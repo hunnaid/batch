@@ -135,4 +135,21 @@ export class CookingLogConcept {
 
         return {};
     }
+
+    /**
+     * Lists a recipe's cooking entries, newest first.
+     *
+     * @param input - The recipe whose cooking history should be returned.
+     * @returns All matching entries, or an empty array if none exist.
+     */
+    async _forRecipe({
+        recipe,
+    }: {
+        recipe: string;
+    }): Promise<EntryDocument[]> {
+        return await this.entries
+            .find({ recipe })
+            .sort({ createdAt: -1, _id: 1 })
+            .toArray();
+    }
 }

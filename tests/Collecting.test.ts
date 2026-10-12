@@ -169,3 +169,24 @@ test("keeps membership independent across collections", async () => {
     },
   ]);
 });
+
+test("lists collection items as separate rows", async () => {
+  const { collection } = await collecting.create({
+    creator: "user-1",
+    name: "Family Recipes",
+  });
+
+  expect(await collecting._items({ collection })).toEqual([]);
+
+  await collecting.add({ collection, item: "recipe-b" });
+  await collecting.add({ collection, item: "recipe-a" });
+
+  expect(await collecting._items({ collection })).toEqual([
+    { item: "recipe-a" },
+    { item: "recipe-b" },
+  ]);
+
+  expect(
+    await collecting._items({ collection: crypto.randomUUID() })
+  ).toEqual([]);
+});

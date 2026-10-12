@@ -280,3 +280,42 @@ test("membership changes stay within their resource", async () => {
     await sharing.authorize({ resource: second, user: "friend" })
   ).toEqual({});
 });
+
+test("lists owned and shared resources and reflects revoked access", async () => {
+  const user = crypto.randomUUID();
+  const otherOwner = crypto.randomUUID();
+  const owned = crypto.randomUUID();
+  const shared = crypto.randomUUID();
+  const unrelated = crypto.randomUUID();
+
+  expect(await sharing._accessible({ user })).toEqual([]);
+
+  await sharing.initialize({ resource: owned, owner: user });
+  await sharing.initialize({ resource: shared, owner: otherOwner });
+  await sharing.initialize({ resource: unrelated, owner: otherOwner });
+
+  await sharing.grant({
+    owner: otherOwner,
+    resource: shared,
+    member: user,
+  });
+
+  const rows = await sharing._accessible({ user });
+
+  expect(rows).toHaveLength(2);
+  expect(rows).toContainEqual({ resource: owned, owner: user });
+  expect(rows).toContainEqual({
+    resource: shared,
+    owner: otherOwner,
+  });
+
+  await sharing.revoke({
+    owner: otherOwner,
+    resource: shared,
+    member: user,
+  });
+
+  expect(await sharing._accessible({ user })).toEqual([
+    { resource: owned, owner: user },
+  ]);
+});

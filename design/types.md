@@ -15,4 +15,6 @@ instantiate CookingLog with
 instantiate Sharing with
     User is PasswordAuthenticating.User
     Resource is Collecting.Collection
+instantiate Sessioning with
+    User is PasswordAuthenticating.User
 ```
