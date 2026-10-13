@@ -26,6 +26,9 @@ import {
     CollectionNotFound,
     InvalidCollectionName,
     ItemAlreadyCollected,
+    InvalidCollectionRename,
+    RenameCollectionNotFound,
+    DeleteCollectionNotFound,
 } from "./concepts/Collecting.ts";
 
 import cookingLogSpec from "@design/concepts/CookingLog.md" with { type: "text" };
@@ -52,6 +55,8 @@ import {
     RevokeNotOwner,
     RevokeResourceNotFound,
     SharingConcept,
+    OwnerAccessRequired,
+    CannotUninitializeResource,
 } from "./concepts/Sharing.ts";
 
 import sessioningSpec from "@design/concepts/Sessioning.md" with { type: "text" };
@@ -95,6 +100,9 @@ const collecting = registerConcept({
         INVALID_COLLECTION_NAME: InvalidCollectionName,
         COLLECTION_NOT_FOUND: CollectionNotFound,
         ITEM_ALREADY_COLLECTED: ItemAlreadyCollected,
+        INVALID_COLLECTION_RENAME: InvalidCollectionRename,
+        RENAME_COLLECTION_NOT_FOUND: RenameCollectionNotFound,
+        DELETE_COLLECTION_NOT_FOUND: DeleteCollectionNotFound,
     },
 });
 
@@ -129,6 +137,8 @@ const sharing = registerConcept({
         CANNOT_REVOKE_OWNER: CannotRevokeOwner,
         MEMBER_NOT_ADDED: MemberNotAdded,
         ACCESS_DENIED: AccessDenied,
+        OWNER_ACCESS_REQUIRED: OwnerAccessRequired,
+        CANNOT_UNINITIALIZE_RESOURCE: CannotUninitializeResource,
     },
 });
 

@@ -19,6 +19,11 @@ Defined in [Collecting](../design/concepts/Collecting.md), line 1.
 - `add(collection: Collection, item: Item) : returns ()`
   - Refuses `COLLECTION_NOT_FOUND`: The collection does not exist.
   - Refuses `ITEM_ALREADY_COLLECTED`: The item is already in the collection.
+- `rename(collection: Collection, name: String) : returns ()`
+  - Refuses `INVALID_COLLECTION_RENAME`: The collection name cannot be blank.
+  - Refuses `RENAME_COLLECTION_NOT_FOUND`: The collection does not exist.
+- `delete(collection: Collection) : returns ()`
+  - Refuses `DELETE_COLLECTION_NOT_FOUND`: The collection does not exist.
 
 #### Queries
 
@@ -128,6 +133,10 @@ Defined in [Sharing](../design/concepts/Sharing.md), line 1.
   - Refuses `MEMBER_NOT_ADDED`: The user is not a member of this resource.
 - `authorize(user: User, resource: Resource) : returns ()`
   - Refuses `ACCESS_DENIED`: You do not have access to this resource.
+- `authorizeOwner(user: User, resource: Resource) : returns ()`
+  - Refuses `OWNER_ACCESS_REQUIRED`: Only the owner can perform this action.
+- `uninitialize(resource: Resource, owner: User) : returns ()`
+  - Refuses `CANNOT_UNINITIALIZE_RESOURCE`: Only the owner can remove sharing for an existing resource.
 
 #### Queries
 
@@ -361,6 +370,58 @@ then
   RequestBoundary.respond (collection, requestId)
 ```
 
+### Collections.DeleteCollection
+
+Authored path: `Collections.DeleteCollection`.
+- Covered by [Collections](../design/compositions/Collections.md), line 62.
+- Covered by [Collections](../design/compositions/Collections.md), line 75.
+
+```reaction
+when RequestBoundary.request (collection, path: "/collections/delete", requestId, session)
+then
+  Sessioning.resolve (session)
+```
+
+### Collections.DeleteCollection#2
+
+Authored path: `Collections.DeleteCollection`.
+- Covered by [Collections](../design/compositions/Collections.md), line 62.
+- Covered by [Collections](../design/compositions/Collections.md), line 75.
+
+```reaction
+when Sessioning.resolve (session, user), asked by Collections.DeleteCollection
+where
+  earlier, RequestBoundary.request (collection, path: "/collections/delete", requestId, session)
+then
+  Sharing.uninitialize (owner: user, resource: collection)
+```
+
+### Collections.DeleteCollection#3
+
+Authored path: `Collections.DeleteCollection`.
+- Covered by [Collections](../design/compositions/Collections.md), line 62.
+- Covered by [Collections](../design/compositions/Collections.md), line 75.
+
+```reaction
+when Sharing.uninitialize (owner: user, resource: collection), asked by Collections.DeleteCollection#2
+then
+  Collecting.delete (collection)
+```
+
+### Collections.DeleteCollection#4
+
+Authored path: `Collections.DeleteCollection`.
+- Covered by [Collections](../design/compositions/Collections.md), line 62.
+- Covered by [Collections](../design/compositions/Collections.md), line 75.
+
+```reaction
+when Collecting.delete (collection), asked by Collections.DeleteCollection#3
+where
+  earlier, RequestBoundary.request (collection, path: "/collections/delete", requestId, session)
+then
+  RequestBoundary.respond (collection, requestId)
+```
+
 ### Collections.InitializeCollectionSharing
 
 Authored path: `Collections.InitializeCollectionSharing`.
@@ -396,6 +457,60 @@ where
   earlier, RequestBoundary.request (path: "/collections/list", requestId, session)
 then
   RequestBoundary.respond (overview: former "the accessible collections of (user)" with (user), requestId)
+```
+
+### Collections.RenameCollection
+
+Authored path: `Collections.RenameCollection`.
+- Covered by [Collections](../design/compositions/Collections.md), line 59.
+- Covered by [Collections](../design/compositions/Collections.md), line 74.
+
+```reaction
+when RequestBoundary.request (collection, name, path: "/collections/rename", requestId, session)
+then
+  Sessioning.resolve (session)
+```
+
+### Collections.RenameCollection#2
+
+Authored path: `Collections.RenameCollection`.
+- Covered by [Collections](../design/compositions/Collections.md), line 59.
+- Covered by [Collections](../design/compositions/Collections.md), line 74.
+
+```reaction
+when Sessioning.resolve (session, user), asked by Collections.RenameCollection
+where
+  earlier, RequestBoundary.request (collection, name, path: "/collections/rename", requestId, session)
+then
+  Sharing.authorizeOwner (resource: collection, user)
+```
+
+### Collections.RenameCollection#3
+
+Authored path: `Collections.RenameCollection`.
+- Covered by [Collections](../design/compositions/Collections.md), line 59.
+- Covered by [Collections](../design/compositions/Collections.md), line 74.
+
+```reaction
+when Sharing.authorizeOwner (resource: collection, user), asked by Collections.RenameCollection#2
+where
+  earlier, RequestBoundary.request (collection, name, path: "/collections/rename", requestId, session)
+then
+  Collecting.rename (collection, name)
+```
+
+### Collections.RenameCollection#4
+
+Authored path: `Collections.RenameCollection`.
+- Covered by [Collections](../design/compositions/Collections.md), line 59.
+- Covered by [Collections](../design/compositions/Collections.md), line 74.
+
+```reaction
+when Collecting.rename (collection, name), asked by Collections.RenameCollection#3
+where
+  earlier, RequestBoundary.request (collection, name, path: "/collections/rename", requestId, session)
+then
+  RequestBoundary.respond (collection, requestId)
 ```
 
 ### Collections.RevokeCollectionAccess
@@ -832,7 +947,9 @@ not listed here have no explicit input contract.
 
 - `/accounts/register` — requires `password`, `username`
 - `/collections/create` — requires `name`, `session`
+- `/collections/delete` — requires `collection`, `session`
 - `/collections/list` — requires `session`
+- `/collections/rename` — requires `collection`, `name`, `session`
 - `/collections/revoke` — requires `collection`, `session`, `username`
 - `/collections/share` — requires `collection`, `session`, `username`
 - `/entries/add` — requires `changes`, `collection`, `recipe`, `result`, `session`

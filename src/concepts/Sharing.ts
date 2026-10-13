@@ -44,6 +44,12 @@ export class CannotRevokeOwner extends Error {}
 /** The user is not a member of this resource. */
 export class MemberNotAdded extends Error {}
 
+/** The resource is unknown or the user is not its owner. */
+export class OwnerAccessRequired extends Error {}
+
+/** Sharing cannot be removed for an unknown resource or by a nonowner. */
+export class CannotUninitializeResource extends Error {}
+
 /**
  * Manages resource ownership and membership independently of its contents.
  */
@@ -240,5 +246,59 @@ export class SharingConcept {
             resource: document._id,
             owner: document.owner,
         }));
+    }
+
+    /**
+     * Require ownership for an operation reserved for the resource's owner.
+     *
+     * @param input - The requesting user and resource.
+     * @returns An empty action result when ownership is verified.
+     * @throws OwnerAccessRequired if the resource is unknown or owned by another user.
+     */
+    async authorizeOwner({
+        user,
+        resource,
+    }: {
+        user: string;
+        resource: string;
+    }): Promise<{}> {
+        const existing = await this.resources.findOne({
+            _id: resource,
+            owner: user,
+        });
+
+        if (!existing) {
+            throw new OwnerAccessRequired("Only the owner can perform this action.");
+        }
+
+        return {};
+    }
+
+    /**
+     * Remove a resource's ownership and membership information.
+     *
+     * @param input - The resource and its owner.
+     * @returns An empty action result.
+     * @throws CannotUninitializeResource if the resource is unknown or ownership differs.
+     */
+    async uninitialize({
+        resource,
+        owner,
+    }: {
+        resource: string;
+        owner: string;
+    }): Promise<{}> {
+        const result = await this.resources.deleteOne({
+            _id: resource,
+            owner,
+        });
+
+        if (result.deletedCount === 0) {
+            throw new CannotUninitializeResource(
+                "Only the owner can remove sharing for an existing resource."
+            );
+        }
+
+        return {};
     }
 }

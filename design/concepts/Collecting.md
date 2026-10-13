@@ -54,6 +54,29 @@ add(collection: Collection, item: Item) : returns ()
   then
     add item to the collection's items
     returns
+
+rename(collection: Collection, name: String) : returns ()
+  where name is blank
+  then
+    refuses INVALID_COLLECTION_RENAME "The collection name cannot be blank."
+  where name is not blank and collection does not exist
+  then
+    refuses RENAME_COLLECTION_NOT_FOUND "The collection does not exist."
+  where name is not blank and collection exists
+  then
+    set the collection's name to the given name
+    preserve its creator and items
+    returns
+
+delete(collection: Collection) : returns ()
+  where collection does not exist
+  then
+    refuses DELETE_COLLECTION_NOT_FOUND "The collection does not exist."
+  where collection exists
+  then
+    remove the collection and its item memberships
+    leave the items themselves and other collections unchanged
+    returns
 ```
 
 ## Queries

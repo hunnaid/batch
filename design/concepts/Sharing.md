@@ -84,6 +84,25 @@ authorize(user: User, resource: Resource) : returns ()
   then
     make no state change
     returns
+
+authorizeOwner(user: User, resource: Resource) : returns ()
+  where resource is not in Resources or its owner differs from user
+  then
+    refuses OWNER_ACCESS_REQUIRED "Only the owner can perform this action."
+  where resource is in Resources and its owner equals user
+  then
+    make no state change
+    returns
+
+uninitialize(resource: Resource, owner: User) : returns ()
+  where resource is not in Resources or its owner differs from the given owner
+  then
+    refuses CANNOT_UNINITIALIZE_RESOURCE "Only the owner can remove sharing for an existing resource."
+  where resource is in Resources and its owner equals the given owner
+  then
+    remove resource from Resources along with its owner and members
+    leave other resources unchanged
+    returns
 ```
 
 ## Queries

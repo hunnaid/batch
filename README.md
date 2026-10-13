@@ -168,12 +168,11 @@ The frontend uses the generated HTTP client contract in `generated/wire.ts`.
 ## Current Limitations
 
 - Recipes are entered manually; website imports are not implemented.
-- Collections cannot yet be renamed or deleted through the interface.
 - Cooking entries refer to the original recipe rather than branching
   from other entries.
 - Shared changes appear when data is reloaded; there are no live updates.
 - Unsaved form text can be lost when navigating away or refreshing.
-- The interface is intentionally plain. Visual design is planned for P3.
+- The interface is intentionally plain. UI design is planned for later.
 
 The checker currently reports endpoint-coverage advisories and two
 source-order notices. These are not failed checks or proof of correctness.

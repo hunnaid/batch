@@ -215,6 +215,55 @@ const RevokeCollectionAccess = endpoint(
     }
 );
 
+/** Rename a collection after verifying the signed-in user owns it. */
+const RenameCollection = endpoint(
+    "/collections/rename",
+    ({ session, collection, name, user }) =>
+        receive({ session, collection, name })
+        .then(Sessioning.resolve({ session }).responds({ user }))
+        .then(Sharing.authorizeOwner({ user, resource: collection }))
+        .then(Collecting.rename({ collection, name }))
+        .then(respond({ collection })),
+    {
+        validators: {
+            input: (value: unknown) => ({
+                ok:
+                    hasSessionInput(value) &&
+                    typeof value.collection === "string" &&
+                    typeof value.name === "string",
+            }),
+        },
+    }
+);
+
+/**
+ * Remove sharing first, then delete the collection.
+ * Recipes and cooking entries remain stored independently.
+ */
+const DeleteCollection = endpoint(
+    "/collections/delete",
+    ({ session, collection, user }) =>
+        receive({ session, collection })
+        .then(Sessioning.resolve({ session }).responds({ user }))
+        .then(
+            Sharing.uninitialize({
+                resource: collection,
+                owner: user,
+            })
+        )
+        .then(Collecting.delete({ collection }))
+        .then(respond({ collection })),
+    {
+        validators: {
+            input: (value: unknown) => ({
+                ok:
+                hasSessionInput(value) &&
+                typeof value.collection === "string",
+            }),
+        },
+    }
+);
+
 export const composition = {
     InitializeCollectionSharing,
     CreateCollection,
@@ -222,4 +271,6 @@ export const composition = {
     ListCollections,
     AccessibleCollections: accessibleCollections,
     RevokeCollectionAccess,
+    RenameCollection,
+    DeleteCollection,
 };

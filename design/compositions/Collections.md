@@ -55,3 +55,22 @@ Collection endpoints validate input types before invoking concept actions.
 Session inputs accept a token or null for a missing cookie. Collection
 creation requires a string name; sharing and revocation require string
 collection identifiers and usernames.
+
+Only the collection owner can rename a collection.[rename]
+Renaming preserves its recipes and membership.
+
+Only the owner can delete a collection.[delete] Deletion first removes its
+sharing information, then removes the collection. Recipes and cooking entries
+remain stored, preserving any use through other collections. Recipes with no
+remaining collection are no longer discoverable through the interface.
+
+These steps are not transactional. If collection deletion fails after sharing
+is removed, the collection remains stored without access and requires repair.
+
+[rename]: reaction:Collections.RenameCollection
+[delete]: reaction:Collections.DeleteCollection
+
+```endpoints
+Collections.RenameCollection at /collections/rename
+Collections.DeleteCollection at /collections/delete
+```

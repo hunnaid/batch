@@ -20,6 +20,15 @@ export class CollectionNotFound extends Error {}
 /** The item is already in the collection. */
 export class ItemAlreadyCollected extends Error {}
 
+/** The collection being renamed does not exist. */
+export class RenameCollectionNotFound extends Error {}
+
+/** A replacement collection name cannot be blank. */
+export class InvalidCollectionRename extends Error {}
+
+/** The collection being deleted does not exist. */
+export class DeleteCollectionNotFound extends Error {}
+
 /**
  * Organizes items into collections.
  * Access control belongs in the application composition.
@@ -138,5 +147,66 @@ export class CollectingConcept {
         return [...document.items]
             .sort()
             .map((item) => ({ item }));
+    }
+
+    /**
+     * Change a collection's name while preserving its creator and items.
+     *
+     * @param input - The collection and replacement name.
+     * @returns An empty action result.
+     * @throws InvalidCollectionRename if the name is blank.
+     * @throws RenameCollectionNotFound if the collection does not exist.
+     */
+    async rename({
+        collection,
+        name,
+    }: {
+        collection: string;
+        name: string;
+    }): Promise<{}> {
+        if (!name.trim()) {
+            throw new InvalidCollectionRename(
+                "The collection name cannot be blank."
+            );
+        }
+
+        const result = await this.collections.updateOne(
+            { _id: collection },
+            { $set: { name } }
+        );
+
+        // Renaming to the existing name is still a successful action.
+        if (result.matchedCount === 0) {
+            throw new RenameCollectionNotFound(
+                "The collection does not exist."
+            );
+        }
+
+        return {};
+    }
+
+    /**
+     * Delete a collection without deleting the items it contains.
+     *
+     * @param input - The collection to delete.
+     * @returns An empty action result.
+     * @throws DeleteCollectionNotFound if the collection does not exist.
+     */
+    async delete({
+        collection,
+    }: {
+        collection: string;
+    }): Promise<{}> {
+        const result = await this.collections.deleteOne({
+            _id: collection,
+        });
+
+        if (result.deletedCount === 0) {
+            throw new DeleteCollectionNotFound(
+                "The collection does not exist."
+            );
+        }
+
+        return {};
     }
 }

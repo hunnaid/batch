@@ -24,6 +24,20 @@ const loading = ref(false);
 const creating = ref(false);
 const error = ref("");
 
+/** Prevent overlapping rename/delete requests. */
+const managing = ref(false);
+
+/** Track the collection being renamed and its proposed name. */
+const renaming = ref<string | null>(null);
+const replacementName = ref("");
+
+/** Show the rename form with the current name already filled in. */
+function beginRename(collection: CollectionSummary) {
+  renaming.value = collection.collection;
+  replacementName.value = collection.name;
+  error.value = "";
+}
+
 /** Report failures, returning to login when the session has expired. */
 function reportError(cause: unknown) {
   if (cause instanceof ApiError) {
@@ -37,6 +51,16 @@ function reportError(cause: unknown) {
       cause.code === "INVALID_INPUT"
     ) {
       error.value = "Enter a nonblank collection name.";
+      return;
+    }
+
+    if (cause.code === "FORBIDDEN") {
+      error.value = "Only the collection owner can perform this action.";
+      return;
+    }
+
+    if (cause.code === "NOT_FOUND") {
+      error.value = "This collection no longer exists. Refresh the list.";
       return;
     }
   }
@@ -103,6 +127,75 @@ function recipeSaved(collection: string, recipe: string) {
   emit("openRecipe", collection, recipe);
 }
 
+/** Rename a collection without changing its recipes or members. */
+async function renameCollection(collection: CollectionSummary) {
+  if (managing.value) return;
+
+  const newName = replacementName.value.trim();
+
+  if (!newName) {
+    error.value = "Enter a nonblank collection name.";
+    return;
+  }
+
+  managing.value = true;
+  error.value = "";
+
+  try {
+    const response = await api.collections.rename({
+      collection: collection.collection,
+      name: newName,
+    });
+
+    if ("error" in response) {
+      throw new ApiError(String(response.error));
+    }
+
+    renaming.value = null;
+    await loadCollections();
+  } catch (cause) {
+    reportError(cause);
+  } finally {
+    managing.value = false;
+  }
+}
+
+/** Delete a collection after the owner confirms the scope of deletion. */
+async function deleteCollection(collection: CollectionSummary) {
+  if (managing.value) return;
+
+  const confirmed = window.confirm(
+    `Delete "${collection.name}" and remove everyone's access to this collection?\n\n` +
+    "Recipes and cooking entries will remain stored. Recipes saved only " +
+    "in this collection will no longer appear in the app."
+  );
+
+  if (!confirmed) return;
+
+  managing.value = true;
+  error.value = "";
+
+  try {
+    const response = await api.collections.delete({
+      collection: collection.collection,
+    });
+
+    if ("error" in response) {
+      throw new ApiError(String(response.error));
+    }
+
+    if (addingTo.value === collection.collection) {
+      addingTo.value = null;
+    }
+
+    await loadCollections();
+  } catch (cause) {
+    reportError(cause);
+  } finally {
+    managing.value = false;
+  }
+}
+
 onMounted(loadCollections);
 </script>
 
@@ -111,7 +204,7 @@ onMounted(loadCollections);
     <h2>Collections</h2>
 
     <form @submit.prevent="createCollection">
-      <fieldset :disabled="creating || loading">
+      <fieldset :disabled="creating || loading || managing">
         <label for="collection-name">New collection name</label>
         <input
           id="collection-name"
@@ -130,7 +223,7 @@ onMounted(loadCollections);
 
     <button
       type="button"
-      :disabled="loading || creating"
+      :disabled="loading || creating || managing"
       @click="loadCollections"
     >
       Refresh collections
@@ -197,6 +290,54 @@ onMounted(loadCollections);
             @session-expired="emit('sessionExpired')"
           />
         </details>
+
+        <div v-if="collection.owner === user">
+          <button
+            v-if="renaming !== collection.collection"
+            type="button"
+            :disabled="managing || loading || creating || addingTo !== null"
+            @click="beginRename(collection)"
+          >
+            Rename
+          </button>
+
+          <form
+            v-if="renaming === collection.collection"
+            @submit.prevent="renameCollection(collection)"
+          >
+            <fieldset :disabled="managing || creating">
+              <label :for="`rename-${collection.collection}`">
+                Collection name
+              </label>
+
+              <input
+                :id="`rename-${collection.collection}`"
+                v-model="replacementName"
+                required
+              />
+
+              <button type="submit">
+                {{ managing ? "Saving…" : "Save name" }}
+              </button>
+
+              <button type="button" @click="renaming = null">
+                Cancel
+              </button>
+            </fieldset>
+          </form>
+
+          <button
+            type="button"
+            :disabled="
+              managing || loading || creating ||
+              addingTo !== null || renaming !== null
+            "
+            @click="deleteCollection(collection)"
+          >
+            Delete collection
+          </button>
+        </div>
+
       </article>
     </template>
   </section>

@@ -34,6 +34,16 @@ export type BatchWire = {
     };
     error: { error: AppWideError | "ACCESS_DENIED" | "INVALID_COLLECTION_NAME" | "INVALID_INPUT" | "INVALID_SESSION" | "RESOURCE_ALREADY_INITIALIZED" };
   };
+  "/collections/delete": {
+    input: {
+      "collection": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["uninitialize"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["delete"]>[0], ["collection"]>]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+    };
+    output: {
+      "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["delete"]>[0], ["collection"]>>;
+    };
+    error: { error: AppWideError | "CANNOT_UNINITIALIZE_RESOURCE" | "DELETE_COLLECTION_NOT_FOUND" | "INVALID_INPUT" | "INVALID_SESSION" };
+  };
   "/collections/list": {
     input: {
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
@@ -52,6 +62,17 @@ export type BatchWire = {
       };
     };
     error: { error: AppWideError | "INVALID_INPUT" | "INVALID_SESSION" };
+  };
+  "/collections/rename": {
+    input: {
+      "collection": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorizeOwner"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["rename"]>[0], ["collection"]>]>>;
+      "name": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["rename"]>[0], ["name"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+    };
+    output: {
+      "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["rename"]>[0], ["collection"]>>;
+    };
+    error: { error: AppWideError | "INVALID_COLLECTION_RENAME" | "INVALID_INPUT" | "INVALID_SESSION" | "OWNER_ACCESS_REQUIRED" | "RENAME_COLLECTION_NOT_FOUND" };
   };
   "/collections/revoke": {
     input: {
@@ -192,6 +213,15 @@ export type BatchWireHttp = {
     };
     error: { error: HttpAppWideError | "FORBIDDEN" | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
+  "/collections/delete": {
+    input: {
+      "collection": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["uninitialize"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["delete"]>[0], ["collection"]>]>>;
+    };
+    output: {
+      "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["delete"]>[0], ["collection"]>>;
+    };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
   "/collections/list": {
     input: Record<string, never>;
     output: {
@@ -208,6 +238,16 @@ export type BatchWireHttp = {
       };
     };
     error: { error: HttpAppWideError | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
+  "/collections/rename": {
+    input: {
+      "collection": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorizeOwner"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["rename"]>[0], ["collection"]>]>>;
+      "name": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["rename"]>[0], ["name"]>>;
+    };
+    output: {
+      "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["rename"]>[0], ["collection"]>>;
+    };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/collections/revoke": {
     input: {

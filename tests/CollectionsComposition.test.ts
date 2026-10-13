@@ -38,6 +38,9 @@ const db = client.db(
 
 const collecting = new CollectingConcept(db);
 const sharing = new SharingConcept(db);
+const sessions = new SessioningConcept(db);
+const recipes = new RecipeRecordingConcept(db);
+const cookingLog = new CookingLogConcept(db);
 
 /**
  * A test-only entry point for triggering collection creation.
@@ -58,12 +61,12 @@ const CreateCollection = endpoint(
 const app = assemble({
   conceptSet: applicationConceptSet,
   instances: {
-    RecipeRecording: new RecipeRecordingConcept(db),
+    RecipeRecording: recipes,
     PasswordAuthenticating: new PasswordAuthenticatingConcept(db),
     Collecting: collecting,
-    CookingLog: new CookingLogConcept(db),
+    CookingLog: cookingLog,
     Sharing: sharing,
-    Sessioning: new SessioningConcept(db),
+    Sessioning: sessions,
   },
   composition: {
     Collections: collectionsComposition,
@@ -246,4 +249,295 @@ test("account refusals return domain errors rather than timing out", async () =>
     ok: false,
     error: { kind: "domain", value: "INVALID_REGISTRATION" },
   });
+});
+
+/**
+ * Invoke an endpoint with a bounded wait.
+ * Unexpected failures should stop the test with their actual error.
+ */
+async function invokeSuccessfully<T>(
+  path: string,
+  input: Record<string, unknown>
+): Promise<T> {
+  const response = await app.invoker.invoke(
+    path,
+    input,
+    { timeoutMs: 2000 }
+  );
+
+  if (!response.ok) {
+    throw new Error(JSON.stringify(response.error));
+  }
+
+  return response.value as T;
+}
+
+/**
+ * Create independent owner/member sessions and a shared collection.
+ * Account registration is covered separately by the account tests.
+ */
+async function createSharedCollection() {
+  const owner = crypto.randomUUID();
+  const member = crypto.randomUUID();
+
+  const { session: ownerSession } = await sessions.start({
+    user: owner,
+  });
+
+  const { session: memberSession } = await sessions.start({
+    user: member,
+  });
+
+  const { collection } = await invokeSuccessfully<{
+    collection: string;
+  }>("/collections/create", {
+    session: ownerSession,
+    name: "Family Recipes",
+  });
+
+  await sharing.grant({
+    resource: collection,
+    owner,
+    member,
+  });
+
+  return {
+    collection,
+    owner,
+    member,
+    ownerSession,
+    memberSession,
+  };
+}
+
+/** Read the collection identifiers visible through the real list endpoint. */
+async function visibleCollections(session: string): Promise<string[]> {
+  const response = await invokeSuccessfully<{
+    overview: {
+      collections: { collection: string }[];
+    };
+  }>("/collections/list", { session });
+
+  return response.overview.collections.map(
+    (collection) => collection.collection
+  );
+}
+
+test("the owner can rename a collection without changing its items or access", async () => {
+  const fixture = await createSharedCollection();
+  const { collection, owner, member, ownerSession } = fixture;
+
+  const { recipe } = await recipes.record({
+    title: "Mom's Biryani",
+    ingredients: ["Rice", "Chili"],
+    instructions: ["Cook the rice.", "Add chili and steam."],
+  });
+
+  await collecting.add({ collection, item: recipe });
+
+  const before = await collecting._get({ collection });
+
+  expect(
+    await invokeSuccessfully<{ collection: string }>(
+      "/collections/rename",
+      {
+        session: ownerSession,
+        collection,
+        name: "Family Favorites",
+      }
+    )
+  ).toEqual({ collection });
+
+  expect(await collecting._get({ collection })).toEqual(
+    before.map((details) => ({
+      ...details,
+      name: "Family Favorites",
+    }))
+  );
+
+  // Both the owner and the existing member retain access.
+  for (const user of [owner, member]) {
+    expect(
+      await sharing.authorize({ user, resource: collection })
+    ).toEqual({});
+  }
+
+  expect(
+    await visibleCollections(fixture.memberSession)
+  ).toContain(collection);
+});
+
+test("a blank rename leaves the existing collection unchanged", async () => {
+  const { collection, ownerSession } = await createSharedCollection();
+  const before = await collecting._get({ collection });
+
+  expect(
+    await app.invoker.invoke(
+      "/collections/rename",
+      {
+        session: ownerSession,
+        collection,
+        name: "   ",
+      },
+      { timeoutMs: 2000 }
+    )
+  ).toEqual({
+    ok: false,
+    error: {
+      kind: "domain",
+      value: "INVALID_COLLECTION_RENAME",
+    },
+  });
+
+  expect(await collecting._get({ collection })).toEqual(before);
+});
+
+/**
+ * Exercise both owner-only endpoints as an actual shared member.
+ * Refusal must preserve the collection and its sharing state.
+ */
+for (const operation of [
+  {
+    name: "rename",
+    path: "/collections/rename",
+    error: "OWNER_ACCESS_REQUIRED",
+  },
+  {
+    name: "delete",
+    path: "/collections/delete",
+    error: "CANNOT_UNINITIALIZE_RESOURCE",
+  },
+]) {
+  test(`a shared member cannot ${operation.name} a collection`, async () => {
+    const fixture = await createSharedCollection();
+    const { collection, owner, member, memberSession } = fixture;
+
+    const before = await collecting._get({ collection });
+
+    const input =
+      operation.name === "rename"
+        ? {
+            session: memberSession,
+            collection,
+            name: "Unauthorized rename",
+          }
+        : {
+            session: memberSession,
+            collection,
+          };
+
+    expect(
+      await app.invoker.invoke(
+        operation.path,
+        input,
+        { timeoutMs: 2000 }
+      )
+    ).toEqual({
+      ok: false,
+      error: {
+        kind: "domain",
+        value: operation.error,
+      },
+    });
+
+    expect(await collecting._get({ collection })).toEqual(before);
+
+    for (const user of [owner, member]) {
+      expect(
+        await sharing.authorize({ user, resource: collection })
+      ).toEqual({});
+    }
+  });
+}
+
+test("deleting a collection removes access while preserving recipes, entries, and other collections", async () => {
+  const fixture = await createSharedCollection();
+  const {
+    collection,
+    owner,
+    member,
+    ownerSession,
+    memberSession,
+  } = fixture;
+
+  const { collection: otherCollection } =
+    await invokeSuccessfully<{ collection: string }>(
+      "/collections/create",
+      {
+        session: ownerSession,
+        name: "Other Recipes",
+      }
+    );
+
+  const recipeData = {
+    title: "Mom's Biryani",
+    ingredients: ["Rice", "Chili"],
+    instructions: ["Cook the rice.", "Add chili and steam."],
+    source: "Mom, through iMessage",
+  };
+
+  const { recipe } = await recipes.record(recipeData);
+
+  // One recipe can remain accessible through another collection.
+  await collecting.add({ collection, item: recipe });
+  await collecting.add({
+    collection: otherCollection,
+    item: recipe,
+  });
+
+  const { entry } = await cookingLog.record({
+    author: owner,
+    recipe,
+    changes: "Used half the chili.",
+    result: "Milder, which I preferred.",
+  });
+
+  const entryBefore = await cookingLog._get({ entry });
+  const otherBefore = await collecting._get({
+    collection: otherCollection,
+  });
+
+  // Establish that both users could see the collection before deletion.
+  expect(await visibleCollections(ownerSession)).toContain(collection);
+  expect(await visibleCollections(memberSession)).toContain(collection);
+
+  expect(
+    await invokeSuccessfully<{ collection: string }>(
+      "/collections/delete",
+      {
+        session: ownerSession,
+        collection,
+      }
+    )
+  ).toEqual({ collection });
+
+  expect(await collecting._get({ collection })).toEqual([]);
+
+  for (const user of [owner, member]) {
+    await expect(
+      sharing.authorize({ user, resource: collection })
+    ).rejects.toBeInstanceOf(AccessDenied);
+  }
+
+  const ownerCollections = await visibleCollections(ownerSession);
+  const memberCollections = await visibleCollections(memberSession);
+
+  expect(ownerCollections).not.toContain(collection);
+  expect(memberCollections).not.toContain(collection);
+  expect(ownerCollections).toContain(otherCollection);
+
+  // Deletion must not cascade into independently stored recipe history.
+  expect(await recipes._get({ recipe })).toEqual([recipeData]);
+  expect(await cookingLog._get({ entry })).toEqual(entryBefore);
+
+  expect(
+    await collecting._get({ collection: otherCollection })
+  ).toEqual(otherBefore);
+
+  expect(
+    await sharing.authorize({
+      user: owner,
+      resource: otherCollection,
+    })
+  ).toEqual({});
 });
