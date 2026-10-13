@@ -52,3 +52,8 @@ author, recipe, and creation time.
 ```endpoints
 Recipes.EditCookingEntry at /entries/edit
 ```
+
+Recipe and cooking-entry endpoints validate incoming field types before
+invoking concept actions. Session inputs accept a token or null for a missing
+cookie. Identifiers and text fields must be strings, and ingredient and
+instruction lists must contain only strings.

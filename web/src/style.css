@@ -1,0 +1,58 @@
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  color: #222;
+  background: white;
+}
+
+main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+input,
+textarea,
+button,
+select {
+  font: inherit;
+}
+
+fieldset {
+  display: grid;
+  gap: 10px;
+  max-width: 420px;
+  padding: 0;
+  border: 0;
+  margin-bottom: 16px;
+}
+
+input,
+textarea,
+select,
+button {
+  padding: 8px;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+}
+
+[role="alert"] {
+  color: #a11;
+}
+
+article {
+  border-top: 1px solid #ddd;
+  margin-top: 20px;
+  padding-top: 12px;
+}
+
+.recipe-text {
+  white-space: pre-wrap;
+}

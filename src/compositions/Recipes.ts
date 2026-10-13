@@ -21,6 +21,26 @@ const {
  } = concepts;
 
 /**
+ * Accept a session token or null when the HTTP cookie is missing.
+ * Sessioning checks whether the token is valid.
+ */
+function hasSessionInput(
+    value: unknown
+): value is Record<string, unknown> {
+    if (
+        typeof value !== "object" ||
+        value === null ||
+        Array.isArray(value)
+    ) {
+        return false;
+    }
+
+    const input = value as Record<string, unknown>;
+
+    return typeof input.session === "string" || input.session === null;
+}
+
+/**
  * Save an original recipe in a collection accessible to the signed-in user.
  */
 const SaveRecipe = endpoint(
@@ -74,15 +94,11 @@ const SaveRecipe = endpoint(
              * operations. The concept checks nonblank and nonempty requirements.
              */
             input: (value: unknown) => {
-                if (
-                    typeof value !== "object" ||
-                    value === null ||
-                    Array.isArray(value)
-                ) {
+                if (!hasSessionInput(value)) {
                     return { ok: false };
                 }
 
-                const input = value as Record<string, unknown>;
+                const input = value;
 
                 const isStringArray = (items: unknown): items is string[] =>
                     Array.isArray(items) &&
@@ -161,13 +177,23 @@ const GetRecipe = endpoint(
     "/recipes/get",
     ({ session, collection, recipe, user }) =>
         receive({ session, collection, recipe })
-        .then(Sessioning.resolve({ session }).responds({ user }))
-        .then(Sharing.authorize({ user, resource: collection }))
-        .then(
-            respond({
-                recipe: recipeDetails({ collection, recipe }),
-            })
-    )
+            .then(Sessioning.resolve({ session }).responds({ user }))
+            .then(Sharing.authorize({ user, resource: collection }))
+            .then(
+                respond({
+                    recipe: recipeDetails({ collection, recipe }),
+                })
+            ),
+    {
+        validators: {
+            input: (value: unknown) => ({
+                ok:
+                    hasSessionInput(value) &&
+                    typeof value.collection === "string" &&
+                    typeof value.recipe === "string",
+            }),
+        },
+    }
 );
 
 /**
@@ -200,15 +226,11 @@ const AddCookingEntry = endpoint(
     {
         validators: {
             input: (value: unknown) => {
-                if (
-                    typeof value !== "object" ||
-                    value === null ||
-                    Array.isArray(value)
-                ) {
+                if (!hasSessionInput(value)) {
                     return { ok: false };
                 }
 
-                const input = value as Record<string, unknown>;
+                const input = value;
 
                 return {
                     ok:
@@ -262,15 +284,11 @@ const EditCookingEntry = endpoint(
     {
         validators: {
             input: (value: unknown) => {
-                if (
-                    typeof value !== "object" ||
-                    value === null ||
-                    Array.isArray(value)
-                ) {
+                if (!hasSessionInput(value)) {
                     return { ok: false };
                 }
 
-                const input = value as Record<string, unknown>;
+                const input = value;
 
                 return {
                     ok:

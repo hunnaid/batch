@@ -8,6 +8,48 @@ import { concepts } from "../concepts.ts";
 const { PasswordAuthenticating, Sessioning } = concepts;
 
 /**
+ * Verify credential field types at the API boundary.
+ * PasswordAuthenticating handles blank values and credential matching.
+ */
+function credentialsInput(value: unknown): { ok: boolean } {
+    if (
+        typeof value !== "object" ||
+        value === null ||
+        Array.isArray(value)
+    ) {
+        return { ok: false };
+    }
+
+    const input = value as Record<string, unknown>;
+
+    return {
+        ok:
+        typeof input.username === "string" &&
+        typeof input.password === "string",
+    };
+}
+
+/**
+ * Accept a session token or the null supplied when no cookie is present.
+ * Sessioning decides whether the session is valid.
+ */
+function sessionInput(value: unknown): { ok: boolean } {
+    if (
+        typeof value !== "object" ||
+        value === null ||
+        Array.isArray(value)
+    ) {
+        return { ok: false };
+    }
+
+    const input = value as Record<string, unknown>;
+
+    return {
+        ok: typeof input.session === "string" || input.session === null,
+    };
+}
+
+/**
  * Register an account.
  * Registration does not automatically sign the user in.
  */
@@ -19,7 +61,10 @@ const Register = endpoint(
             PasswordAuthenticating.register({ username, password })
             .responds({ user })
         )
-        .then(respond({ user }))
+        .then(respond({ user })),
+    {
+        validators: { input: credentialsInput },
+    }
 );
 
 /**
@@ -38,7 +83,10 @@ const Login = endpoint(
             Sessioning.start({ user })
             .responds({ session, expiresAt })
         )
-        .then(respond({ user, session, expiresAt }))
+        .then(respond({ user, session, expiresAt })),
+    {
+        validators: { input: credentialsInput },
+    }
 );
 
 /**
@@ -49,7 +97,10 @@ const CurrentUser = endpoint(
     ({ session, user }) =>
         receive({ session })
         .then(Sessioning.resolve({ session }).responds({ user }))
-        .then(respond({ user }))
+        .then(respond({ user })),
+    {
+        validators: { input: sessionInput },
+    }
 );
 
 /**
@@ -61,7 +112,10 @@ const Logout = endpoint(
     ({ session }) =>
         receive({ session })
         .then(Sessioning.end({ session }))
-        .then(respond({}))
+        .then(respond({})),
+    {
+        validators: { input: sessionInput },
+    }
 );
 
 export const composition = {

@@ -23,6 +23,26 @@ const {
 } = concepts;
 
 /**
+ * Accept endpoint input only when it contains a session token or null.
+ * The HTTP adapter supplies null when the browser has no session cookie.
+ */
+function hasSessionInput(
+    value: unknown
+): value is Record<string, unknown> {
+    if (
+        typeof value !== "object" ||
+        value === null ||
+        Array.isArray(value)
+    ) {
+        return false;
+    }
+
+    const input = value as Record<string, unknown>;
+
+    return typeof input.session === "string" || input.session === null;
+}
+
+/**
  * Give each newly created collection an owner and an empty membership set.
  */
 const InitializeCollectionSharing = reaction(({ creator, collection }) =>
@@ -50,7 +70,14 @@ const CreateCollection = endpoint(
         )
         .afterFlowSettles()
         .then(Sharing.authorize({ user, resource: collection }))
-        .then(respond({ collection }))
+        .then(respond({ collection })),
+    {
+        validators: {
+            input: (value: unknown) => ({
+                ok: hasSessionInput(value) && typeof value.name === "string",
+            }),
+        },
+    }
 );
 
 /**
@@ -84,23 +111,12 @@ const ShareCollection = endpoint(
         ),
     {
         validators: {
-            input: (value: unknown) => {
-                if (
-                    typeof value !== "object" ||
-                    value === null ||
-                    Array.isArray(value)
-                ) {
-                    return { ok: false };
-                }
-
-                const input = value as Record<string, unknown>;
-
-                return {
-                    ok:
-                        typeof input.collection === "string" &&
-                        typeof input.username === "string",
-                };
-            },
+            input: (value: unknown) => ({
+                ok:
+                    hasSessionInput(value) &&
+                    typeof value.collection === "string" &&
+                    typeof value.username === "string",
+            }),
         },
     }
 );
@@ -148,7 +164,14 @@ const ListCollections = endpoint(
             respond({
                 overview: accessibleCollections({ user }),
             })
-        )
+        ),
+    {
+        validators: {
+            input: (value: unknown) => ({
+                ok: hasSessionInput(value),
+            }),
+        },
+    }
 );
 
 /**
@@ -182,23 +205,12 @@ const RevokeCollectionAccess = endpoint(
         ),
     {
         validators: {
-            input: (value: unknown) => {
-                if (
-                    typeof value !== "object" ||
-                    value === null ||
-                    Array.isArray(value)
-                ) {
-                    return { ok: false };
-                }
-
-                const input = value as Record<string, unknown>;
-
-                return {
-                    ok:
-                        typeof input.collection === "string" &&
-                        typeof input.username === "string",
-                };
-            },
+            input: (value: unknown) => ({
+                ok:
+                    hasSessionInput(value) &&
+                    typeof value.collection === "string" &&
+                    typeof value.username === "string",
+            }),
         },
     }
 );

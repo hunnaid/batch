@@ -22,3 +22,7 @@ Accounts.Login at /sessions/start
 Accounts.CurrentUser at /sessions/current
 Accounts.Logout at /sessions/end
 ```
+
+The endpoints validate credential and session field types before invoking
+concept actions. A missing cookie supplies a null session, which session
+resolution rejects as unauthorized.

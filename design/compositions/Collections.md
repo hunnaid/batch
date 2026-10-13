@@ -50,3 +50,8 @@ from their accessible collections list.
 ```endpoints
 Collections.RevokeCollectionAccess at /collections/revoke
 ```
+
+Collection endpoints validate input types before invoking concept actions.
+Session inputs accept a token or null for a missing cookie. Collection
+creation requires a string name; sharing and revocation require string
+collection identifiers and usernames.

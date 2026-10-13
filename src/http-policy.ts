@@ -7,6 +7,12 @@ import { httpPolicy } from "@mit-sdg/sync-engine-http/policy";
 export const policy = httpPolicy({
     publicOrigin: "http://localhost:8080",
     basePath: "/api",
+    requestOrigins: {
+        allowed: [
+            "http://localhost:8080",
+            "http://localhost:5173",
+        ],
+    },
 
     publicErrors: {
         INVALID_REGISTRATION: "INVALID_REQUEST",
