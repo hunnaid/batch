@@ -151,20 +151,6 @@ bun run check
 
 The frontend uses the generated HTTP client contract in `generated/wire.ts`.
 
-### Manual user journey
-
-1. Register and sign in.
-2. Create a collection called "Family Recipes."
-3. Enter a recipe with ingredients, ordered instructions, and its source.
-4. Add a cooking entry with adjustments, then edit it to record the result.
-5. Register another account in a separate browser profile or private window.
-6. Share the collection with that account by username.
-7. Confirm the recipient can read the recipe and add their own entry, but cannot edit the original user's entry.
-8. Revoke access and confirm the recipient cannot access the collection after reloading.
-9. Restart the application and confirm the owner can still access the saved recipes and entries.
-10. Rename the collection as its owner, refresh, and confirm the name persists.
-11. Create a disposable collection and delete it. Confirm it disappears without affecting other collections.
-
 ## Project Organization
 
 - `src/concepts/`: independent concepts and MongoDB storage.
@@ -187,10 +173,6 @@ The frontend uses the generated HTTP client contract in `generated/wire.ts`.
 - Shared changes appear when data is reloaded; there are no live updates.
 - Unsaved form text can be lost when navigating away or refreshing.
 - The interface is intentionally plain. Visual polish is planned for later.
-
-The checker currently reports endpoint-coverage advisories and two
-source-order notices. These are not failed checks or proof of correctness.
-Selected refusal paths are tested, and list queries specify their ordering.
 
 ## Links
 
