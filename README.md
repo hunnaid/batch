@@ -29,7 +29,7 @@ Collection members can read recipes and contribute recipes and cooking entries.
 Only owners can rename or delete collections and manage membership.
 Only an entry's author can edit that entry.
 
-Deleting a collection removed the collection and its sharing permissions.
+Deleting a collection removes the collection and its sharing permissions.
 The original recipes and cooking entries remain stored separately.
 
 ## Requirements
@@ -191,3 +191,8 @@ The frontend uses the generated HTTP client contract in `generated/wire.ts`.
 The checker currently reports endpoint-coverage advisories and two
 source-order notices. These are not failed checks or proof of correctness.
 Selected refusal paths are tested, and list queries specify their ordering.
+
+## Links
+
+- [Narrated MVP demo](https://drive.google.com/file/d/1vGsjhs8QBaca15tqGHWBKg4QrXVZNgVh/view?usp=sharing)
+- [P2 user journey](design/docs/p2-user-journey.md)
