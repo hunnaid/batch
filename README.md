@@ -23,10 +23,14 @@ Batch currently supports:
 - Recording cooking adjustments and results.
 - Editing your own cooking entries.
 - Sharing collections with registered users and revoking access.
+- Renaming and deleting collections you own.
 
 Collection members can read recipes and contribute recipes and cooking entries.
-Only owners can manage collection membership, and only an entry's author can
-edit that entry.
+Only owners can rename or delete collections and manage membership.
+Only an entry's author can edit that entry.
+
+Deleting a collection removed the collection and its sharing permissions.
+The original recipes and cooking entries remain stored separately.
 
 ## Requirements
 
@@ -65,7 +69,15 @@ Keep `.env` untracked. Adjust it if your MongoDB credentials or address differ.
 If MongoDB is already running on port 27017 with matching credentials,
 reuse it and skip the container-creation commands below.
 
-Otherwise, with Podman installed and running, create a local database container:
+Otherwise, start Podman. On macOS, start your existing Podman machine:
+
+```sh
+podman machine start
+```
+
+If you have never created a Podman machine, run `podman machine init` before starting it. If the machine is already running, continue to the next step.
+
+Create a local database container:
 
 ```sh
 podman volume create batch-mongo-data
@@ -79,17 +91,15 @@ podman run -d \
   docker.io/library/mongo:8.0
 ```
 
-On macOS, start your existing Podman machine with `podman machine start`.
-If you have never created one, run `podman machine init` first.
+The named volume preserves database contents across container restarts. The `dev` credentials are for local development.
 
-The named volume preserves database contents across container restarts.
-The `dev` credentials are for local development.
-
-For later runs, start the existing container instead of creating it again:
+If you created the container above, start it on later runs instead of creating it again:
 
 ```sh
 podman start batch-mongo
 ```
+
+If you reused an existing MongoDB container, start that container by its own name instead.
 
 ### Start Batch
 
@@ -149,35 +159,35 @@ The frontend uses the generated HTTP client contract in `generated/wire.ts`.
 4. Add a cooking entry with adjustments, then edit it to record the result.
 5. Register another account in a separate browser profile or private window.
 6. Share the collection with that account by username.
-7. Confirm the recipient can read the recipe and add their own entry,
-   but cannot edit the original user's entry.
-8. Revoke access and confirm the collection is no longer accessible.
-9. Restart the application and confirm saved recipes and entries remain.
+7. Confirm the recipient can read the recipe and add their own entry, but cannot edit the original user's entry.
+8. Revoke access and confirm the recipient cannot access the collection after reloading.
+9. Restart the application and confirm the owner can still access the saved recipes and entries.
+10. Rename the collection as its owner, refresh, and confirm the name persists.
+11. Create a disposable collection and delete it. Confirm it disappears without affecting other collections.
 
 ## Project Organization
 
 - `src/concepts/`: independent concepts and MongoDB storage.
 - `src/compositions/`: endpoints, reactions, and response formers.
+- `src/http-policy.ts`: HTTP error mappings, session cookies, and request origins.
 - `web/src/`: Vue components and the generated-client integration.
-- `design/concepts/`: implementation specifications.
+- `design/concepts/`: current concept specifications.
 - `design/compositions/`: composition documentation.
-- `design/docs/`: P1 design documents.
+- `design/docs/`: original P1 design documents.
 - `generated/`: generated application documentation and API types.
 - `tests/`: concept and composition tests.
+- `AGENTS.md`: instructions for coding assistants working on the project.
 
 ## Current Limitations
 
 - Recipes are entered manually; website imports are not implemented.
-- Cooking entries refer to the original recipe rather than branching
-  from other entries.
+- Cooking entries refer to the original recipe rather than branching from other entries.
+- The interface does not yet support adding an existing recipe to another collection.
+- Deleting a collection retains its recipes and cooking entries in storage. Recipes that belong only to that collection become inaccessible through the interface; recovery is not implemented.
 - Shared changes appear when data is reloaded; there are no live updates.
 - Unsaved form text can be lost when navigating away or refreshing.
-- The interface is intentionally plain. UI design is planned for later.
+- The interface is intentionally plain. Visual polish is planned for later.
 
 The checker currently reports endpoint-coverage advisories and two
 source-order notices. These are not failed checks or proof of correctness.
 Selected refusal paths are tested, and list queries specify their ordering.
-
-The frontend build also reports Node-module externalization warnings from
-sync-engine dependencies. The built frontend's main workflow was manually
-tested successfully.
