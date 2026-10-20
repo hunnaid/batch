@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, test } from "bun:test";
+import { afterAll, beforeAll, beforeEach, expect, test } from "bun:test";
 import { MongoClient } from "mongodb";
 import { assemble } from "@mit-sdg/sync-engine/assembly";
 import {
@@ -20,6 +20,7 @@ import {
 } from "../src/concepts/Sharing.ts";
 import { SessioningConcept } from "../src/concepts/Sessioning.ts";
 import { composition as accountsComposition } from "../src/compositions/Accounts.ts";
+import { composition as recipesComposition } from "../src/compositions/Recipes.ts";
 
 /** Use a temporary database separate from the application's data. */
 const url = process.env.MONGODB_URL;
@@ -71,6 +72,7 @@ const app = assemble({
   composition: {
     Collections: collectionsComposition,
     Accounts: accountsComposition,
+    Recipes: recipesComposition,
     Test: { CreateCollection },
   },
 });
@@ -80,6 +82,12 @@ let connected = false;
 beforeAll(async () => {
   await client.connect();
   connected = true;
+});
+
+/** Clear only this test run's temporary database between tests. */
+beforeEach(async () => {
+  await app.whenIdle();
+  await db.dropDatabase();
 });
 
 // Finish pending engine work before deleting this run's database.
@@ -540,4 +548,256 @@ test("deleting a collection removes access while preserving recipes, entries, an
       resource: otherCollection,
     })
   ).toEqual({});
+});
+
+/**
+ * Set up two collections with different owners.
+ * The acting user is a member of both, demonstrating that ownership
+ * is not required to contribute an existing recipe.
+ */
+async function createRecipeTransferFixture() {
+  const source = await createSharedCollection();
+  const destination = await createSharedCollection();
+
+  await sharing.grant({
+    resource: destination.collection,
+    owner: destination.owner,
+    member: source.member,
+  });
+
+  const recipeData = {
+    title: "Mom's Biryani",
+    ingredients: ["Rice", "Chili"],
+    instructions: ["Cook the rice.", "Add chili and steam."],
+    source: "Mom, through iMessage",
+  };
+
+  const { recipe } = await recipes.record(recipeData);
+
+  await collecting.add({
+    collection: source.collection,
+    item: recipe,
+  });
+
+  const { entry } = await cookingLog.record({
+    author: source.owner,
+    recipe,
+    changes: "Used half the chili.",
+    result: "Milder flavor.",
+  });
+
+  return {
+    source,
+    destination,
+    recipe,
+    entry,
+    recipeData,
+    input: {
+      session: source.memberSession,
+      sourceCollection: source.collection,
+      destinationCollection: destination.collection,
+      recipe,
+    },
+  };
+}
+
+/** Capture the state that a refused addition must leave unchanged. */
+async function recipeTransferState(
+  fixture: Awaited<ReturnType<typeof createRecipeTransferFixture>>
+) {
+  return {
+    source: await collecting._get({
+      collection: fixture.source.collection,
+    }),
+    destination: await collecting._get({
+      collection: fixture.destination.collection,
+    }),
+    recipe: await recipes._get({ recipe: fixture.recipe }),
+    entries: await cookingLog._forRecipe({ recipe: fixture.recipe }),
+  };
+}
+
+test("a member can add an existing recipe while retaining its source and history", async () => {
+  const fixture = await createRecipeTransferFixture();
+  const { source, destination, recipe, entry, input } = fixture;
+  const before = await recipeTransferState(fixture);
+
+  expect(
+    await invokeSuccessfully<{ recipe: string; collection: string }>(
+      "/recipes/add-to-collection",
+      input
+    )
+  ).toEqual({
+    recipe,
+    collection: destination.collection,
+  });
+
+  const after = await recipeTransferState(fixture);
+
+  expect(after.source).toEqual(before.source);
+  expect(after.recipe).toEqual(before.recipe);
+  expect(after.entries).toEqual(before.entries);
+
+  expect(after.destination).toEqual([
+    {
+      creator: destination.owner,
+      name: "Family Recipes",
+      items: [recipe],
+    },
+  ]);
+
+  // Both collection routes expose the same recipe and existing entry.
+  const throughSource = await invokeSuccessfully<unknown>(
+    "/recipes/get",
+    {
+      session: source.memberSession,
+      collection: source.collection,
+      recipe,
+    }
+  );
+
+  const throughDestination = await invokeSuccessfully<unknown>(
+    "/recipes/get",
+    {
+      session: source.memberSession,
+      collection: destination.collection,
+      recipe,
+    }
+  );
+
+  expect(throughDestination).toEqual(throughSource);
+  expect(throughDestination).toMatchObject({
+    recipe: {
+      recipe,
+      title: fixture.recipeData.title,
+      entries: [{ entry }],
+    },
+  });
+
+  // Later entries are also shared because both collections use one recipe.
+  const { entry: laterEntry } = await cookingLog.record({
+    author: source.member,
+    recipe,
+    changes: "Steamed for five extra minutes.",
+    result: "Rice turned out well.",
+  });
+
+  const updatedSource = await invokeSuccessfully<{
+    recipe: { entries: { entry: string }[] };
+  }>("/recipes/get", {
+    session: source.memberSession,
+    collection: source.collection,
+    recipe,
+  });
+
+  const updatedDestination = await invokeSuccessfully<unknown>(
+    "/recipes/get",
+    {
+      session: source.memberSession,
+      collection: destination.collection,
+      recipe,
+    }
+  );
+
+  expect(updatedDestination).toEqual(updatedSource);
+  expect(
+    updatedSource.recipe.entries.map((row) => row.entry)
+  ).toContain(laterEntry);
+});
+
+/** Losing access to either collection must prevent the addition. */
+for (const restrictedSide of ["source", "destination"] as const) {
+  test(`adding a recipe requires access to the ${restrictedSide} collection`, async () => {
+    const fixture = await createRecipeTransferFixture();
+    const restricted = fixture[restrictedSide];
+
+    await sharing.revoke({
+      resource: restricted.collection,
+      owner: restricted.owner,
+      member: fixture.source.member,
+    });
+
+    const before = await recipeTransferState(fixture);
+
+    expect(
+      await app.invoker.invoke(
+        "/recipes/add-to-collection",
+        fixture.input,
+        { timeoutMs: 2000 }
+      )
+    ).toEqual({
+      ok: false,
+      error: {
+        kind: "domain",
+        value: "ACCESS_DENIED",
+      },
+    });
+
+    expect(await recipeTransferState(fixture)).toEqual(before);
+  });
+}
+
+test("a recipe outside the stated source collection cannot be added", async () => {
+  const fixture = await createRecipeTransferFixture();
+
+  // This is a real recipe, but it has never belonged to the source.
+  const { recipe: unrelatedRecipe } = await recipes.record({
+    title: "Unrelated recipe",
+    ingredients: ["Water"],
+    instructions: ["Pour the water."],
+  });
+
+  const unrelatedBefore = await recipes._get({
+    recipe: unrelatedRecipe,
+  });
+  const before = await recipeTransferState(fixture);
+
+  expect(
+    await app.invoker.invoke(
+      "/recipes/add-to-collection",
+      {
+        ...fixture.input,
+        recipe: unrelatedRecipe,
+      },
+      { timeoutMs: 2000 }
+    )
+  ).toEqual({
+    ok: false,
+    error: {
+      kind: "domain",
+      value: "RECIPE_NOT_IN_COLLECTION",
+    },
+  });
+
+  expect(await recipeTransferState(fixture)).toEqual(before);
+  expect(
+    await recipes._get({ recipe: unrelatedRecipe })
+  ).toEqual(unrelatedBefore);
+});
+
+test("repeating an addition is refused without changing either collection", async () => {
+  const fixture = await createRecipeTransferFixture();
+
+  await invokeSuccessfully(
+    "/recipes/add-to-collection",
+    fixture.input
+  );
+
+  const before = await recipeTransferState(fixture);
+
+  expect(
+    await app.invoker.invoke(
+      "/recipes/add-to-collection",
+      fixture.input,
+      { timeoutMs: 2000 }
+    )
+  ).toEqual({
+    ok: false,
+    error: {
+      kind: "domain",
+      value: "ITEM_ALREADY_COLLECTED",
+    },
+  });
+
+  expect(await recipeTransferState(fixture)).toEqual(before);
 });

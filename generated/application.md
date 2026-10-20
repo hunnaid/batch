@@ -148,6 +148,30 @@ Defined in [Sharing](../design/concepts/Sharing.md), line 1.
   - `Resource` is `Collecting.Collection` — [Application types](../design/types.md), line 17.
   - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 16.
 
+## Views
+
+_Views name reusable conditions. Multiple `where` blocks are alternatives._
+
+### (entry) belongs to (recipe)
+
+Authored path: `Recipes.EntryInRecipe`.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 93.
+
+```view
+(entry) belongs to (recipe) — inputs (entry, recipe); outputs (); bindings ()
+  where CookingLog._get (entry) has (recipe)
+```
+
+### (recipe) belongs to (collection)
+
+Authored path: `Recipes.RecipeInCollection`.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 88.
+
+```view
+(recipe) belongs to (collection) — inputs (collection, recipe); outputs (); bindings ()
+  where Collecting._items (collection) has (item: recipe)
+```
+
 ## Formers
 
 _Formers name result shapes evaluated when asked. The source former owns_
@@ -708,8 +732,8 @@ Authored path: `Recipes.AddCookingEntry`.
 ```reaction
 when Sharing.authorize (resource: collection, user), asked by Recipes.AddCookingEntry#2
 where
-  Collecting._items (collection) has (item: recipe)
   earlier, RequestBoundary.request (changes, collection, path: "/entries/add", recipe, requestId, result, session)
+  view "(recipe) belongs to (collection)" with (collection, recipe)
 then
   CookingLog.record (author: user, changes, recipe, result)
 ```
@@ -738,7 +762,93 @@ Authored path: `Recipes.AddCookingEntry`.
 when Sharing.authorize (resource: collection, user), asked by Recipes.AddCookingEntry#2
 where
   earlier, RequestBoundary.request (changes, collection, path: "/entries/add", recipe, requestId, result, session)
-  no Collecting._items (collection) has (item: recipe)
+  no view "(recipe) belongs to (collection)" with (collection, recipe)
+then
+  RequestBoundary.respond (error: "RECIPE_NOT_IN_COLLECTION", requestId)
+```
+
+### Recipes.AddRecipeToCollection
+
+Authored path: `Recipes.AddRecipeToCollection`.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 64.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 81.
+
+```reaction
+when RequestBoundary.request (destinationCollection, path: "/recipes/add-to-collection", recipe, requestId, session, sourceCollection)
+then
+  Sessioning.resolve (session)
+```
+
+### Recipes.AddRecipeToCollection#2
+
+Authored path: `Recipes.AddRecipeToCollection`.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 64.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 81.
+
+```reaction
+when Sessioning.resolve (session, user), asked by Recipes.AddRecipeToCollection
+where
+  earlier, RequestBoundary.request (destinationCollection, path: "/recipes/add-to-collection", recipe, requestId, session, sourceCollection)
+then
+  Sharing.authorize (resource: sourceCollection, user)
+```
+
+### Recipes.AddRecipeToCollection#3
+
+Authored path: `Recipes.AddRecipeToCollection`.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 64.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 81.
+
+```reaction
+when Sharing.authorize (resource: sourceCollection, user), asked by Recipes.AddRecipeToCollection#2
+where
+  earlier, RequestBoundary.request (destinationCollection, path: "/recipes/add-to-collection", recipe, requestId, session, sourceCollection)
+then
+  Sharing.authorize (resource: destinationCollection, user)
+```
+
+### Recipes.AddRecipeToCollection:recipe-in-source#4
+
+Authored path: `Recipes.AddRecipeToCollection`.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 64.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 81.
+
+```reaction
+when Sharing.authorize (resource: destinationCollection, user), asked by Recipes.AddRecipeToCollection#3
+where
+  earlier, Sharing.authorize (resource: sourceCollection, user), asked by Recipes.AddRecipeToCollection#2
+  earlier, RequestBoundary.request (destinationCollection, path: "/recipes/add-to-collection", recipe, requestId, session, sourceCollection)
+  view "(recipe) belongs to (collection)" with (collection: sourceCollection, recipe)
+then
+  Collecting.add (collection: destinationCollection, item: recipe)
+```
+
+### Recipes.AddRecipeToCollection:recipe-in-source#5
+
+Authored path: `Recipes.AddRecipeToCollection`.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 64.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 81.
+
+```reaction
+when Collecting.add (collection: destinationCollection, item: recipe), asked by Recipes.AddRecipeToCollection:recipe-in-source#4
+where
+  earlier, RequestBoundary.request (destinationCollection, path: "/recipes/add-to-collection", recipe, requestId, session, sourceCollection)
+then
+  RequestBoundary.respond (collection: destinationCollection, recipe, requestId)
+```
+
+### Recipes.AddRecipeToCollection:recipe-not-in-source#4
+
+Authored path: `Recipes.AddRecipeToCollection`.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 64.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 81.
+
+```reaction
+when Sharing.authorize (resource: destinationCollection, user), asked by Recipes.AddRecipeToCollection#3
+where
+  earlier, Sharing.authorize (resource: sourceCollection, user), asked by Recipes.AddRecipeToCollection#2
+  earlier, RequestBoundary.request (destinationCollection, path: "/recipes/add-to-collection", recipe, requestId, session, sourceCollection)
+  no view "(recipe) belongs to (collection)" with (collection: sourceCollection, recipe)
 then
   RequestBoundary.respond (error: "RECIPE_NOT_IN_COLLECTION", requestId)
 ```
@@ -778,9 +888,9 @@ Authored path: `Recipes.EditCookingEntry`.
 ```reaction
 when Sharing.authorize (resource: collection, user), asked by Recipes.EditCookingEntry#2
 where
-  Collecting._items (collection) has (item: recipe)
   earlier, RequestBoundary.request (changes, collection, entry, path: "/entries/edit", recipe, requestId, result, session)
-  CookingLog._get (entry) has (recipe)
+  view "(recipe) belongs to (collection)" with (collection, recipe)
+  view "(entry) belongs to (recipe)" with (entry, recipe)
 then
   CookingLog.edit (author: user, changes, entry, result)
 ```
@@ -808,9 +918,9 @@ Authored path: `Recipes.EditCookingEntry`.
 ```reaction
 when Sharing.authorize (resource: collection, user), asked by Recipes.EditCookingEntry#2
 where
-  Collecting._items (collection) has (item: recipe)
   earlier, RequestBoundary.request (changes, collection, entry, path: "/entries/edit", recipe, requestId, result, session)
-  no CookingLog._get (entry) has (recipe)
+  view "(recipe) belongs to (collection)" with (collection, recipe)
+  no view "(entry) belongs to (recipe)" with (entry, recipe)
 then
   RequestBoundary.respond (error: "ENTRY_NOT_IN_RECIPE", requestId)
 ```
@@ -825,7 +935,7 @@ Authored path: `Recipes.EditCookingEntry`.
 when Sharing.authorize (resource: collection, user), asked by Recipes.EditCookingEntry#2
 where
   earlier, RequestBoundary.request (changes, collection, entry, path: "/entries/edit", recipe, requestId, result, session)
-  no Collecting._items (collection) has (item: recipe)
+  no view "(recipe) belongs to (collection)" with (collection, recipe)
 then
   RequestBoundary.respond (error: "RECIPE_NOT_IN_COLLECTION", requestId)
 ```
@@ -954,6 +1064,7 @@ not listed here have no explicit input contract.
 - `/collections/share` — requires `collection`, `session`, `username`
 - `/entries/add` — requires `changes`, `collection`, `recipe`, `result`, `session`
 - `/entries/edit` — requires `changes`, `collection`, `entry`, `recipe`, `result`, `session`
+- `/recipes/add-to-collection` — requires `destinationCollection`, `recipe`, `session`, `sourceCollection`
 - `/recipes/get` — requires `collection`, `recipe`, `session`
 - `/recipes/save` — requires `session`, `collection`, `title`, `ingredients`, `instructions`; fills `source` with "" when absent
 - `/sessions/current` — requires `session`

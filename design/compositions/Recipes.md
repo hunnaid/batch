@@ -57,3 +57,42 @@ Recipe and cooking-entry endpoints validate incoming field types before
 invoking concept actions. Session inputs accept a token or null for a missing
 cookie. Identifiers and text fields must be strings, and ingredient and
 instruction lists must contain only strings.
+
+## Adding an existing recipe to another collection
+
+A signed-in user can add a recipe from one accessible collection to
+another.[add-to-collection] The endpoint resolves the session, checks
+access to both collections, and verifies that the source contains the
+recipe before adding it to the destination.
+
+The destination receives the same recipe identifier. The original
+collection keeps the recipe, and both collections refer to the same
+instructions and cooking history. Members of either collection can see
+existing and future cooking entries. Removing access to one collection
+does not remove access through another.
+
+If the source does not contain the recipe, the endpoint reports
+RECIPE_NOT_IN_COLLECTION. Collecting refuses the addition if the
+destination already contains the recipe.
+
+[add-to-collection]: reaction:Recipes.AddRecipeToCollection
+
+```endpoints
+Recipes.AddRecipeToCollection at /recipes/add-to-collection
+```
+
+## Checking recipe and entry membership
+
+Before adding a cooking entry, editing one, or adding an existing
+recipe to another collection, the application checks that the
+specified recipe belongs to the specified collection.[recipe-membership]
+Both identifiers are inputs to the check, preserving the recipe
+selected by the request.
+
+When editing a cooking entry, the application also checks that the
+specified entry belongs to the specified recipe.[entry-membership]
+Collection access and entry authorship are enforced separately by
+Sharing and CookingLog.
+
+[recipe-membership]: view:Recipes.RecipeInCollection
+[entry-membership]: view:Recipes.EntryInRecipe

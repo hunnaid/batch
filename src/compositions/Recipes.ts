@@ -9,6 +9,7 @@ import {
     no,
     where,
     whether,
+    view,
 } from "@mit-sdg/sync-engine/language";
 import { concepts } from "../concepts.ts";
 
@@ -19,6 +20,24 @@ const {
     Collecting,
     CookingLog,
  } = concepts;
+
+ /** Test membership using the supplied collection and recipe IDs. */
+const recipeInCollection = view(
+    "(recipe) belongs to (collection)",
+    ({ collection, recipe }) =>
+        where(
+            Collecting._items({ collection }).is({ item: recipe })
+        )
+).holds();
+
+/** Test an entry against the supplied recipe ID. */
+const entryInRecipe = view(
+    "(entry) belongs to (recipe)",
+    ({ entry, recipe }) =>
+        where(
+            CookingLog._get({ entry }).is({ recipe })
+        )
+).holds();
 
 /**
  * Accept a session token or null when the HTTP cookie is missing.
@@ -207,7 +226,7 @@ const AddCookingEntry = endpoint(
         .then(Sessioning.resolve({ session }).responds({ user }))
         .then(Sharing.authorize({ user, resource: collection }))
         .then(
-            where(Collecting._items({ collection }).is({ item: recipe }))
+            where(recipeInCollection({ collection, recipe }))
                 .then(
                     CookingLog.record({
                         author: user,
@@ -219,9 +238,9 @@ const AddCookingEntry = endpoint(
                 .then(respond({ entry }))
                 .named("recipe-in-collection"),
 
-                where(no(Collecting._items({ collection }).is({ item: recipe })))
-                    .then(respond({ error: "RECIPE_NOT_IN_COLLECTION" }))
-                    .named("recipe-not-in-collection")
+            where(no(recipeInCollection({ collection, recipe })))
+                .then(respond({ error: "RECIPE_NOT_IN_COLLECTION" }))
+                .named("recipe-not-in-collection")
         ),
     {
         validators: {
@@ -256,8 +275,8 @@ const EditCookingEntry = endpoint(
         .then(Sharing.authorize({ user, resource: collection }))
         .then(
             where(
-                Collecting._items({ collection }).is({ item: recipe }),
-                CookingLog._get({ entry }).is({ recipe })
+                recipeInCollection({ collection, recipe }),
+                entryInRecipe({ entry, recipe })
             )
                 .then(
                     CookingLog.edit({
@@ -270,13 +289,13 @@ const EditCookingEntry = endpoint(
                 .then(respond({ entry }))
                 .named("entry-in-collection"),
 
-            where(no(Collecting._items({ collection }).is({ item: recipe })))
+            where(no(recipeInCollection({ collection, recipe })))
                 .then(respond({ error: "RECIPE_NOT_IN_COLLECTION" }))
                 .named("recipe-not-in-collection"),
 
             where(
-                Collecting._items({ collection }).is({ item: recipe }),
-                no(CookingLog._get({ entry }).is({ recipe }))
+                recipeInCollection({ collection, recipe }),
+                no(entryInRecipe({ entry, recipe }))
             )
                 .then(respond({ error: "ENTRY_NOT_IN_RECIPE" }))
                 .named("entry-not-in-recipe")
@@ -303,10 +322,84 @@ const EditCookingEntry = endpoint(
     }
 );
 
+/**
+ * Add an existing recipe to another accessible collection.
+ * Reuse its identifier so the original details and cooking history stay together.
+ */
+const AddRecipeToCollection = endpoint(
+    "/recipes/add-to-collection",
+    ({ session, sourceCollection, destinationCollection, recipe, user }) =>
+        receive({
+            session,
+            sourceCollection,
+            destinationCollection,
+            recipe,
+        })
+        .then(Sessioning.resolve({ session }).responds({ user }))
+        .then(
+            Sharing.authorize({
+                user,
+                resource: sourceCollection,
+            })
+        )
+        .then(
+            Sharing.authorize({
+                user,
+                resource: destinationCollection,
+            })
+        )
+        .then(
+            where(
+                recipeInCollection({
+                    collection: sourceCollection,
+                    recipe,
+                })
+            )
+                .then(
+                    Collecting.add({
+                        collection: destinationCollection,
+                        item: recipe,
+                    })
+                )
+                .then(
+                    respond({
+                        recipe,
+                        collection: destinationCollection,
+                    })
+                )
+                .named("recipe-in-source"),
+
+            where(
+                no(
+                    recipeInCollection({
+                        collection: sourceCollection,
+                        recipe,
+                    })
+                )
+            )
+                .then(respond({ error: "RECIPE_NOT_IN_COLLECTION" }))
+                .named("recipe-not-in-source")
+        ),
+    {
+        validators: {
+            input: (value: unknown) => ({
+                ok:
+                    hasSessionInput(value) &&
+                    typeof value.sourceCollection === "string" &&
+                    typeof value.destinationCollection === "string" &&
+                    typeof value.recipe === "string",
+            }),
+        },
+    }
+);
+
 export const composition = {
     SaveRecipe,
     GetRecipe,
     RecipeDetails: recipeDetails,
+    RecipeInCollection: recipeInCollection,
+    EntryInRecipe: entryInRecipe,
     AddCookingEntry,
     EditCookingEntry,
+    AddRecipeToCollection,
 };

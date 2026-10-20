@@ -100,7 +100,7 @@ export type BatchWire = {
     input: {
       "changes": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["record"]>[0], ["changes"]>>;
       "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>>;
-      "recipe": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["record"]>[0], ["recipe"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collecting"]["_items"]>>>, ["item"]>]>>;
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["record"]>[0], ["recipe"]>>;
       "result": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["record"]>[0], ["result"]>>;
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
     };
@@ -113,7 +113,7 @@ export type BatchWire = {
     input: {
       "changes": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["changes"]>>;
       "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>>;
-      "entry": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["entry"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["_get"]>[0], ["entry"]>]>>;
+      "entry": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["entry"]>>;
       "recipe": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collecting"]["_items"]>>>, ["item"]>>;
       "result": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["result"]>>;
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
@@ -122,6 +122,19 @@ export type BatchWire = {
       "entry": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["entry"]>>;
     };
     error: { error: AppWideError | "ACCESS_DENIED" | "COOKING_ENTRY_NOT_FOUND" | "COOKING_ENTRY_NOT_OWNED" | "ENTRY_NOT_IN_RECIPE" | "INVALID_COOKING_ENTRY_EDIT" | "INVALID_INPUT" | "INVALID_SESSION" | "RECIPE_NOT_IN_COLLECTION" };
+  };
+  "/recipes/add-to-collection": {
+    input: {
+      "destinationCollection": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["collection"]>]>>;
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["item"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+      "sourceCollection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>>;
+    };
+    output: {
+      "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["collection"]>>;
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["item"]>>;
+    };
+    error: { error: AppWideError | "ACCESS_DENIED" | "COLLECTION_NOT_FOUND" | "INVALID_INPUT" | "INVALID_SESSION" | "ITEM_ALREADY_COLLECTED" | "RECIPE_NOT_IN_COLLECTION" };
   };
   "/recipes/get": {
     input: {
@@ -273,7 +286,7 @@ export type BatchWireHttp = {
     input: {
       "changes": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["record"]>[0], ["changes"]>>;
       "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>>;
-      "recipe": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["record"]>[0], ["recipe"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collecting"]["_items"]>>>, ["item"]>]>>;
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["record"]>[0], ["recipe"]>>;
       "result": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["record"]>[0], ["result"]>>;
     };
     output: {
@@ -285,7 +298,7 @@ export type BatchWireHttp = {
     input: {
       "changes": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["changes"]>>;
       "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>>;
-      "entry": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["entry"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["_get"]>[0], ["entry"]>]>>;
+      "entry": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["entry"]>>;
       "recipe": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collecting"]["_items"]>>>, ["item"]>>;
       "result": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["result"]>>;
     };
@@ -293,6 +306,18 @@ export type BatchWireHttp = {
       "entry": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["entry"]>>;
     };
     error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/recipes/add-to-collection": {
+    input: {
+      "destinationCollection": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["collection"]>]>>;
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["item"]>>;
+      "sourceCollection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>>;
+    };
+    output: {
+      "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["collection"]>>;
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["item"]>>;
+    };
+    error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/recipes/get": {
     input: {

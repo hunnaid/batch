@@ -88,7 +88,137 @@ async function entrySaved() {
   await loadRecipe();
 }
 
+type CollectionSummary =
+  BatchWireHttp["/collections/list"]["output"]["overview"]["collections"][number];
+
+const destinations = ref<CollectionSummary[]>([]);
+const destination = ref("");
+const loadingDestinations = ref(true);
+const destinationsFailed = ref(false);
+const addingToCollection = ref(false);
+const collectionError = ref("");
+const collectionSuccess = ref("");
+
+/** Find accessible collections that do not already contain this recipe. */
+async function loadDestinations() {
+  if (addingToCollection.value) return;
+
+  loadingDestinations.value = true;
+  destinationsFailed.value = false;
+  collectionError.value = "";
+  collectionSuccess.value = "";
+  destinations.value = [];
+  destination.value = "";
+
+  try {
+    const response = await api.collections.list({});
+
+    if ("error" in response) {
+      throw new ApiError(String(response.error));
+    }
+
+    destinations.value = response.overview.collections.filter(
+      (collection) =>
+        collection.collection !== props.collection &&
+        !collection.recipes.some(
+          (recipe) => recipe.recipe === props.recipe
+        )
+    );
+  } catch (cause) {
+    destinationsFailed.value = true;
+
+    if (cause instanceof ApiError && cause.code === "UNAUTHORIZED") {
+      emit("sessionExpired");
+      return;
+    }
+
+    collectionError.value =
+      "Could not load collections. Please try refreshing them.";
+  } finally {
+    loadingDestinations.value = false;
+  }
+}
+
+/** Add the same recipe identifier, preserving its shared cooking history. */
+async function addToCollection() {
+  if (
+    addingToCollection.value ||
+    loadingDestinations.value ||
+    destinationsFailed.value
+  ) {
+    return;
+  }
+
+  collectionError.value = "";
+  collectionSuccess.value = "";
+
+  const selected = destinations.value.find(
+    (collection) => collection.collection === destination.value
+  );
+
+  if (!selected) {
+    collectionError.value = "Choose a collection.";
+    return;
+  }
+
+  addingToCollection.value = true;
+
+  try {
+    const response = await api["/recipes/add-to-collection"]({
+      sourceCollection: props.collection,
+      destinationCollection: selected.collection,
+      recipe: props.recipe,
+    });
+
+    if ("error" in response) {
+      throw new ApiError(String(response.error));
+    }
+
+    destinations.value = destinations.value.filter(
+      (collection) => collection.collection !== selected.collection
+    );
+    destination.value = "";
+    collectionSuccess.value = `Added to “${selected.name}”.`;
+  } catch (cause) {
+    if (cause instanceof ApiError) {
+      if (cause.code === "UNAUTHORIZED") {
+        emit("sessionExpired");
+        return;
+      }
+
+      if (cause.code === "CONFLICT") {
+        collectionError.value =
+          "This collection already contains the recipe.";
+
+        destinations.value = destinations.value.filter(
+          (collection) => collection.collection !== selected.collection
+        );
+        destination.value = "";
+        return;
+      }
+
+      if (cause.code === "FORBIDDEN") {
+        collectionError.value =
+          "You no longer have access to one of these collections.";
+        return;
+      }
+
+      if (cause.code === "NOT_FOUND") {
+        collectionError.value =
+          "The collection or recipe could not be found. Refresh collections and reopen the recipe.";
+        return;
+      }
+    }
+
+    collectionError.value =
+      "Could not confirm the addition. Refresh collections before trying again.";
+  } finally {
+    addingToCollection.value = false;
+  }
+}
+
 onMounted(loadRecipe);
+onMounted(loadDestinations);
 </script>
 
 <template>
@@ -113,6 +243,75 @@ onMounted(loadRecipe);
       <p v-if="details.source" dir="auto">
         Source: {{ details.source }}
       </p>
+
+      <section aria-labelledby="add-to-collection-heading">
+        <h3 id="add-to-collection-heading">Add to another collection</h3>
+
+        <p id="collection-sharing-help">
+          Members of the destination collection will see this recipe and
+          all existing and future cooking entries. The recipe will also
+          remain in its current collection.
+        </p>
+
+        <p v-if="loadingDestinations" role="status">
+          Loading collections…
+        </p>
+
+        <p v-if="collectionError" role="alert">
+          {{ collectionError }}
+        </p>
+
+        <p v-if="collectionSuccess" role="status">
+          {{ collectionSuccess }}
+        </p>
+
+        <template v-if="!loadingDestinations && !destinationsFailed">
+          <form
+            v-if="destinations.length > 0"
+            @submit.prevent="addToCollection"
+          >
+            <fieldset :disabled="addingToCollection">
+              <legend>Destination collection</legend>
+
+              <label for="recipe-destination">Collection</label>
+              <select
+                id="recipe-destination"
+                v-model="destination"
+                aria-describedby="collection-sharing-help"
+                required
+              >
+                <option disabled value="">Choose a collection</option>
+
+                <option
+                  v-for="collection in destinations"
+                  :key="collection.collection"
+                  :value="collection.collection"
+                  dir="auto"
+                >
+                  {{ collection.name }}
+                </option>
+              </select>
+
+              <button type="submit" :disabled="!destination">
+                {{ addingToCollection ? "Adding…" : "Add to collection" }}
+              </button>
+            </fieldset>
+          </form>
+
+          <p v-else>
+            No other available collections are missing this recipe.
+            Create another collection or ask someone to share one with you.
+          </p>
+        </template>
+
+        <button
+          type="button"
+          :disabled="loadingDestinations || addingToCollection"
+          @click="loadDestinations"
+        >
+          Refresh collections
+        </button>
+      </section>
 
       <h3>Ingredients</h3>
       <ul>
