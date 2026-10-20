@@ -17,6 +17,7 @@ import { concepts } from "../concepts.ts";
 const {
     Sessioning,
     Sharing,
+    RecipeSharing,
     RecipeRecording,
     Collecting,
     CookingLog,
@@ -94,6 +95,7 @@ const SaveRecipe = endpoint(
                 source,
             }).responds({ recipe })
         )
+        .then(RecipeSharing.initialize({ resource: recipe, owner: user }))
         .then(Saving.save({ user, item: recipe }))
         .then(Collecting.add({ collection, item: recipe }))
         .then(respond({ recipe })),
@@ -398,7 +400,7 @@ const AddRecipeToCollection = endpoint(
 
 /**
  * Create a recipe in the signed-in user's personal list.
- * No collection or sharing permission is created.
+ * Establish direct-sharing ownership without granting anyone else access.
  */
 const SavePersonalRecipe = endpoint(
     "/recipes/save-personal",
@@ -427,6 +429,7 @@ const SavePersonalRecipe = endpoint(
                     source,
                 }).responds({ recipe })
             )
+            .then(RecipeSharing.initialize({ resource: recipe, owner: user }))
             .then(Saving.save({ user, item: recipe }))
             .then(respond({ recipe })),
     {

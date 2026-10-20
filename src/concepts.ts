@@ -178,6 +178,7 @@ export const applicationConceptSet = conceptSet({
     Collecting: collecting,
     CookingLog: cookingLog,
     Sharing: sharing,
+    RecipeSharing: sharing,
     Sessioning: sessioning,
     Saving: saving,
 });

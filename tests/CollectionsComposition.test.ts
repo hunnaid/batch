@@ -2,10 +2,13 @@ import { afterAll, beforeAll, beforeEach, expect, test } from "bun:test";
 import { MongoClient } from "mongodb";
 import { assemble } from "@mit-sdg/sync-engine/assembly";
 import {
+  createGateway,
   endpoint,
   receive,
   respond,
 } from "@mit-sdg/sync-engine/boundary";
+import { createHttpHandler } from "@mit-sdg/sync-engine-http/handler";
+import { policy } from "../src/http-policy.ts";
 
 import { applicationConceptSet, concepts } from "../src/concepts.ts";
 import { composition as collectionsComposition } from "../src/compositions/Collections.ts";
@@ -23,6 +26,7 @@ import { SavingConcept } from "../src/concepts/Saving.ts";
 import { SessioningConcept } from "../src/concepts/Sessioning.ts";
 import { composition as accountsComposition } from "../src/compositions/Accounts.ts";
 import { composition as recipesComposition } from "../src/compositions/Recipes.ts";
+import { composition as sharedComposition } from "../src/compositions/Shared.ts";
 
 /** Use a temporary database separate from the application's data. */
 const url = process.env.MONGODB_URL;
@@ -69,6 +73,7 @@ const app = assemble({
     Collecting: collecting,
     CookingLog: cookingLog,
     Sharing: sharing,
+    RecipeSharing: new SharingConcept(db, "recipeSharing.resources"),
     Sessioning: sessions,
     Saving: new SavingConcept(db),
   },
@@ -76,6 +81,7 @@ const app = assemble({
     Collections: collectionsComposition,
     Accounts: accountsComposition,
     Recipes: recipesComposition,
+    Shared: sharedComposition,
     Test: { CreateCollection },
   },
 });
@@ -929,6 +935,30 @@ test("a personal recipe can be opened by its saver but not another user", async 
         },
     });
 
+    // The browser receives an access refusal without losing its valid session.
+    const gateway = createGateway({ application: app });
+    const handler = createHttpHandler({ application: app, gateway, policy });
+    const response = await handler(new Request(
+        new URL("/api/recipes/get-personal", policy.publicOrigin),
+        {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                // The HTTP adapter prefixes this host-only, root-path cookie.
+                Cookie: `__Host-batch-session=${outsiderSession}`,
+            },
+            body: JSON.stringify({ recipe }),
+        }
+    ));
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: "FORBIDDEN" });
+    expect(response.headers.get("Set-Cookie")).toBeNull();
+    expect(await sessions.resolve({ session: outsiderSession })).toEqual({
+        user: outsider,
+    });
+    await gateway.whenIdle();
+
     // The refused request leaves the owner's recipe available.
     expect(
         await invokeSuccessfully<typeof opened>(
@@ -1101,3 +1131,207 @@ test("personal cooking entries can be recorded and edited while unauthorized cha
 
     expect(await cookingLog._get({ entry })).toEqual(edited);
 });
+
+/** Creating inside a shared collection saves personally for the actual creator. */
+for (const creatorRole of ["owner", "member"] as const) {
+  test(`a recipe created in a collection appears only in its ${creatorRole} creator's personal list`, async () => {
+    const fixture = await createSharedCollection();
+    const session = fixture[`${creatorRole}Session`];
+    const otherSession = creatorRole === "owner"
+      ? fixture.memberSession
+      : fixture.ownerSession;
+    const recipeData = {
+      title: "Simple Rice",
+      ingredients: ["Rice", "Water"],
+      instructions: ["Cook the rice."],
+      source: "My notes",
+    };
+
+    const before = Date.now();
+    const { recipe } = await invokeSuccessfully<{ recipe: string }>(
+      "/recipes/save",
+      { session, collection: fixture.collection, ...recipeData }
+    );
+    const after = Date.now();
+
+    const mine = await invokeSuccessfully<{
+      overview: { recipes: { recipe: string; title: string; savedAt: Date }[] };
+    }>("/recipes/mine", { session });
+
+    expect(mine.overview.recipes).toHaveLength(1);
+    expect(mine.overview.recipes[0]).toMatchObject({
+      recipe,
+      title: recipeData.title,
+    });
+    const savedAt = mine.overview.recipes[0]!.savedAt;
+    expect(savedAt).toBeInstanceOf(Date);
+    expect(savedAt.getTime()).toBeGreaterThanOrEqual(before);
+    expect(savedAt.getTime()).toBeLessThanOrEqual(after);
+    expect(await invokeSuccessfully<unknown>("/recipes/mine", {
+      session: otherSession,
+    })).toEqual({ overview: { recipes: [] } });
+
+    const personal = await invokeSuccessfully<unknown>("/recipes/get-personal", {
+      session,
+      recipe,
+    });
+    expect(personal).toEqual({ recipe: { recipe, ...recipeData, entries: [] } });
+    expect(await invokeSuccessfully<unknown>("/recipes/get", {
+      session: otherSession,
+      collection: fixture.collection,
+      recipe,
+    })).toEqual(personal);
+  });
+}
+
+/** The saver is a member, rather than the destination's owner. */
+async function createPersonalRecipeTransferFixture() {
+  const destination = await createSharedCollection();
+  const { recipe } = await invokeSuccessfully<{ recipe: string }>(
+    "/recipes/save-personal",
+    {
+      session: destination.memberSession,
+      title: "Simple Rice",
+      ingredients: ["Rice", "Water"],
+      instructions: ["Cook the rice."],
+      source: "My notes",
+    }
+  );
+  const { entry } = await invokeSuccessfully<{ entry: string }>(
+    "/entries/add-personal",
+    {
+      session: destination.memberSession,
+      recipe,
+      changes: "Used less water.",
+      result: "Firmer rice.",
+    }
+  );
+
+  return {
+    destination,
+    recipe,
+    entry,
+    input: {
+      session: destination.memberSession,
+      destinationCollection: destination.collection,
+      recipe,
+    },
+  };
+}
+
+/** Include personal lists in the state that additions must preserve. */
+async function personalRecipeTransferState(
+  fixture: Awaited<ReturnType<typeof createPersonalRecipeTransferFixture>>
+) {
+  return {
+    destination: await collecting._get({ collection: fixture.destination.collection }),
+    recipe: await recipes._get({ recipe: fixture.recipe }),
+    entries: await cookingLog._forRecipe({ recipe: fixture.recipe }),
+    saverList: await invokeSuccessfully<unknown>("/recipes/mine", {
+      session: fixture.destination.memberSession,
+    }),
+    ownerList: await invokeSuccessfully<unknown>("/recipes/mine", {
+      session: fixture.destination.ownerSession,
+    }),
+  };
+}
+
+test("adding a personal recipe to a collection preserves its save date and shared history", async () => {
+  const fixture = await createPersonalRecipeTransferFixture();
+  const { destination, recipe, entry, input } = fixture;
+  const before = await personalRecipeTransferState(fixture);
+
+  expect(await invokeSuccessfully<unknown>(
+    "/recipes/add-personal-to-collection", input
+  )).toEqual({ recipe, collection: destination.collection });
+
+  expect(await personalRecipeTransferState(fixture)).toEqual({
+    ...before,
+    destination: before.destination.map((row) => ({ ...row, items: [recipe] })),
+  });
+  expect(before.ownerList).toEqual({ overview: { recipes: [] } });
+
+  const personal = await invokeSuccessfully<unknown>("/recipes/get-personal", {
+    session: destination.memberSession,
+    recipe,
+  });
+  expect(personal).toMatchObject({ recipe: { recipe, entries: [{ entry }] } });
+  expect(await invokeSuccessfully<unknown>("/recipes/get", {
+    session: destination.ownerSession,
+    collection: destination.collection,
+    recipe,
+  })).toEqual(personal);
+
+  // Future attempts added by another collection member share the same history.
+  const { entry: laterEntry } = await invokeSuccessfully<{ entry: string }>(
+    "/entries/add",
+    {
+      session: destination.ownerSession,
+      collection: destination.collection,
+      recipe,
+      changes: "Added some salt.",
+      result: "More flavorful.",
+    }
+  );
+  const updated = await invokeSuccessfully<{
+    recipe: { entries: { entry: string }[] };
+  }>("/recipes/get-personal", { session: destination.memberSession, recipe });
+
+  expect(updated.recipe.entries.map((row) => row.entry).sort()).toEqual(
+    [entry, laterEntry].sort()
+  );
+  expect(await invokeSuccessfully<unknown>("/recipes/get", {
+    session: destination.ownerSession,
+    collection: destination.collection,
+    recipe,
+  })).toEqual(updated);
+  expect(await invokeSuccessfully<unknown>("/recipes/mine", {
+    session: destination.memberSession,
+  })).toEqual(before.saverList);
+});
+
+test("repeating a personal recipe addition is refused without changing its save or collection", async () => {
+  const fixture = await createPersonalRecipeTransferFixture();
+  await invokeSuccessfully("/recipes/add-personal-to-collection", fixture.input);
+  const before = await personalRecipeTransferState(fixture);
+
+  expect(await app.invoker.invoke(
+    "/recipes/add-personal-to-collection", fixture.input, { timeoutMs: 2000 }
+  )).toEqual({
+    ok: false,
+    error: { kind: "domain", value: "ITEM_ALREADY_COLLECTED" },
+  });
+  expect(await personalRecipeTransferState(fixture)).toEqual(before);
+});
+
+for (const restriction of ["personal save", "destination access"] as const) {
+  test(`adding a personal recipe requires ${restriction} and preserves state on refusal`, async () => {
+    const fixture = await createPersonalRecipeTransferFixture();
+    let session = fixture.destination.memberSession;
+
+    if (restriction === "personal save") {
+      // The owner can access the destination but has not personally saved the recipe.
+      session = fixture.destination.ownerSession;
+    } else {
+      await sharing.revoke({
+        owner: fixture.destination.owner,
+        resource: fixture.destination.collection,
+        member: fixture.destination.member,
+      });
+    }
+
+    const before = await personalRecipeTransferState(fixture);
+    expect(await app.invoker.invoke(
+      "/recipes/add-personal-to-collection",
+      { ...fixture.input, session },
+      { timeoutMs: 2000 }
+    )).toEqual({
+      ok: false,
+      error: {
+        kind: "domain",
+        value: restriction === "personal save" ? "ITEM_NOT_SAVED" : "ACCESS_DENIED",
+      },
+    });
+    expect(await personalRecipeTransferState(fixture)).toEqual(before);
+  });
+}

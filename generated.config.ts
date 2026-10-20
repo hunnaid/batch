@@ -12,6 +12,7 @@ export default {
       new URL("./design/compositions/Collections.md", import.meta.url),
       new URL("./design/compositions/Accounts.md", import.meta.url),
       new URL("./design/compositions/Recipes.md", import.meta.url),
+      new URL("./design/compositions/Shared.md", import.meta.url),
     ],
   },
   wireName: "BatchWire",

@@ -11,6 +11,7 @@ import { SavingConcept } from "./concepts/Saving.ts";
 import { composition as collectionsComposition } from "./compositions/Collections.ts";
 import { composition as accountsComposition } from "./compositions/Accounts.ts";
 import { composition as recipesComposition } from "./compositions/Recipes.ts";
+import { composition as sharedComposition } from "./compositions/Shared.ts";
 import { db } from "./db.ts";
 
 /**
@@ -27,6 +28,7 @@ export function assembleApplication() {
       Collecting: new CollectingConcept(db),
       CookingLog: new CookingLogConcept(db),
       Sharing: new SharingConcept(db),
+      RecipeSharing: new SharingConcept(db, "recipeSharing.resources"),
       Sessioning: new SessioningConcept(db),
       Saving: new SavingConcept(db),
     },
@@ -36,6 +38,7 @@ export function assembleApplication() {
       Collections: collectionsComposition,
       Accounts: accountsComposition,
       Recipes: recipesComposition,
+      Shared: sharedComposition,
     },
   });
 }

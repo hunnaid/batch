@@ -3,6 +3,8 @@ import { onMounted, ref } from "vue";
 import { api, ApiError } from "../api";
 import type { BatchWireHttp } from "../../../generated/wire";
 import CookingEntryForm from "./CookingEntryForm.vue";
+import SharingForm from "./SharingForm.vue";
+import RoleBadge from "./RoleBadge.vue";
 
 type RecipeDetails = NonNullable<
   BatchWireHttp["/recipes/get"]["output"]["recipe"]
@@ -12,6 +14,7 @@ type CookingEntry = RecipeDetails["entries"][number];
 
 const props = defineProps<{
   collection?: string;
+  directShared?: boolean;
   recipe: string;
   user: string;
   backLabel?: string;
@@ -25,15 +28,19 @@ const emit = defineEmits<{
 const details = ref<RecipeDetails | null>(null);
 const loading = ref(true);
 const error = ref("");
+const canManageSharing = ref(false);
 
 /** Retrieve the original recipe and its cooking entries together. */
 async function loadRecipe() {
   loading.value = true;
   error.value = "";
   details.value = null;
+  canManageSharing.value = false;
 
   try {
-    const response = props.collection !== undefined
+    const response = props.directShared
+      ? await api["/recipes/get-shared"]({ recipe: props.recipe })
+      : props.collection !== undefined
       ? await api.recipes.get({
           collection: props.collection,
           recipe: props.recipe,
@@ -46,6 +53,9 @@ async function loadRecipe() {
       throw new ApiError(String(response.error));
     }
 
+    const sharing = await api["/recipes/sharing-status"]({ recipe: props.recipe });
+    if ("error" in sharing) throw new ApiError(String(sharing.error));
+    canManageSharing.value = sharing.canManage;
     details.value = response.recipe;
   } catch (cause) {
     if (cause instanceof ApiError && cause.code === "UNAUTHORIZED") {
@@ -251,11 +261,20 @@ onMounted(loadDestinations);
 
     <template v-else>
       <h2 dir="auto">{{ details.title }}</h2>
+      <RoleBadge v-if="props.directShared" :owner="canManageSharing" />
       <p v-if="details.source" dir="auto">
         Source: {{ details.source }}
       </p>
 
-      <section aria-labelledby="add-to-collection-heading">
+      <details v-if="canManageSharing">
+        <summary>Share recipe</summary>
+        <SharingForm
+          :recipe="props.recipe"
+          @session-expired="emit('sessionExpired')"
+        />
+      </details>
+
+      <section v-if="!props.directShared || canManageSharing" aria-labelledby="add-to-collection-heading">
         <h3 id="add-to-collection-heading">Add to a collection</h3>
 
         <p id="collection-sharing-help">
@@ -360,6 +379,7 @@ onMounted(loadDestinations);
         v-if="showEntryForm"
         :key="editingEntry?.entry ?? 'new'"
         :collection="props.collection"
+        :direct-shared="props.directShared"
         :recipe="props.recipe"
         :entry="editingEntry?.entry"
         :initial-changes="editingEntry?.changes"

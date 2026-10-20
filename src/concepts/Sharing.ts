@@ -59,9 +59,10 @@ export class SharingConcept {
     /**
      * Select this concept's storage without performing a database operation.
      * @param db - The database used to store resource access information.
+     * @param storageName - Independent storage for each instance of this concept.
      */
-    constructor(db: Db) {
-        this.resources = db.collection<ResourceDocument>("sharing.resources");
+    constructor(db: Db, storageName = "sharing.resources") {
+        this.resources = db.collection<ResourceDocument>(storageName);
     }
 
     /**
@@ -241,6 +242,28 @@ export class SharingConcept {
             })
             .sort({ _id: 1 })
             .toArray();
+
+        return documents.map((document) => ({
+            resource: document._id,
+            owner: document.owner,
+        }));
+    }
+
+    /** Retrieve ownership without exposing the member list. */
+    async _get({ resource }: { resource: string }): Promise<{ owner: string }[]> {
+        const document = await this.resources.findOne({ _id: resource });
+        return document ? [{ owner: document.owner }] : [];
+    }
+
+    /** List accessible resources that currently have at least one member. */
+    async _shared({ user }: { user: string }): Promise<{
+        resource: string;
+        owner: string;
+    }[]> {
+        const documents = await this.resources.find({
+            "members.0": { $exists: true },
+            $or: [{ owner: user }, { members: user }],
+        }).sort({ _id: 1 }).toArray();
 
         return documents.map((document) => ({
             resource: document._id,

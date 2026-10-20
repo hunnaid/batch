@@ -4,6 +4,7 @@ import { api, ApiError } from "../api";
 
 const props = defineProps<{
   collection?: string;
+  directShared?: boolean;
   recipe: string;
   entry?: string;
   initialChanges?: string;
@@ -40,8 +41,12 @@ async function save() {
       result: result.value,
     };
 
-    // Choose access through a collection or through the personal saved list.
-    const response = props.collection !== undefined
+    // Use the same access path as the recipe screen.
+    const response = props.directShared
+      ? (props.entry
+          ? await api["/entries/edit-shared"]({ ...input, entry: props.entry })
+          : await api["/entries/add-shared"](input))
+      : props.collection !== undefined
       ? (
           props.entry
             ? await api.entries.edit({

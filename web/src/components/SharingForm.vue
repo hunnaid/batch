@@ -3,11 +3,13 @@ import { ref } from "vue";
 import { api, ApiError } from "../api";
 
 const props = defineProps<{
-  collection: string;
+  collection?: string;
+  recipe?: string;
 }>();
 
 const emit = defineEmits<{
   sessionExpired: [];
+  changed: [];
 }>();
 
 const username = ref("");
@@ -15,7 +17,7 @@ const busy = ref(false);
 const error = ref("");
 const notice = ref("");
 
-/** Grant or revoke access using the recipient's registered username. */
+/** Grant or revoke collection or direct recipe access by registered username. */
 async function updateAccess(action: "share" | "revoke") {
   if (busy.value) return;
 
@@ -30,15 +32,24 @@ async function updateAccess(action: "share" | "revoke") {
   busy.value = true;
 
   try {
-    const input = {
-      collection: props.collection,
-      username: username.value,
-    };
-
-    const response =
-      action === "share"
+    let response;
+    if (props.recipe !== undefined) {
+      if (action === "share") {
+        const prepared = await api["/recipes/prepare-sharing"]({ recipe: props.recipe });
+        if ("error" in prepared) throw new ApiError(String(prepared.error));
+      }
+      const input = { recipe: props.recipe, username: username.value };
+      response = action === "share"
+        ? await api["/recipes/share"](input)
+        : await api["/recipes/revoke"](input);
+    } else if (props.collection !== undefined) {
+      const input = { collection: props.collection, username: username.value };
+      response = action === "share"
         ? await api.collections.share(input)
         : await api.collections.revoke(input);
+    } else {
+      throw new Error("A recipe or collection is required.");
+    }
 
     if ("error" in response) {
       throw new ApiError(String(response.error));
@@ -50,6 +61,7 @@ async function updateAccess(action: "share" | "revoke") {
         : `Access removed for ${username.value}.`;
 
     username.value = "";
+    emit("changed");
   } catch (cause) {
     if (cause instanceof ApiError) {
       if (cause.code === "UNAUTHORIZED") {
@@ -58,8 +70,8 @@ async function updateAccess(action: "share" | "revoke") {
       }
 
       const messages: Record<string, string> = {
-        NOT_FOUND: "The username or collection could not be found.",
-        FORBIDDEN: "Only the collection owner can manage access.",
+        NOT_FOUND: "The username or shared item could not be found.",
+        FORBIDDEN: "Only the owner can manage access.",
         INVALID_REQUEST: "Check the username.",
         INVALID_INPUT: "Check the username.",
         CONFLICT:
@@ -82,20 +94,24 @@ async function updateAccess(action: "share" | "revoke") {
 <template>
   <form @submit.prevent="updateAccess('share')">
     <fieldset :disabled="busy">
-      <legend>Manage collection access</legend>
+      <legend>Manage {{ recipe !== undefined ? "recipe" : "collection" }} access</legend>
+      <p v-if="recipe !== undefined">
+        Share this recipe and its cooking history directly with another cook.
+        Revoking direct access preserves any access they have through a collection.
+      </p>
 
-      <label :for="'share-username-' + collection">
+      <label :for="'share-username-' + (recipe ?? collection)">
         Registered username
       </label>
 
       <input
-        :id="'share-username-' + collection"
+        :id="'share-username-' + (recipe ?? collection)"
         v-model="username"
         required
       />
 
       <button type="submit">
-        {{ busy ? "Updating…" : "Share collection" }}
+        {{ busy ? "Updating…" : recipe !== undefined ? "Share recipe" : "Share collection" }}
       </button>
 
       <button

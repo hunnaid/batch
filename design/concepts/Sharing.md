@@ -113,4 +113,14 @@ _accessible(user: User) : many (resource: Resource, owner: User)
   Include the resource identifier and its owner.
   Sort rows by resource identifier in ascending order.
   Return no rows when the user has access to no resources.
+
+_get(resource: Resource) : optional (owner: User)
+  Return the resource's owner when initialized, otherwise no rows.
+  This query does not authorize a user; compositions enforce access.
+
+_shared(user: User) : many (resource: Resource, owner: User)
+  Return each resource with at least one member where the user is owner or member.
+  Include the resource identifier and owner, ordered by resource identifier.
+  Exclude private resources with no members and inaccessible resources.
+  Revoking the last member removes the resource from this query for its owner too.
 ```

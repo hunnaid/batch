@@ -2,7 +2,8 @@
 
 A signed-in cook saves a recipe into a collection they can access.[save]
 The endpoint resolves the session and checks collection access before
-recording the recipe. It saves the new recipe to the creator's personal
+recording the recipe. It initializes direct-sharing ownership with no members,
+then saves the new recipe to the creator's personal
 list, adds it to the collection, and returns its identifier.
 
 Ingredients and instructions retain their supplied order. An omitted source
@@ -101,7 +102,8 @@ Sharing and CookingLog.
 
 A signed-in cook can create a recipe without choosing a collection.[save-personal]
 The endpoint records the recipe and saves its identifier in that user's
-personal list before returning success. This operation does not share it.
+personal list before returning success. It also initializes direct-sharing
+ownership for the creator with no members. This operation does not share it.
 
 The My recipes endpoint lists the signed-in user's personal saves.[list-mine]
 Each result includes the recipe identifier, title, and the date that user

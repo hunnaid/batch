@@ -319,3 +319,38 @@ test("lists owned and shared resources and reflects revoked access", async () =>
     { resource: owned, owner: user },
   ]);
 });
+
+test("shared queries exclude private resources and update for each revoked member", async () => {
+  const resource = crypto.randomUUID();
+  const owner = crypto.randomUUID();
+  const first = crypto.randomUUID();
+  const second = crypto.randomUUID();
+  expect(await sharing._get({ resource })).toEqual([]);
+  await sharing.initialize({ resource, owner });
+  expect(await sharing._get({ resource })).toEqual([{ owner }]);
+  expect(await sharing._shared({ user: owner })).toEqual([]);
+  await sharing.grant({ resource, owner, member: first });
+  await sharing.grant({ resource, owner, member: second });
+  for (const user of [owner, first, second]) {
+    expect(await sharing._shared({ user })).toEqual([{ resource, owner }]);
+  }
+  expect(await sharing._shared({ user: "outsider" })).toEqual([]);
+  await sharing.revoke({ resource, owner, member: first });
+  expect(await sharing._shared({ user: first })).toEqual([]);
+  expect(await sharing._shared({ user: owner })).toEqual([{ resource, owner }]);
+  await sharing.revoke({ resource, owner, member: second });
+  expect(await sharing._shared({ user: owner })).toEqual([]);
+  expect(await sharing._get({ resource })).toEqual([{ owner }]);
+});
+
+test("separate sharing instances do not share ownership or memberships", async () => {
+  const direct = new SharingConcept(db, "recipeSharing.resources");
+  const resource = crypto.randomUUID();
+  await sharing.initialize({ resource, owner: "collection-owner" });
+  await direct.initialize({ resource, owner: "recipe-owner" });
+  await direct.grant({ resource, owner: "recipe-owner", member: "direct-member" });
+  expect(await sharing._get({ resource })).toEqual([{ owner: "collection-owner" }]);
+  expect(await sharing._shared({ user: "direct-member" })).toEqual([]);
+  expect(await direct._shared({ user: "direct-member" }))
+    .toEqual([{ resource, owner: "recipe-owner" }]);
+});

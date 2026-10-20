@@ -3,7 +3,8 @@
 PasswordAuthenticating owns user identities, and RecipeRecording owns
 recipe identities. Saving maintains each user's personal recipe list.
 Collecting organizes recipes into collections, Sharing controls collection
-access, CookingLog records cooking attempts, and Sessioning identifies
+access. A separate Sharing instance, RecipeSharing, controls direct recipe
+access. CookingLog records cooking attempts, and Sessioning identifies
 signed-in users.
 
 ```instances
@@ -26,6 +27,10 @@ instantiate CookingLog with
 instantiate Sharing with
     User is PasswordAuthenticating.User
     Resource is Collecting.Collection
+
+instantiate Sharing as RecipeSharing with
+    User is PasswordAuthenticating.User
+    Resource is RecipeRecording.Recipe
 
 instantiate Sessioning with
     User is PasswordAuthenticating.User

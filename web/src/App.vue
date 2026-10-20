@@ -6,9 +6,10 @@ import CollectionsView from "./components/CollectionsView.vue";
 import RecipeView from "./components/RecipeView.vue";
 
 import AllRecipesView from "./components/AllRecipesView.vue";
+import SharedView from "./components/SharedView.vue";
 
 /** Remember which overview to return to after viewing a recipe. */
-const overview = ref<"recipes" | "collections">("recipes");
+const overview = ref<"recipes" | "collections" | "shared">("recipes");
 
 const user = ref<string | null>(null);
 const checkingSession = ref(true);
@@ -63,6 +64,7 @@ async function logout() {
 const selectedRecipe = ref<{
   collection: string | null;
   recipe: string;
+  directShared?: boolean;
 } | null>(null);
 
 function openRecipe(collection: string, recipe: string) {
@@ -75,6 +77,10 @@ function openPersonalRecipe(recipe: string) {
     collection: null,
     recipe,
   };
+}
+
+function openSharedRecipe(recipe: string) {
+  selectedRecipe.value = { collection: null, recipe, directShared: true };
 }
 
 /** Clear navigation and user state when authentication ends. */
@@ -121,14 +127,15 @@ function clearSession() {
     <section v-else class="workspace">
       <RecipeView
         v-if="selectedRecipe"
-        :key="(selectedRecipe.collection ?? 'personal') + ':' + selectedRecipe.recipe"
+        :key="(selectedRecipe.collection ?? (selectedRecipe.directShared ? 'shared' : 'personal')) + ':' + selectedRecipe.recipe"
         :collection="selectedRecipe.collection ?? undefined"
         :recipe="selectedRecipe.recipe"
+        :direct-shared="selectedRecipe.directShared"
         :user="user"
         :back-label="
           overview === 'recipes'
             ? 'Back to my recipes'
-            : 'Back to collections'
+            : overview === 'shared' ? 'Back to shared' : 'Back to collections'
         "
         @back="selectedRecipe = null"
         @session-expired="clearSession"
@@ -151,6 +158,13 @@ function clearSession() {
           >
             Collections
           </button>
+          <button
+            type="button"
+            :aria-pressed="overview === 'shared'"
+            @click="overview = 'shared'"
+          >
+            Shared
+          </button>
         </nav>
 
         <AllRecipesView
@@ -160,12 +174,34 @@ function clearSession() {
         />
 
         <CollectionsView
+          v-else-if="overview === 'collections'"
+          :user="user"
+          @open-recipe="openRecipe"
+          @session-expired="clearSession"
+        />
+
+        <SharedView
           v-else
           :user="user"
           @open-recipe="openRecipe"
+          @open-shared-recipe="openSharedRecipe"
           @session-expired="clearSession"
         />
       </template>
     </section>
   </main>
 </template>
+
+<style scoped>
+nav[aria-label="Recipe organization"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+nav button[aria-pressed="true"] {
+  background: var(--green);
+  border-color: var(--green);
+  color: white;
+}
+</style>
