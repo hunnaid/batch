@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { api, ApiError } from "../api";
 import type { BatchWireHttp } from "../../../generated/wire";
 import RecipeForm from "./RecipeForm.vue";
@@ -23,6 +23,24 @@ const name = ref("");
 const loading = ref(false);
 const creating = ref(false);
 const error = ref("");
+
+const search = ref("");
+
+/** Match collection names or recipe titles without changing the loaded data. */
+const matchingCollectionIds = computed(() => {
+  const query = search.value.trim().toLocaleLowerCase();
+
+  return new Set(
+    collections.value
+      .filter((collection) =>
+        collection.name.toLocaleLowerCase().includes(query) ||
+        collection.recipes.some((recipe) =>
+          recipe.title.toLocaleLowerCase().includes(query)
+        )
+      )
+      .map((collection) => collection.collection)
+  );
+});
 
 /** Prevent overlapping rename/delete requests. */
 const managing = ref(false);
@@ -203,6 +221,32 @@ onMounted(loadCollections);
   <section>
     <h2>Collections</h2>
 
+    <div>
+      <label for="collection-search">Search collections and recipes</label>
+
+      <input
+        id="collection-search"
+        v-model="search"
+        type="search"
+        dir="auto"
+        placeholder="For example, Family Recipes or biryani"
+        aria-describedby="collection-search-help"
+      />
+
+      <button
+        v-if="search"
+        type="button"
+        @click="search = ''"
+      >
+        Clear search
+      </button>
+
+      <p id="collection-search-help">
+        Search by collection name or recipe title. Matching collections show
+        all their recipes.
+      </p>
+    </div>
+
     <form @submit.prevent="createCollection">
       <fieldset :disabled="creating || loading || managing">
         <label for="collection-name">New collection name</label>
@@ -236,9 +280,21 @@ onMounted(loadCollections);
         No collections yet. Create one to start saving recipes.
       </p>
 
+      <p
+        v-if="
+          !error &&
+          collections.length > 0 &&
+          matchingCollectionIds.size === 0
+        "
+        role="status"
+      >
+        No collections or recipe titles match “{{ search.trim() }}”.
+      </p>
+
       <article
         v-for="collection in collections"
         :key="collection.collection"
+        v-show="matchingCollectionIds.has(collection.collection)"
       >
         <h3>{{ collection.name }}</h3>
         <p>
