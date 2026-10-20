@@ -73,6 +73,59 @@ function clearSession() {
 </script>
 
 <template>
+  <main class="app-shell">
+    <header class="app-header">
+      <div>
+        <p class="brand-label">Your recipe notebook</p>
+        <h1 class="brand-name">Batch</h1>
+        <p class="brand-description">
+          Keep the recipes. Remember what worked.
+        </p>
+      </div>
+
+      <button
+        v-if="user"
+        type="button"
+        class="sign-out"
+        :disabled="signingOut"
+        @click="logout"
+      >
+        {{ signingOut ? "Signing out…" : "Sign out" }}
+      </button>
+    </header>
+
+    <p v-if="error" role="alert">{{ error }}</p>
+
+    <p v-if="checkingSession" role="status">
+      Checking your session…
+    </p>
+
+    <section v-else-if="!user" class="auth-panel">
+      <AuthForm @authenticated="authenticated" />
+    </section>
+
+    <section v-else class="workspace">
+      <RecipeView
+        v-if="selectedRecipe"
+        :key="selectedRecipe.collection + ':' + selectedRecipe.recipe"
+        :collection="selectedRecipe.collection"
+        :recipe="selectedRecipe.recipe"
+        :user="user"
+        @back="selectedRecipe = null"
+        @session-expired="clearSession"
+      />
+
+      <CollectionsView
+        v-else
+        :user="user"
+        @open-recipe="openRecipe"
+        @session-expired="clearSession"
+      />
+    </section>
+  </main>
+</template>
+
+<!-- <template>
   <main>
     <h1>Batch</h1>
     <p v-if="error" role="alert">{{ error }}</p>
@@ -86,7 +139,7 @@ function clearSession() {
 
     <section v-else>
       <p>You are signed in.</p>
-      
+
       <button :disabled="signingOut" @click="logout">
         {{ signingOut ? "Signing out…" : "Sign out" }}
       </button>
@@ -109,4 +162,4 @@ function clearSession() {
       />
     </section>
   </main>
-</template>
+</template> -->

@@ -1,58 +1,361 @@
+/* Shared colors keep every screen visually consistent. */
+:root {
+  color-scheme: light;
+
+  --page: #f6f3ec;
+  --surface: #fffdf8;
+  --text: #292f29;
+  --muted: #62695f;
+  --border: #d8dcd1;
+  --input-border: #858e80;
+
+  --green: #365442;
+  --green-hover: #294233;
+  --green-soft: #e8eee5;
+
+  --error: #933c32;
+  --error-soft: #fbeee9;
+  --focus: #925425;
+
+  --heading-font: Georgia, "Times New Roman", serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
+  min-width: 320px;
   font-family: system-ui, sans-serif;
-  line-height: 1.5;
-  color: #222;
-  background: white;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--text);
+  background: var(--page);
 }
 
-main {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 24px;
-}
-
+button,
 input,
 textarea,
-button,
 select {
   font: inherit;
 }
 
+button,
+input,
+textarea,
+select,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  color: var(--text);
+  background: #dce7d3;
+}
+
+/* The header frames both the signed-in and signed-out screens. */
+.app-shell {
+  max-width: 960px;
+  margin-inline: auto;
+  padding: 40px 28px 80px;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 28px;
+  margin-bottom: 36px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand-label {
+  margin: 0 0 4px;
+  color: var(--green);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.brand-name {
+  margin: 0;
+  font-family: var(--heading-font);
+  font-size: clamp(3rem, 7vw, 4.5rem);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.05em;
+}
+
+.brand-description {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.sign-out {
+  flex-shrink: 0;
+}
+
+.workspace {
+  min-width: 0;
+}
+
+.auth-panel {
+  max-width: 480px;
+  margin-inline: auto;
+  padding: 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+
+/* Serif headings give the interface a cookbook feel. */
+h2,
+h3,
+h4 {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+h2 {
+  margin: 0 0 24px;
+  font-family: var(--heading-font);
+  font-size: clamp(1.8rem, 4vw, 2.3rem);
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+h3 {
+  margin: 28px 0 16px;
+  font-family: var(--heading-font);
+  font-size: 1.4rem;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+h4 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+p {
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+
+a {
+  color: var(--green);
+  text-underline-offset: 4px;
+}
+
+/* Forms remain single-column and easy to scan. */
+form {
+  margin-block: 20px;
+}
+
 fieldset {
   display: grid;
-  gap: 10px;
-  max-width: 420px;
+  gap: 12px;
+  min-width: 0;
+  max-width: 560px;
   padding: 0;
+  margin: 0 0 20px;
   border: 0;
-  margin-bottom: 16px;
+}
+
+legend {
+  padding: 0;
+  margin-bottom: 12px;
+  font-weight: 650;
+}
+
+label {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.9rem;
+  font-weight: 650;
 }
 
 input,
 textarea,
-select,
-button {
-  padding: 8px;
+select {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 13px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
 }
 
+input,
+select {
+  min-height: 46px;
+}
+
+textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+/* Outlined buttons are secondary; submitting a form is the primary action. */
 button {
+  min-height: 44px;
+  padding: 10px 16px;
+  color: var(--green);
+  background: var(--surface);
+  border: 1px solid var(--input-border);
+  border-radius: 10px;
+  font-weight: 600;
+  line-height: 1.4;
   cursor: pointer;
 }
 
+button:hover:not(:disabled) {
+  background: var(--green-soft);
+  border-color: var(--green);
+}
+
+button[type="submit"] {
+  color: white;
+  background: var(--green);
+  border-color: var(--green);
+}
+
+button[type="submit"]:hover:not(:disabled) {
+  background: var(--green-hover);
+  border-color: var(--green-hover);
+}
+
 button:disabled {
-  cursor: wait;
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
-[role="alert"] {
-  color: #a11;
+input:disabled,
+textarea:disabled,
+select:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
+:where(button, input, textarea, select, a, summary):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* Collection cards and cooking attempts use the same quiet surface. */
 article {
-  border-top: 1px solid #ddd;
-  margin-top: 20px;
-  padding-top: 12px;
+  margin-block: 20px;
+  padding: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+article > h3:first-child {
+  margin-top: 0;
+}
+
+article > button {
+  margin-block: 6px;
+  margin-inline-end: 8px;
+}
+
+ul,
+ol {
+  padding-inline-start: 24px;
+}
+
+li {
+  padding-inline-start: 4px;
+  margin-block: 8px;
+  overflow-wrap: anywhere;
+}
+
+/* Recipe titles inside collection lists read as navigation. */
+article > ul {
+  padding: 0;
+  list-style: none;
+}
+
+article > ul > li {
+  padding: 0;
+}
+
+article > ul > li > button {
+  width: 100%;
+  text-align: start;
+  background: var(--green-soft);
+  border-color: transparent;
+}
+
+article > ul > li > button:hover:not(:disabled) {
+  border-color: var(--green);
+}
+
+details {
+  margin-block: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+summary {
+  color: var(--green);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+time {
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .recipe-text {
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Feedback stays readable and does not depend on color alone. */
+[role="alert"] {
+  padding: 12px 16px;
+  color: var(--error);
+  background: var(--error-soft);
+  border-inline-start: 3px solid var(--error);
+  border-radius: 6px;
+}
+
+[role="status"] {
+  color: var(--green);
+}
+
+/* Logical spacing above preserves mixed-language layouts. */
+@media (max-width: 600px) {
+  .app-shell {
+    padding: 24px 16px 48px;
+  }
+
+  .app-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-bottom: 28px;
+  }
+
+  .auth-panel {
+    padding: 24px 20px;
+  }
+
+  article {
+    padding: 20px 16px;
+  }
 }
