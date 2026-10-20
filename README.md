@@ -178,3 +178,15 @@ The frontend uses the generated HTTP client contract in `generated/wire.ts`.
 
 - [Narrated MVP demo](https://drive.google.com/file/d/1vGsjhs8QBaca15tqGHWBKg4QrXVZNgVh/view?usp=sharing)
 - [P2 user journey](design/docs/p2-user-journey.md)
+
+---
+
+## P3: Beta
+
+- [Live app](https://YOUR-APP-NAME.mit-sdg.dev)
+
+Batch is deployed on the class platform. The deployed app uses a separate
+MongoDB database, so local accounts and recipes are not available online.
+Register an account to try it.
+
+Further functionality and interface improvements are in progress.
