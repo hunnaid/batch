@@ -1,17 +1,26 @@
 import { httpPolicy } from "@mit-sdg/sync-engine-http/policy";
 
+/** Use the deployed address when provided, with a local development default. */
+const publicOrigin =
+    process.env.PUBLIC_ORIGIN ?? "http://localhost:8080";
+
+const isProduction = process.env.NODE_ENV === "production";
+
+if (isProduction && !process.env.PUBLIC_ORIGIN) {
+    throw new Error("PUBLIC_ORIGIN is required in production.");
+}
+
 /**
- * Configure local API routes, public errors, and browser session cookies.
+ * Configure API routes, public errors, and browser session cookies.
  * Use this same policy when generating the browser's API contract.
  */
 export const policy = httpPolicy({
-    publicOrigin: "http://localhost:8080",
+    publicOrigin,
     basePath: "/api",
     requestOrigins: {
-        allowed: [
-            "http://localhost:8080",
-            "http://localhost:5173",
-        ],
+        allowed: isProduction
+            ? [publicOrigin]
+            : [publicOrigin, "http://localhost:5173"],
     },
 
     publicErrors: {

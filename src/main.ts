@@ -5,6 +5,9 @@ import { assembleApplication } from "./assembly.ts";
 import { client } from "./db.ts";
 import { policy } from "./http-policy.ts";
 
+import { resolve, sep } from "node:path";
+import { fileURLToPath } from "node:url";
+
 // Confirm the database is reachable before accepting requests.
 await client.connect();
 
@@ -17,14 +20,84 @@ const handler = createHttpHandler({
   policy,
 });
 
-/** Serve the application's POST/JSON endpoints on the local machine. */
+/** Locate the built frontend relative to this source file. */
+const frontendDirectory = fileURLToPath(
+  new URL("../web/dist/", import.meta.url)
+);
+
+/** Serve built frontend files without allowing access outside web/dist. */
+async function serveFrontend(request: Request): Promise<Response> {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return new Response("Method not allowed", {
+      status: 405,
+      headers: { Allow: "GET, HEAD" },
+    });
+  }
+
+  let pathname: string;
+
+  try {
+    pathname = decodeURIComponent(new URL(request.url).pathname);
+  } catch {
+    return new Response("Invalid URL", { status: 400 });
+  }
+
+  if (pathname.includes("\0") || pathname.includes("\\")) {
+    return new Response("Invalid path", { status: 400 });
+  }
+
+  const relativePath =
+    pathname === "/" ? "index.html" : pathname.slice(1);
+
+  const filePath = resolve(frontendDirectory, relativePath);
+  const root = resolve(frontendDirectory);
+
+  // A request must never escape the directory containing public files.
+  if (!filePath.startsWith(root + sep)) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  const file = Bun.file(filePath);
+
+  if (!(await file.exists())) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  return new Response(request.method === "HEAD" ? null : file, {
+    headers: {
+      "Content-Type": file.type,
+      "Cache-Control": "no-cache",
+    },
+  });
+}
+
+/** Use platform settings when supplied, retaining local development defaults. */
+const hostname = process.env.HOST ?? "127.0.0.1";
+const port = Number(process.env.PORT ?? "8080");
+
+/** Serve health checks, API requests, and the built Vue frontend. */
 const server = Bun.serve({
-  hostname: "127.0.0.1",
-  port: 8080,
-  fetch: handler,
+  hostname,
+  port,
+
+  async fetch(request) {
+    const { pathname } = new URL(request.url);
+
+    // Basic health check: the server started after connecting to MongoDB.
+    if (pathname === "/health") {
+      return Response.json({ status: "ok" });
+    }
+
+    // Keep API requests within the existing HTTP adapter.
+    if (pathname === "/api" || pathname.startsWith("/api/")) {
+      return handler(request);
+    }
+
+    return serveFrontend(request);
+  },
 });
 
-console.log(`Batch API is running at http://localhost:${server.port}/api`);
+console.log(`Batch server listening on ${hostname}:${server.port}`);
 
 /** Stop accepting work and finish active requests before closing MongoDB. */
 let stopping = false;

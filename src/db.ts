@@ -1,10 +1,10 @@
 import { MongoClient } from "mongodb";
 
-// bun loads this setting from .env
+// Bun loads this from .env locally; the deployment platform supplies it online.
 const url = process.env.MONGODB_URL;
 
 if (!url) {
-    throw new Error("MONGODB_URL is not set. Add it to your .env file.");
+    throw new Error("MONGODB_URL must be set in the environment.");
 }
 
 // share one client across the app

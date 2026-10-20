@@ -29,6 +29,8 @@
     "build:frontend": "bun --bun vite build --config web/vite.config.ts",
     "test": "bun test",
     "dev:backend": "bun --watch src/main.ts",
-    "dev": "bun run --parallel dev:backend dev:frontend"
+    "dev": "bun run --parallel dev:backend dev:frontend",
+    "build": "bun run build:frontend",
+    "preview": "bun run build && NODE_ENV=production HOST=127.0.0.1 PORT=3000 PUBLIC_ORIGIN=http://localhost:3000 bun run start"
   }
 }
