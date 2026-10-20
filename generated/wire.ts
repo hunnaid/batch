@@ -109,6 +109,18 @@ export type BatchWire = {
     };
     error: { error: AppWideError | "ACCESS_DENIED" | "INVALID_COOKING_ENTRY" | "INVALID_INPUT" | "INVALID_SESSION" | "RECIPE_NOT_IN_COLLECTION" };
   };
+  "/entries/add-personal": {
+    input: {
+      "changes": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["record"]>[0], ["changes"]>>;
+      "recipe": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Saving"]["authorize"]>[0], ["item"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["record"]>[0], ["recipe"]>]>>;
+      "result": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["record"]>[0], ["result"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+    };
+    output: {
+      "entry": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["CookingLog"]["record"]>>, ["entry"]>>;
+    };
+    error: { error: AppWideError | "INVALID_COOKING_ENTRY" | "INVALID_INPUT" | "INVALID_SESSION" | "ITEM_NOT_SAVED" };
+  };
   "/entries/edit": {
     input: {
       "changes": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["changes"]>>;
@@ -122,6 +134,31 @@ export type BatchWire = {
       "entry": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["entry"]>>;
     };
     error: { error: AppWideError | "ACCESS_DENIED" | "COOKING_ENTRY_NOT_FOUND" | "COOKING_ENTRY_NOT_OWNED" | "ENTRY_NOT_IN_RECIPE" | "INVALID_COOKING_ENTRY_EDIT" | "INVALID_INPUT" | "INVALID_SESSION" | "RECIPE_NOT_IN_COLLECTION" };
+  };
+  "/entries/edit-personal": {
+    input: {
+      "changes": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["changes"]>>;
+      "entry": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["entry"]>>;
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Saving"]["authorize"]>[0], ["item"]>>;
+      "result": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["result"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+    };
+    output: {
+      "entry": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["entry"]>>;
+    };
+    error: { error: AppWideError | "COOKING_ENTRY_NOT_FOUND" | "COOKING_ENTRY_NOT_OWNED" | "ENTRY_NOT_IN_RECIPE" | "INVALID_COOKING_ENTRY_EDIT" | "INVALID_INPUT" | "INVALID_SESSION" | "ITEM_NOT_SAVED" };
+  };
+  "/recipes/add-personal-to-collection": {
+    input: {
+      "destinationCollection": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["collection"]>]>>;
+      "recipe": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Saving"]["authorize"]>[0], ["item"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["item"]>]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+    };
+    output: {
+      "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["collection"]>>;
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["item"]>>;
+    };
+    error: { error: AppWideError | "ACCESS_DENIED" | "COLLECTION_NOT_FOUND" | "INVALID_INPUT" | "INVALID_SESSION" | "ITEM_ALREADY_COLLECTED" | "ITEM_NOT_SAVED" };
   };
   "/recipes/add-to-collection": {
     input: {
@@ -160,6 +197,44 @@ export type BatchWire = {
     };
     error: { error: AppWideError | "ACCESS_DENIED" | "INVALID_INPUT" | "INVALID_SESSION" };
   };
+  "/recipes/get-personal": {
+    input: {
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Saving"]["authorize"]>[0], ["item"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+    };
+    output: {
+      "recipe": {
+        "entries": {
+          "author": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["CookingLog"]["_forRecipe"]>>>, ["author"]>>;
+          "changes": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["CookingLog"]["_forRecipe"]>>>, ["changes"]>>;
+          "createdAt": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["CookingLog"]["_forRecipe"]>>>, ["createdAt"]>>;
+          "entry": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["CookingLog"]["_forRecipe"]>>>, ["_id"]>>;
+          "result": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["CookingLog"]["_forRecipe"]>>>, ["result"]>>;
+        }[];
+        "ingredients": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["ingredients"]>>;
+        "instructions": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["instructions"]>>;
+        "recipe": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Saving"]["authorize"]>[0], ["item"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>[0], ["recipe"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Saving"]["_forUser"]>>>, ["item"]>]>>;
+        "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["source"]>> | null;
+        "title": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["title"]>>;
+      } | null;
+    };
+    error: { error: AppWideError | "INVALID_INPUT" | "INVALID_SESSION" | "ITEM_NOT_SAVED" };
+  };
+  "/recipes/mine": {
+    input: {
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+    };
+    output: {
+      "overview": {
+        "recipes": {
+          "recipe": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>[0], ["recipe"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Saving"]["_forUser"]>>>, ["item"]>]>>;
+          "savedAt": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Saving"]["_forUser"]>>>, ["savedAt"]>>;
+          "title": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["title"]>>;
+        }[];
+      };
+    };
+    error: { error: AppWideError | "INVALID_INPUT" | "INVALID_SESSION" };
+  };
   "/recipes/save": {
     input: {
       "collection": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["collection"]>]>>;
@@ -173,6 +248,19 @@ export type BatchWire = {
       "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["item"]>>;
     };
     error: { error: AppWideError | "ACCESS_DENIED" | "COLLECTION_NOT_FOUND" | "INVALID_INPUT" | "INVALID_RECIPE" | "INVALID_SESSION" | "ITEM_ALREADY_COLLECTED" };
+  };
+  "/recipes/save-personal": {
+    input: {
+      "ingredients": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["ingredients"]>>;
+      "instructions": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["instructions"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+      "source"?: Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["source"]>>;
+      "title": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["title"]>>;
+    };
+    output: {
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Saving"]["save"]>[0], ["item"]>>;
+    };
+    error: { error: AppWideError | "INVALID_INPUT" | "INVALID_RECIPE" | "INVALID_SESSION" };
   };
   "/sessions/current": {
     input: {
@@ -294,6 +382,17 @@ export type BatchWireHttp = {
     };
     error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
+  "/entries/add-personal": {
+    input: {
+      "changes": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["record"]>[0], ["changes"]>>;
+      "recipe": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Saving"]["authorize"]>[0], ["item"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["record"]>[0], ["recipe"]>]>>;
+      "result": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["record"]>[0], ["result"]>>;
+    };
+    output: {
+      "entry": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["CookingLog"]["record"]>>, ["entry"]>>;
+    };
+    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
   "/entries/edit": {
     input: {
       "changes": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["changes"]>>;
@@ -306,6 +405,29 @@ export type BatchWireHttp = {
       "entry": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["entry"]>>;
     };
     error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/entries/edit-personal": {
+    input: {
+      "changes": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["changes"]>>;
+      "entry": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["entry"]>>;
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Saving"]["authorize"]>[0], ["item"]>>;
+      "result": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["result"]>>;
+    };
+    output: {
+      "entry": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["entry"]>>;
+    };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INTERNAL_ERROR" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/recipes/add-personal-to-collection": {
+    input: {
+      "destinationCollection": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["collection"]>]>>;
+      "recipe": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Saving"]["authorize"]>[0], ["item"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["item"]>]>>;
+    };
+    output: {
+      "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["collection"]>>;
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["item"]>>;
+    };
+    error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INTERNAL_ERROR" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/recipes/add-to-collection": {
     input: {
@@ -342,6 +464,41 @@ export type BatchWireHttp = {
     };
     error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
+  "/recipes/get-personal": {
+    input: {
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Saving"]["authorize"]>[0], ["item"]>>;
+    };
+    output: {
+      "recipe": {
+        "entries": {
+          "author": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["CookingLog"]["_forRecipe"]>>>, ["author"]>>;
+          "changes": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["CookingLog"]["_forRecipe"]>>>, ["changes"]>>;
+          "createdAt": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["CookingLog"]["_forRecipe"]>>>, ["createdAt"]>>;
+          "entry": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["CookingLog"]["_forRecipe"]>>>, ["_id"]>>;
+          "result": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["CookingLog"]["_forRecipe"]>>>, ["result"]>>;
+        }[];
+        "ingredients": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["ingredients"]>>;
+        "instructions": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["instructions"]>>;
+        "recipe": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Saving"]["authorize"]>[0], ["item"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>[0], ["recipe"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Saving"]["_forUser"]>>>, ["item"]>]>>;
+        "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["source"]>> | null;
+        "title": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["title"]>>;
+      } | null;
+    };
+    error: { error: HttpAppWideError | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
+  "/recipes/mine": {
+    input: Record<string, never>;
+    output: {
+      "overview": {
+        "recipes": {
+          "recipe": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>[0], ["recipe"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Saving"]["_forUser"]>>>, ["item"]>]>>;
+          "savedAt": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Saving"]["_forUser"]>>>, ["savedAt"]>>;
+          "title": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["title"]>>;
+        }[];
+      };
+    };
+    error: { error: HttpAppWideError | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
   "/recipes/save": {
     input: {
       "collection": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["collection"]>]>>;
@@ -354,6 +511,18 @@ export type BatchWireHttp = {
       "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["item"]>>;
     };
     error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/recipes/save-personal": {
+    input: {
+      "ingredients": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["ingredients"]>>;
+      "instructions": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["instructions"]>>;
+      "source"?: Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["source"]>>;
+      "title": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["title"]>>;
+    };
+    output: {
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Saving"]["save"]>[0], ["item"]>>;
+    };
+    error: { error: HttpAppWideError | "INVALID_REQUEST" | "UNAUTHORIZED" };
   };
   "/sessions/current": {
     input: Record<string, never>;

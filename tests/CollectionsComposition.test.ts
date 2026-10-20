@@ -18,6 +18,8 @@ import {
   AccessDenied,
   SharingConcept,
 } from "../src/concepts/Sharing.ts";
+import { SavingConcept } from "../src/concepts/Saving.ts";
+
 import { SessioningConcept } from "../src/concepts/Sessioning.ts";
 import { composition as accountsComposition } from "../src/compositions/Accounts.ts";
 import { composition as recipesComposition } from "../src/compositions/Recipes.ts";
@@ -68,6 +70,7 @@ const app = assemble({
     CookingLog: cookingLog,
     Sharing: sharing,
     Sessioning: sessions,
+    Saving: new SavingConcept(db),
   },
   composition: {
     Collections: collectionsComposition,
@@ -800,4 +803,301 @@ test("repeating an addition is refused without changing either collection", asyn
   });
 
   expect(await recipeTransferState(fixture)).toEqual(before);
+});
+
+test("a recipe can be saved without a collection and appears only in the saver's list", async () => {
+    const owner = crypto.randomUUID();
+    const otherUser = crypto.randomUUID();
+
+    const { session: ownerSession } = await sessions.start({
+        user: owner,
+    });
+
+    const { session: otherSession } = await sessions.start({
+        user: otherUser,
+    });
+
+    const recipeData = {
+        title: "Simple Rice",
+        ingredients: ["1 cup rice", "Water"],
+        instructions: ["Cook the rice."],
+        source: "My notes",
+    };
+
+    const { recipe } = await invokeSuccessfully<{ recipe: string }>(
+        "/recipes/save-personal",
+        {
+            session: ownerSession,
+            ...recipeData,
+        }
+    );
+
+    // The original details are stored without creating a collection.
+    expect(await recipes._get({ recipe })).toEqual([recipeData]);
+    expect(await visibleCollections(ownerSession)).toEqual([]);
+
+    const mine = await invokeSuccessfully<{
+        overview: {
+            recipes: {
+                recipe: string;
+                title: string;
+                savedAt: unknown;
+            }[];
+        };
+    }>("/recipes/mine", {
+        session: ownerSession,
+    });
+
+    expect(mine.overview.recipes).toHaveLength(1);
+    expect(mine.overview.recipes[0]).toMatchObject({
+        recipe,
+        title: recipeData.title,
+    });
+    expect(mine.overview.recipes[0]!.savedAt).toBeDefined();
+
+    // Another signed-in user's list does not expose this recipe.
+    const otherList = await invokeSuccessfully<typeof mine>(
+        "/recipes/mine",
+        { session: otherSession }
+    );
+
+    expect(otherList).toEqual({
+        overview: {
+            recipes: [],
+        },
+    });
+});
+
+test("a personal recipe can be opened by its saver but not another user", async () => {
+    const owner = crypto.randomUUID();
+    const outsider = crypto.randomUUID();
+
+    const { session: ownerSession } = await sessions.start({
+        user: owner,
+    });
+
+    const { session: outsiderSession } = await sessions.start({
+        user: outsider,
+    });
+
+    const recipeData = {
+        title: "Simple Rice",
+        ingredients: ["Rice", "Water"],
+        instructions: ["Cook the rice."],
+        source: "My notes",
+    };
+
+    const { recipe } = await invokeSuccessfully<{ recipe: string }>(
+        "/recipes/save-personal",
+        {
+            session: ownerSession,
+            ...recipeData,
+        }
+    );
+
+    const opened = await invokeSuccessfully<{ recipe: unknown }>(
+        "/recipes/get-personal",
+        {
+            session: ownerSession,
+            recipe,
+        }
+    );
+
+    expect(opened).toEqual({
+        recipe: {
+            recipe,
+            ...recipeData,
+            entries: [],
+        },
+    });
+
+    // Knowing the identifier does not allow another user to read it.
+    expect(
+        await app.invoker.invoke(
+            "/recipes/get-personal",
+            {
+                session: outsiderSession,
+                recipe,
+            },
+            { timeoutMs: 2000 }
+        )
+    ).toEqual({
+        ok: false,
+        error: {
+            kind: "domain",
+            value: "ITEM_NOT_SAVED",
+        },
+    });
+
+    // The refused request leaves the owner's recipe available.
+    expect(
+        await invokeSuccessfully<typeof opened>(
+            "/recipes/get-personal",
+            {
+                session: ownerSession,
+                recipe,
+            }
+        )
+    ).toEqual(opened);
+});
+
+test("personal cooking entries can be recorded and edited while unauthorized changes are refused", async () => {
+    const owner = crypto.randomUUID();
+    const outsider = crypto.randomUUID();
+
+    const { session: ownerSession } = await sessions.start({
+        user: owner,
+    });
+
+    const { session: outsiderSession } = await sessions.start({
+        user: outsider,
+    });
+
+    const { recipe } = await invokeSuccessfully<{ recipe: string }>(
+        "/recipes/save-personal",
+        {
+            session: ownerSession,
+            title: "Simple Rice",
+            ingredients: ["Rice", "Water"],
+            instructions: ["Cook the rice."],
+        }
+    );
+
+    const { entry } = await invokeSuccessfully<{ entry: string }>(
+        "/entries/add-personal",
+        {
+            session: ownerSession,
+            recipe,
+            changes: "Used less water.",
+            result: "",
+        }
+    );
+
+    const original = await cookingLog._get({ entry });
+
+    expect(original).toHaveLength(1);
+    expect(original[0]).toMatchObject({
+        _id: entry,
+        author: owner,
+        recipe,
+        changes: "Used less water.",
+        result: "",
+    });
+
+    expect(
+        await invokeSuccessfully<{ entry: string }>(
+            "/entries/edit-personal",
+            {
+                session: ownerSession,
+                recipe,
+                entry,
+                changes: "Used less water.",
+                result: "The rice was firmer.",
+            }
+        )
+    ).toEqual({ entry });
+
+    const edited = await cookingLog._get({ entry });
+
+    expect(edited).toEqual(
+        original.map((row) => ({
+            ...row,
+            result: "The rice was firmer.",
+        }))
+    );
+
+    // The personal recipe screen receives the updated history.
+    const opened = await invokeSuccessfully<{
+        recipe: {
+            entries: {
+                entry: string;
+                result: string;
+            }[];
+        };
+    }>("/recipes/get-personal", {
+        session: ownerSession,
+        recipe,
+    });
+
+    expect(opened.recipe.entries).toHaveLength(1);
+    expect(opened.recipe.entries[0]).toMatchObject({
+        entry,
+        result: "The rice was firmer.",
+    });
+
+    const historyBefore = await cookingLog._forRecipe({ recipe });
+
+    // Another user cannot add or edit through personal access.
+    for (const path of [
+        "/entries/add-personal",
+        "/entries/edit-personal",
+    ]) {
+        const input =
+            path === "/entries/edit-personal"
+                ? {
+                    session: outsiderSession,
+                    recipe,
+                    entry,
+                    changes: "Unauthorized change.",
+                    result: "",
+                }
+                : {
+                    session: outsiderSession,
+                    recipe,
+                    changes: "Unauthorized addition.",
+                    result: "",
+                };
+
+        expect(
+            await app.invoker.invoke(
+                path,
+                input,
+                { timeoutMs: 2000 }
+            )
+        ).toEqual({
+            ok: false,
+            error: {
+                kind: "domain",
+                value: "ITEM_NOT_SAVED",
+            },
+        });
+
+        expect(
+            await cookingLog._forRecipe({ recipe })
+        ).toEqual(historyBefore);
+    }
+
+    // Saving another recipe does not permit editing this entry through it.
+    const { recipe: otherRecipe } =
+        await invokeSuccessfully<{ recipe: string }>(
+            "/recipes/save-personal",
+            {
+                session: ownerSession,
+                title: "Another Recipe",
+                ingredients: ["Water"],
+                instructions: ["Pour the water."],
+            }
+        );
+
+    expect(
+        await app.invoker.invoke(
+            "/entries/edit-personal",
+            {
+                session: ownerSession,
+                recipe: otherRecipe,
+                entry,
+                changes: "Wrong recipe.",
+                result: "",
+            },
+            { timeoutMs: 2000 }
+        )
+    ).toEqual({
+        ok: false,
+        error: {
+            kind: "domain",
+            value: "ENTRY_NOT_IN_RECIPE",
+        },
+    });
+
+    expect(await cookingLog._get({ entry })).toEqual(edited);
 });

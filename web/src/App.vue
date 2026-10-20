@@ -5,6 +5,11 @@ import AuthForm from "./components/AuthForm.vue";
 import CollectionsView from "./components/CollectionsView.vue";
 import RecipeView from "./components/RecipeView.vue";
 
+import AllRecipesView from "./components/AllRecipesView.vue";
+
+/** Remember which overview to return to after viewing a recipe. */
+const overview = ref<"recipes" | "collections">("recipes");
+
 const user = ref<string | null>(null);
 const checkingSession = ref(true);
 const signingOut = ref(false);
@@ -56,7 +61,7 @@ async function logout() {
 
 /** Identify the recipe screen currently open, if any. */
 const selectedRecipe = ref<{
-  collection: string;
+  collection: string | null;
   recipe: string;
 } | null>(null);
 
@@ -64,10 +69,19 @@ function openRecipe(collection: string, recipe: string) {
   selectedRecipe.value = { collection, recipe };
 }
 
+/** Open a recipe through the signed-in user's personal saved list. */
+function openPersonalRecipe(recipe: string) {
+  selectedRecipe.value = {
+    collection: null,
+    recipe,
+  };
+}
+
 /** Clear navigation and user state when authentication ends. */
 function clearSession() {
   selectedRecipe.value = null;
   user.value = null;
+  overview.value = "recipes";
 }
 
 </script>
@@ -107,59 +121,51 @@ function clearSession() {
     <section v-else class="workspace">
       <RecipeView
         v-if="selectedRecipe"
-        :key="selectedRecipe.collection + ':' + selectedRecipe.recipe"
-        :collection="selectedRecipe.collection"
+        :key="(selectedRecipe.collection ?? 'personal') + ':' + selectedRecipe.recipe"
+        :collection="selectedRecipe.collection ?? undefined"
         :recipe="selectedRecipe.recipe"
         :user="user"
+        :back-label="
+          overview === 'recipes'
+            ? 'Back to my recipes'
+            : 'Back to collections'
+        "
         @back="selectedRecipe = null"
         @session-expired="clearSession"
       />
 
-      <CollectionsView
-        v-else
-        :user="user"
-        @open-recipe="openRecipe"
-        @session-expired="clearSession"
-      />
+      <template v-else>
+        <nav aria-label="Recipe organization">
+          <button
+            type="button"
+            :aria-pressed="overview === 'recipes'"
+            @click="overview = 'recipes'"
+          >
+            My recipes
+          </button>
+
+          <button
+            type="button"
+            :aria-pressed="overview === 'collections'"
+            @click="overview = 'collections'"
+          >
+            Collections
+          </button>
+        </nav>
+
+        <AllRecipesView
+          v-if="overview === 'recipes'"
+          @open-recipe="openPersonalRecipe"
+          @session-expired="clearSession"
+        />
+
+        <CollectionsView
+          v-else
+          :user="user"
+          @open-recipe="openRecipe"
+          @session-expired="clearSession"
+        />
+      </template>
     </section>
   </main>
 </template>
-
-<!-- <template>
-  <main>
-    <h1>Batch</h1>
-    <p v-if="error" role="alert">{{ error }}</p>
-
-    <p v-if="checkingSession">Checking your session…</p>
-
-    <AuthForm
-      v-else-if="!user"
-      @authenticated="authenticated"
-    />
-
-    <section v-else>
-      <p>You are signed in.</p>
-
-      <button :disabled="signingOut" @click="logout">
-        {{ signingOut ? "Signing out…" : "Sign out" }}
-      </button>
-
-      <RecipeView
-        v-if="selectedRecipe"
-        :key="selectedRecipe.collection + ':' + selectedRecipe.recipe"
-        :collection="selectedRecipe.collection"
-        :recipe="selectedRecipe.recipe"
-        :user="user"
-        @back="selectedRecipe = null"
-        @session-expired="clearSession"
-      />
-
-      <CollectionsView
-        v-else
-        :user="user"
-        @open-recipe="openRecipe"
-        @session-expired="clearSession"
-      />
-    </section>
-  </main>
-</template> -->

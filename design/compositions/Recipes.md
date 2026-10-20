@@ -1,9 +1,9 @@
 # Recipes
 
 A signed-in cook saves a recipe into a collection they can access.[save]
-The endpoint resolves the session and checks collection access before recording
-the recipe. It then adds the new recipe to that collection and returns its
-identifier.
+The endpoint resolves the session and checks collection access before
+recording the recipe. It saves the new recipe to the creator's personal
+list, adds it to the collection, and returns its identifier.
 
 Ingredients and instructions retain their supplied order. An omitted source
 defaults to an empty string at the endpoint.
@@ -96,3 +96,85 @@ Sharing and CookingLog.
 
 [recipe-membership]: view:Recipes.RecipeInCollection
 [entry-membership]: view:Recipes.EntryInRecipe
+
+## Personal recipes
+
+A signed-in cook can create a recipe without choosing a collection.[save-personal]
+The endpoint records the recipe and saves its identifier in that user's
+personal list before returning success. This operation does not share it.
+
+The My recipes endpoint lists the signed-in user's personal saves.[list-mine]
+Each result includes the recipe identifier, title, and the date that user
+first saved it.[personal-recipes] Access to a shared collection alone does
+not add its recipes to this list.
+
+[save-personal]: reaction:Recipes.SavePersonalRecipe
+[list-mine]: reaction:Recipes.ListMyRecipes
+[personal-recipes]: former:Recipes.PersonalRecipes
+
+```endpoints
+Recipes.SavePersonalRecipe at /recipes/save-personal
+Recipes.ListMyRecipes at /recipes/mine
+```
+
+## Opening a personal recipe
+
+A signed-in cook can open a recipe from their personal list without
+supplying a collection.[get-personal] Saving verifies that the recipe
+has been saved by the user identified by the session.
+
+The response includes the original recipe and its cooking history.[saved-details]
+An item absent from the user's personal list is refused. If the personal
+save exists but the recipe record is missing, the response contains a
+null recipe.
+
+[get-personal]: reaction:Recipes.GetPersonalRecipe
+[saved-details]: former:Recipes.SavedRecipeDetails
+
+```endpoints
+Recipes.GetPersonalRecipe at /recipes/get-personal
+```
+
+## Cooking entries for personal recipes
+
+A signed-in cook can record an attempt for a recipe in their personal
+saved list without choosing a collection.[add-personal-entry]
+The session determines the entry's author.
+
+To edit an attempt, the recipe must be personally saved, the entry must
+belong to that recipe, and the signed-in user must be its original
+author.[edit-personal-entry] Editing preserves the entry's identity,
+recipe association, author, and creation time.
+
+These endpoints use the same cooking history as the collection-based
+endpoints.
+
+[add-personal-entry]: reaction:Recipes.AddPersonalCookingEntry
+[edit-personal-entry]: reaction:Recipes.EditPersonalCookingEntry
+
+```endpoints
+Recipes.AddPersonalCookingEntry at /entries/add-personal
+Recipes.EditPersonalCookingEntry at /entries/edit-personal
+```
+
+## Personal recipes and collections
+
+Creating a new recipe through a collection also saves that recipe to
+the signed-in creator's personal list.[save-personal-membership]
+Other collection members do not receive a personal save merely
+because they can access the collection.
+
+A cook can add a personally saved recipe to a collection they can
+access.[personal-to-collection] The endpoint verifies personal recipe
+access and destination collection access before adding the recipe.
+
+The personal save remains available. The collection references the
+same recipe identifier, including its existing and future cooking
+history. An existing destination membership is refused.
+
+[save-personal-membership]: reaction:Recipes.SaveRecipe
+[personal-to-collection]: reaction:Recipes.AddPersonalRecipeToCollection
+
+```endpoints
+Recipes.AddPersonalRecipeToCollection at /recipes/add-personal-to-collection
+```

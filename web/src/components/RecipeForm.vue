@@ -3,7 +3,7 @@ import { nextTick, ref } from "vue";
 import { api, ApiError } from "../api";
 
 const props = defineProps<{
-  collection: string;
+  collection?: string;
 }>();
 
 const emit = defineEmits<{
@@ -60,7 +60,7 @@ async function removeRow(rows: RecipeRow[], index: number) {
   }
 }
 
-/** Save the original recipe in the selected collection. */
+/** Save a recipe personally or in the supplied collection. */
 async function save() {
   if (busy.value) return;
 
@@ -93,13 +93,19 @@ async function save() {
 
 
   try {
-    const response = await api.recipes.save({
-      collection: props.collection,
+    const input = {
       title: title.value.trim(),
       ingredients: ingredientList,
       instructions: instructionList,
       source: source.value.trim(),
-    });
+    };
+
+    const response = props.collection !== undefined
+      ? await api.recipes.save({
+          ...input,
+          collection: props.collection,
+        })
+      : await api["/recipes/save-personal"](input);
 
     if ("error" in response) {
       throw new ApiError(String(response.error));
@@ -116,8 +122,8 @@ async function save() {
       const messages: Record<string, string> = {
         INVALID_REQUEST: "Check that the recipe has a title and complete lists.",
         INVALID_INPUT: "Check the recipe fields.",
-        FORBIDDEN: "You no longer have access to this collection.",
-        NOT_FOUND: "This collection is no longer available.",
+        FORBIDDEN: "You do not have permission to save the recipe here.",
+        NOT_FOUND: "The selected destination is no longer available.",
       };
 
       error.value =
@@ -134,6 +140,9 @@ async function save() {
 <template>
   <form @submit.prevent="save">
     <h3>Add recipe</h3>
+    <p v-if="props.collection === undefined">
+      Save to My recipes. You can organize it into a collection later.
+    </p>
 
     <fieldset :disabled="busy">
       <label for="recipe-title">Title</label>

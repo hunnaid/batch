@@ -3,7 +3,7 @@ import { ref } from "vue";
 import { api, ApiError } from "../api";
 
 const props = defineProps<{
-  collection: string;
+  collection?: string;
   recipe: string;
   entry?: string;
   initialChanges?: string;
@@ -35,15 +35,33 @@ async function save() {
 
   try {
     const input = {
-      collection: props.collection,
       recipe: props.recipe,
       changes: changes.value,
       result: result.value,
     };
 
-    const response = props.entry
-      ? await api.entries.edit({ ...input, entry: props.entry })
-      : await api.entries.add(input);
+    // Choose access through a collection or through the personal saved list.
+    const response = props.collection !== undefined
+      ? (
+          props.entry
+            ? await api.entries.edit({
+                ...input,
+                collection: props.collection,
+                entry: props.entry,
+              })
+            : await api.entries.add({
+                ...input,
+                collection: props.collection,
+              })
+        )
+      : (
+          props.entry
+            ? await api["/entries/edit-personal"]({
+                ...input,
+                entry: props.entry,
+              })
+            : await api["/entries/add-personal"](input)
+        );
 
     if ("error" in response) {
       throw new ApiError(String(response.error));

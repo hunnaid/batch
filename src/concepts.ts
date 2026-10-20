@@ -66,6 +66,13 @@ import {
     SessioningConcept,
 } from "./concepts/Sessioning.ts";
 
+import savingSpec from "@design/concepts/Saving.md" with { type: "text" };
+
+import {
+    ItemNotSaved,
+    SavingConcept,
+} from "./concepts/Saving.ts";
+
 /**
  * Connect the implementation to its specification and declared refusal.
  */
@@ -153,6 +160,15 @@ const sessioning = registerConcept({
     },
 });
 
+/** Connect personal saving to its specification and declared refusal. */
+const saving = registerConcept({
+    class: SavingConcept,
+    spec: savingSpec,
+    refusals: {
+        ITEM_NOT_SAVED: ItemNotSaved,
+    },
+});
+
 /**
  * Declare the concepts available to the application.
  */
@@ -163,6 +179,7 @@ export const applicationConceptSet = conceptSet({
     CookingLog: cookingLog,
     Sharing: sharing,
     Sessioning: sessioning,
+    Saving: saving,
 });
 
 export const { concepts } = applicationConceptSet;

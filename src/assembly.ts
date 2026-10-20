@@ -6,6 +6,8 @@ import { CollectingConcept } from "./concepts/Collecting.ts";
 import { CookingLogConcept } from "./concepts/CookingLog.ts";
 import { SharingConcept } from "./concepts/Sharing.ts";
 import { SessioningConcept } from "./concepts/Sessioning.ts";
+import { SavingConcept } from "./concepts/Saving.ts";
+
 import { composition as collectionsComposition } from "./compositions/Collections.ts";
 import { composition as accountsComposition } from "./compositions/Accounts.ts";
 import { composition as recipesComposition } from "./compositions/Recipes.ts";
@@ -26,6 +28,7 @@ export function assembleApplication() {
       CookingLog: new CookingLogConcept(db),
       Sharing: new SharingConcept(db),
       Sessioning: new SessioningConcept(db),
+      Saving: new SavingConcept(db),
     },
 
     // Endpoints and reactions will be added here next.

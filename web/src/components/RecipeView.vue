@@ -11,9 +11,10 @@ type RecipeDetails = NonNullable<
 type CookingEntry = RecipeDetails["entries"][number];
 
 const props = defineProps<{
-  collection: string;
+  collection?: string;
   recipe: string;
   user: string;
+  backLabel?: string;
 }>();
 
 const emit = defineEmits<{
@@ -32,10 +33,14 @@ async function loadRecipe() {
   details.value = null;
 
   try {
-    const response = await api.recipes.get({
-      collection: props.collection,
-      recipe: props.recipe,
-    });
+    const response = props.collection !== undefined
+      ? await api.recipes.get({
+          collection: props.collection,
+          recipe: props.recipe,
+        })
+      : await api["/recipes/get-personal"]({
+          recipe: props.recipe,
+        });
 
     if ("error" in response) {
       throw new ApiError(String(response.error));
@@ -50,7 +55,7 @@ async function loadRecipe() {
 
     error.value =
       cause instanceof ApiError && cause.code === "FORBIDDEN"
-        ? "You no longer have access to this collection."
+        ? "You no longer have access to this recipe."
         : "Could not load the recipe. Please try again.";
   } finally {
     loading.value = false;
@@ -164,11 +169,17 @@ async function addToCollection() {
   addingToCollection.value = true;
 
   try {
-    const response = await api["/recipes/add-to-collection"]({
-      sourceCollection: props.collection,
-      destinationCollection: selected.collection,
-      recipe: props.recipe,
-    });
+    // Use the access path through which this recipe was opened.
+    const response = props.collection !== undefined
+      ? await api["/recipes/add-to-collection"]({
+          sourceCollection: props.collection,
+          destinationCollection: selected.collection,
+          recipe: props.recipe,
+        })
+      : await api["/recipes/add-personal-to-collection"]({
+          destinationCollection: selected.collection,
+          recipe: props.recipe,
+        });
 
     if ("error" in response) {
       throw new ApiError(String(response.error));
@@ -224,7 +235,7 @@ onMounted(loadDestinations);
 <template>
   <section>
     <button type="button" @click="emit('back')">
-      Back to collections
+      {{ props.backLabel ?? "Back to collections" }}
     </button>
 
     <p v-if="loading" role="status">Loading recipe…</p>
@@ -235,7 +246,7 @@ onMounted(loadDestinations);
     </div>
 
     <p v-else-if="!details">
-      This recipe is not available in this collection.
+      This recipe is no longer available.
     </p>
 
     <template v-else>
@@ -245,12 +256,12 @@ onMounted(loadDestinations);
       </p>
 
       <section aria-labelledby="add-to-collection-heading">
-        <h3 id="add-to-collection-heading">Add to another collection</h3>
+        <h3 id="add-to-collection-heading">Add to a collection</h3>
 
         <p id="collection-sharing-help">
           Members of the destination collection will see this recipe and
-          all existing and future cooking entries. The recipe will also
-          remain in its current collection.
+          all existing and future cooking entries. Adding it does not
+          remove it from My recipes or any existing collection.
         </p>
 
         <p v-if="loadingDestinations" role="status">
@@ -380,15 +391,16 @@ onMounted(loadDestinations);
 
         <p v-if="entry.result" class="recipe-text" dir="auto">
           <strong>Result:</strong> {{ entry.result }}
-          <button
-            v-if="entry.author === user && !showEntryForm"
-            type="button"
-            @click="editEntry(entry)"
-          >
-            Edit this entry
-          </button>
         </p>
         <p v-else>No result recorded yet.</p>
+
+        <button
+          v-if="entry.author === user && !showEntryForm"
+          type="button"
+          @click="editEntry(entry)"
+        >
+          Edit this entry
+        </button>
       </article>
     </template>
   </section>

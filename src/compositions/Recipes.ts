@@ -5,6 +5,7 @@ import {
 } from "@mit-sdg/sync-engine/boundary";
 import {
     each,
+    form,
     former,
     no,
     where,
@@ -19,6 +20,7 @@ const {
     RecipeRecording,
     Collecting,
     CookingLog,
+    Saving,
  } = concepts;
 
  /** Test membership using the supplied collection and recipe IDs. */
@@ -92,6 +94,7 @@ const SaveRecipe = endpoint(
                 source,
             }).responds({ recipe })
         )
+        .then(Saving.save({ user, item: recipe }))
         .then(Collecting.add({ collection, item: recipe }))
         .then(respond({ recipe })),
     {
@@ -393,6 +396,321 @@ const AddRecipeToCollection = endpoint(
     }
 );
 
+/**
+ * Create a recipe in the signed-in user's personal list.
+ * No collection or sharing permission is created.
+ */
+const SavePersonalRecipe = endpoint(
+    "/recipes/save-personal",
+    ({
+        session,
+        title,
+        ingredients,
+        instructions,
+        source,
+        user,
+        recipe,
+    }) =>
+        receive({
+            session,
+            title,
+            ingredients,
+            instructions,
+            source,
+        })
+            .then(Sessioning.resolve({ session }).responds({ user }))
+            .then(
+                RecipeRecording.record({
+                    title,
+                    ingredients,
+                    instructions,
+                    source,
+                }).responds({ recipe })
+            )
+            .then(Saving.save({ user, item: recipe }))
+            .then(respond({ recipe })),
+    {
+        input: {
+            required: [
+                "session",
+                "title",
+                "ingredients",
+                "instructions",
+            ],
+            defaults: {
+                source: "",
+            },
+        },
+        validators: {
+            input: (value: unknown) => {
+                if (!hasSessionInput(value)) {
+                    return { ok: false };
+                }
+
+                const isStringArray = (
+                    items: unknown
+                ): items is string[] =>
+                    Array.isArray(items) &&
+                    items.every((item) => typeof item === "string");
+
+                return {
+                    ok:
+                        typeof value.title === "string" &&
+                        isStringArray(value.ingredients) &&
+                        isStringArray(value.instructions) &&
+                        (
+                            value.source === undefined ||
+                            typeof value.source === "string"
+                        ),
+                };
+            },
+        },
+    }
+);
+
+/**
+ * Combine personal saves with recipe titles for the homepage.
+ * Merely receiving collection access does not create a personal save.
+ */
+const personalRecipes = former(
+    "the saved recipes of (user)",
+    ({ user }, { recipe, title, savedAt }) =>
+        form({
+            recipes: each(
+                Saving._forUser({ user }).is({
+                    item: recipe,
+                    savedAt,
+                })
+            )
+                .where(
+                    RecipeRecording._get({ recipe }).is({ title })
+                )
+                .form({
+                    recipe,
+                    title,
+                    savedAt,
+                }),
+        })
+);
+
+/** List personal recipes using the identity established by the session. */
+const ListMyRecipes = endpoint(
+    "/recipes/mine",
+    ({ session, user }) =>
+        receive({ session })
+            .then(Sessioning.resolve({ session }).responds({ user }))
+            .then(
+                respond({
+                    overview: personalRecipes({ user }),
+                })
+            ),
+    {
+        validators: {
+            input: (value: unknown) => ({
+                ok: hasSessionInput(value),
+            }),
+        },
+    }
+);
+
+/**
+ * Retrieve a personally saved recipe and its shared cooking history.
+ * Both the user and recipe are supplied inputs to this former.
+ */
+const savedRecipeDetails = former(
+    "the saved recipe (recipe) of (user)",
+    (
+        { user, recipe },
+        {
+            title,
+            ingredients,
+            instructions,
+            source,
+            entry,
+            author,
+            changes,
+            result,
+            createdAt,
+        }
+    ) =>
+        where(
+            Saving._forUser({ user }).is({ item: recipe }),
+            RecipeRecording._get({ recipe }).is({
+                title,
+                ingredients,
+                instructions,
+            }),
+            whether(
+                RecipeRecording._get({ recipe }).is({ source })
+            )
+        ).form({
+            recipe,
+            title,
+            ingredients,
+            instructions,
+            source,
+            entries: each(
+                CookingLog._forRecipe({ recipe }).is({
+                    _id: entry,
+                    author,
+                    changes,
+                    result,
+                    createdAt,
+                })
+            ).form({
+                entry,
+                author,
+                changes,
+                result,
+                createdAt,
+            }),
+        })
+).optional();
+
+/**
+ * Open a recipe from the signed-in user's personal list.
+ * Knowing a recipe identifier alone does not grant access.
+ */
+const GetPersonalRecipe = endpoint(
+    "/recipes/get-personal",
+    ({ session, recipe, user }) =>
+        receive({ session, recipe })
+            .then(Sessioning.resolve({ session }).responds({ user }))
+            .then(Saving.authorize({ user, item: recipe }))
+            .then(
+                respond({
+                    recipe: savedRecipeDetails({ user, recipe }),
+                })
+            ),
+    {
+        validators: {
+            input: (value: unknown) => ({
+                ok:
+                    hasSessionInput(value) &&
+                    typeof value.recipe === "string",
+            }),
+        },
+    }
+);
+
+/**
+ * Record an attempt for a personally saved recipe.
+ * The session determines the author.
+ */
+const AddPersonalCookingEntry = endpoint(
+    "/entries/add-personal",
+    ({ session, recipe, changes, result, user, entry }) =>
+        receive({ session, recipe, changes, result })
+            .then(Sessioning.resolve({ session }).responds({ user }))
+            .then(Saving.authorize({ user, item: recipe }))
+            .then(
+                CookingLog.record({
+                    author: user,
+                    recipe,
+                    changes,
+                    result,
+                }).responds({ entry })
+            )
+            .then(respond({ entry })),
+    {
+        validators: {
+            input: (value: unknown) => ({
+                ok:
+                    hasSessionInput(value) &&
+                    typeof value.recipe === "string" &&
+                    typeof value.changes === "string" &&
+                    typeof value.result === "string",
+            }),
+        },
+    }
+);
+
+/**
+ * Edit an attempt through personal recipe access.
+ * The entry must belong to the requested recipe, and CookingLog
+ * still requires the signed-in user to be its original author.
+ */
+const EditPersonalCookingEntry = endpoint(
+    "/entries/edit-personal",
+    ({ session, recipe, entry, changes, result, user }) =>
+        receive({ session, recipe, entry, changes, result })
+            .then(Sessioning.resolve({ session }).responds({ user }))
+            .then(Saving.authorize({ user, item: recipe }))
+            .then(
+                where(entryInRecipe({ entry, recipe }))
+                    .then(
+                        CookingLog.edit({
+                            author: user,
+                            entry,
+                            changes,
+                            result,
+                        })
+                    )
+                    .then(respond({ entry }))
+                    .named("entry-in-personal-recipe"),
+
+                where(no(entryInRecipe({ entry, recipe })))
+                    .then(respond({ error: "ENTRY_NOT_IN_RECIPE" }))
+                    .named("entry-not-in-personal-recipe")
+            ),
+    {
+        validators: {
+            input: (value: unknown) => ({
+                ok:
+                    hasSessionInput(value) &&
+                    typeof value.recipe === "string" &&
+                    typeof value.entry === "string" &&
+                    typeof value.changes === "string" &&
+                    typeof value.result === "string",
+            }),
+        },
+    }
+);
+
+/**
+ * Add a personally saved recipe to an accessible collection.
+ * Keep the personal save and reuse the same recipe and cooking history.
+ */
+const AddPersonalRecipeToCollection = endpoint(
+    "/recipes/add-personal-to-collection",
+    ({ session, destinationCollection, recipe, user }) =>
+        receive({
+            session,
+            destinationCollection,
+            recipe,
+        })
+            .then(Sessioning.resolve({ session }).responds({ user }))
+            .then(Saving.authorize({ user, item: recipe }))
+            .then(
+                Sharing.authorize({
+                    user,
+                    resource: destinationCollection,
+                })
+            )
+            .then(
+                Collecting.add({
+                    collection: destinationCollection,
+                    item: recipe,
+                })
+            )
+            .then(
+                respond({
+                    recipe,
+                    collection: destinationCollection,
+                })
+            ),
+    {
+        validators: {
+            input: (value: unknown) => ({
+                ok:
+                    hasSessionInput(value) &&
+                    typeof value.destinationCollection === "string" &&
+                    typeof value.recipe === "string",
+            }),
+        },
+    }
+);
+
 export const composition = {
     SaveRecipe,
     GetRecipe,
@@ -402,4 +720,12 @@ export const composition = {
     AddCookingEntry,
     EditCookingEntry,
     AddRecipeToCollection,
+    SavePersonalRecipe,
+    ListMyRecipes,
+    PersonalRecipes: personalRecipes,
+    GetPersonalRecipe,
+    SavedRecipeDetails: savedRecipeDetails,
+    AddPersonalCookingEntry,
+    EditPersonalCookingEntry,
+    AddPersonalRecipeToCollection,
 };
