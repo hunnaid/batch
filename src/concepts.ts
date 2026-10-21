@@ -76,6 +76,19 @@ import {
     SavingConcept,
 } from "./concepts/Saving.ts";
 
+import profilingSpec from "@design/concepts/Profiling.md" with { type: "text" };
+import { ProfilingConcept, InvalidProfile, ProfileAlreadyExists, ProfileNotFound } from "./concepts/Profiling.ts";
+
+const profiling = registerConcept({
+    class: ProfilingConcept,
+    spec: profilingSpec,
+    refusals: {
+        INVALID_PROFILE: InvalidProfile,
+        PROFILE_ALREADY_EXISTS: ProfileAlreadyExists,
+        PROFILE_NOT_FOUND: ProfileNotFound,
+    },
+});
+
 /**
  * Connect the implementation to its specification and declared refusal.
  */
@@ -179,6 +192,7 @@ const saving = registerConcept({
  * Declare the concepts available to the application.
  */
 export const applicationConceptSet = conceptSet({
+    Profiling: profiling,
     RecipeRecording: recipeRecording,
     PasswordAuthenticating: passwordAuthenticating,
     Collecting: collecting,

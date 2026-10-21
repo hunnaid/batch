@@ -1,3 +1,4 @@
+import { ProfilingConcept } from "../src/concepts/Profiling.ts";
 import { expect, test } from "bun:test";
 import { testDatabase } from "./helpers/database.ts";
 import { assemble } from "@mit-sdg/sync-engine/assembly";
@@ -56,6 +57,7 @@ const CreateCollection = endpoint(
 const app = assemble({
   conceptSet: applicationConceptSet,
   instances: {
+    Profiling: new ProfilingConcept(db),
     RecipeRecording: recipes,
     PasswordAuthenticating: new PasswordAuthenticatingConcept(db),
     Collecting: collecting,

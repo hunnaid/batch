@@ -173,6 +173,71 @@ export type BatchWire = {
     };
     error: { error: AppWideError | "ACCESS_DENIED" | "COOKING_ENTRY_NOT_FOUND" | "COOKING_ENTRY_NOT_OWNED" | "ENTRY_NOT_IN_RECIPE" | "INVALID_COOKING_ENTRY_EDIT" | "INVALID_INPUT" | "INVALID_SESSION" };
   };
+  "/profiles/get": {
+    input: {
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+      "user": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>[0], ["user"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>[0], ["user"]>]>>;
+    };
+    output: {
+      "identity": {
+        "profile": {
+          "bio": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["bio"]>> | null;
+          "displayName": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["displayName"]>> | null;
+          "picture": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["picture"]>> | null;
+        };
+        "user": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>[0], ["user"]>>;
+        "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>>>, ["username"]>>;
+      } | null;
+    };
+    error: { error: AppWideError | "INVALID_INPUT" | "INVALID_SESSION" };
+  };
+  "/profiles/me": {
+    input: {
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+    };
+    output: {
+      "identity": {
+        "profile": {
+          "bio": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["bio"]>> | null;
+          "displayName": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["displayName"]>> | null;
+          "picture": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["picture"]>> | null;
+        };
+        "user": Jsonify<AllOf<[AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>>, ["user"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>[0], ["user"]>]>>;
+        "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>>>, ["username"]>>;
+      } | null;
+    };
+    error: { error: AppWideError | "INVALID_INPUT" | "INVALID_SESSION" };
+  };
+  "/profiles/save": {
+    input: {
+      "bio": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["create"]>[0], ["bio"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["update"]>[0], ["bio"]>]>>;
+      "displayName": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["create"]>[0], ["displayName"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["update"]>[0], ["displayName"]>]>>;
+      "picture": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["create"]>[0], ["picture"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["update"]>[0], ["picture"]>]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+    };
+    output: {
+      "identity": {
+        "profile": {
+          "bio": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["bio"]>> | null;
+          "displayName": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["displayName"]>> | null;
+          "picture": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["picture"]>> | null;
+        };
+        "user": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["create"]>[0], ["user"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>[0], ["user"]>]>>;
+        "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>>>, ["username"]>>;
+      } | null;
+    } | {
+      "identity": {
+        "profile": {
+          "bio": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["bio"]>> | null;
+          "displayName": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["displayName"]>> | null;
+          "picture": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["picture"]>> | null;
+        };
+        "user": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["update"]>[0], ["user"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>[0], ["user"]>]>>;
+        "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>>>, ["username"]>>;
+      } | null;
+    };
+    error: { error: AppWideError | "INVALID_INPUT" | "INVALID_PROFILE" | "INVALID_SESSION" | "PROFILE_ALREADY_EXISTS" | "PROFILE_NOT_FOUND" };
+  };
   "/recipes/add-personal-to-collection": {
     input: {
       "destinationCollection": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["collection"]>]>>;
@@ -582,6 +647,67 @@ export type BatchWireHttp = {
       "entry": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["CookingLog"]["edit"]>[0], ["entry"]>>;
     };
     error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/profiles/get": {
+    input: {
+      "user": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>[0], ["user"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>[0], ["user"]>]>>;
+    };
+    output: {
+      "identity": {
+        "profile": {
+          "bio": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["bio"]>> | null;
+          "displayName": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["displayName"]>> | null;
+          "picture": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["picture"]>> | null;
+        };
+        "user": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>[0], ["user"]>>;
+        "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>>>, ["username"]>>;
+      } | null;
+    };
+    error: { error: HttpAppWideError | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
+  "/profiles/me": {
+    input: Record<string, never>;
+    output: {
+      "identity": {
+        "profile": {
+          "bio": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["bio"]>> | null;
+          "displayName": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["displayName"]>> | null;
+          "picture": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["picture"]>> | null;
+        };
+        "user": Jsonify<AllOf<[AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>>, ["user"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>[0], ["user"]>]>>;
+        "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>>>, ["username"]>>;
+      } | null;
+    };
+    error: { error: HttpAppWideError | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
+  "/profiles/save": {
+    input: {
+      "bio": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["create"]>[0], ["bio"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["update"]>[0], ["bio"]>]>>;
+      "displayName": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["create"]>[0], ["displayName"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["update"]>[0], ["displayName"]>]>>;
+      "picture": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["create"]>[0], ["picture"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["update"]>[0], ["picture"]>]>>;
+    };
+    output: {
+      "identity": {
+        "profile": {
+          "bio": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["bio"]>> | null;
+          "displayName": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["displayName"]>> | null;
+          "picture": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["picture"]>> | null;
+        };
+        "user": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["create"]>[0], ["user"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>[0], ["user"]>]>>;
+        "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>>>, ["username"]>>;
+      } | null;
+    } | {
+      "identity": {
+        "profile": {
+          "bio": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["bio"]>> | null;
+          "displayName": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["displayName"]>> | null;
+          "picture": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Profiling"]["_get"]>>>, ["picture"]>> | null;
+        };
+        "user": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Profiling"]["update"]>[0], ["user"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>[0], ["user"]>]>>;
+        "username": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["PasswordAuthenticating"]["_byUser"]>>>, ["username"]>>;
+      } | null;
+    };
+    error: { error: HttpAppWideError | "CONFLICT" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/recipes/add-personal-to-collection": {
     input: {

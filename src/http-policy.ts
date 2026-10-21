@@ -24,6 +24,9 @@ export const policy = httpPolicy({
     },
 
     publicErrors: {
+        INVALID_PROFILE: "INVALID_REQUEST",
+        PROFILE_ALREADY_EXISTS: "CONFLICT",
+        PROFILE_NOT_FOUND: "NOT_FOUND",
         INVALID_REGISTRATION: "INVALID_REQUEST",
         USERNAME_TAKEN: "CONFLICT",
         INVALID_CREDENTIALS: "UNAUTHORIZED",

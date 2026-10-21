@@ -60,4 +60,7 @@ _byUsername(username: String) : optional (user: User)
   Return the identifier of the user with the exact given username.
   Return no rows when the username is not registered.
   Do not return credential information.
+_byUser(user: User) : optional (username: String)
+  Return only the registered username for this user identifier, or no rows if unknown.
+  Do not return credential information.
 ```

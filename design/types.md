@@ -5,12 +5,15 @@ recipe identities. Saving maintains each user's personal recipe list.
 Collecting organizes recipes into collections, Sharing controls collection
 access. A separate Sharing instance, RecipeSharing, controls direct recipe
 access. CookingLog records cooking attempts, and Sessioning identifies
-signed-in users.
+signed-in users. Profiling maintains display names, bios, and pictures independently of credentials.
 
 ```instances
 instantiate RecipeRecording
 
 instantiate PasswordAuthenticating
+
+instantiate Profiling with
+    User is PasswordAuthenticating.User
 
 instantiate Saving with
     User is PasswordAuthenticating.User

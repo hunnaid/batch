@@ -5,6 +5,7 @@ import type { BatchWireHttp } from "../../../generated/wire";
 import CookingEntryForm from "./CookingEntryForm.vue";
 import SharingForm from "./SharingForm.vue";
 import RoleBadge from "./RoleBadge.vue";
+import UserAvatar from "./UserAvatar.vue";
 
 type RecipeDetails = NonNullable<
   BatchWireHttp["/recipes/get"]["output"]["recipe"]
@@ -27,6 +28,42 @@ const emit = defineEmits<{
 
 const details = ref<RecipeDetails | null>(null);
 const loading = ref(true);
+type Contributor = NonNullable<BatchWireHttp["/profiles/get"]["output"]["identity"]>;
+const contributors = ref<Record<string, Contributor>>({});
+const loadingContributors = ref(false);
+const contributorError = ref(false);
+
+function contributorName(author: string) {
+  const identity = contributors.value[author];
+  return identity?.profile?.displayName ?? identity?.username ?? (author === props.user ? "You" : "Contributor");
+}
+
+function attemptLabel(author: string) {
+  return contributors.value[author]
+    ? `${contributorName(author)}’s attempt`
+    : author === props.user ? "Your attempt" : "Cooking attempt";
+}
+
+/** Resolve each author once per load, so old attempts use their current presentation. */
+async function loadContributors() {
+  if (!details.value || loadingContributors.value) return;
+  loadingContributors.value = true;
+  contributorError.value = false;
+  const authors = [...new Set(details.value.entries.map((entry) => entry.author))];
+  const outcomes = await Promise.allSettled(authors.map(async (author) => {
+    const response = await api["/profiles/get"]({ user: author });
+    if ("error" in response) throw new ApiError(String(response.error));
+    if (response.identity) contributors.value[author] = response.identity;
+  }));
+  for (const outcome of outcomes) {
+    if (outcome.status === "rejected") {
+      contributorError.value = true;
+      if (outcome.reason instanceof ApiError && outcome.reason.code === "UNAUTHORIZED") emit("sessionExpired");
+    }
+  }
+  loadingContributors.value = false;
+}
+
 const error = ref("");
 const canManageSharing = ref(false);
 const currentCollection = ref<CollectionSummary | null>(null);
@@ -98,6 +135,8 @@ async function loadRecipe() {
     if ("error" in sharing) throw new ApiError(String(sharing.error));
     canManageSharing.value = sharing.canManage;
     details.value = response.recipe;
+    contributors.value = {};
+    void loadContributors();
   } catch (cause) {
     if (cause instanceof ApiError && cause.code === "UNAUTHORIZED") {
       emit("sessionExpired");
@@ -412,6 +451,10 @@ onMounted(loadDestinations);
       </ol>
 
       <h3>Cooking history</h3>
+      <p v-if="contributorError" role="status">
+        Some contributor profiles could not be loaded.
+        <button type="button" :disabled="loadingContributors" @click="loadContributors">Retry profiles</button>
+      </p>
 
       <button
         v-if="!showEntryForm"
@@ -443,9 +486,13 @@ onMounted(loadDestinations);
         v-for="entry in details.entries"
         :key="entry.entry"
       >
-        <h4>
-          {{ entry.author === user ? "Your attempt" : "Shared attempt" }}
-        </h4>
+        <div class="attempt-author">
+          <UserAvatar :name="contributorName(entry.author)" :picture="contributors[entry.author]?.profile?.picture" />
+          <div>
+            <h4 dir="auto">{{ attemptLabel(entry.author) }}<span v-if="contributors[entry.author] && entry.author === user"> (you)</span></h4>
+            <p v-if="contributors[entry.author]" class="author-username" dir="auto">@{{ contributors[entry.author]!.username }}</p>
+          </div>
+        </div>
 
         <time :datetime="entry.createdAt">
           {{ formatDate(entry.createdAt) }}
@@ -497,6 +544,10 @@ onMounted(loadDestinations);
 </template>
 
 <style scoped>
+.attempt-author { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.attempt-author > div { min-width: 0; }
+.attempt-author h4 { margin: 0; }
+.author-username { color: var(--muted); font-size: 0.85rem; margin: 0; }
 .delete-recipe {
   color: var(--error);
   border-color: var(--error);

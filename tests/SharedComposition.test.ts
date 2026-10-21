@@ -1,3 +1,4 @@
+import { ProfilingConcept } from "../src/concepts/Profiling.ts";
 import { expect, test } from "bun:test";
 import type { Document } from "mongodb";
 import { testDatabase } from "./helpers/database.ts";
@@ -27,6 +28,7 @@ const recipeSharing = new SharingConcept(db, "recipeSharing.resources");
 const app = assemble({
   conceptSet: applicationConceptSet,
   instances: {
+    Profiling: new ProfilingConcept(db),
     PasswordAuthenticating: new PasswordAuthenticatingConcept(db),
     Sessioning: sessions,
     RecipeRecording: recording,

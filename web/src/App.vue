@@ -7,13 +7,14 @@ import RecipeView from "./components/RecipeView.vue";
 
 import AllRecipesView from "./components/AllRecipesView.vue";
 import SharedView from "./components/SharedView.vue";
+import ProfileView from "./components/ProfileView.vue";
 
 /** Remember which overview to return to after viewing a recipe. */
 const overview = ref<"recipes" | "collections" | "shared">("recipes");
 
 const user = ref<string | null>(null);
 const checkingSession = ref(true);
-const signingOut = ref(false);
+const showingProfile = ref(false);
 const error = ref("");
 
 /** Restore an existing login when the page loads or refreshes. */
@@ -38,26 +39,6 @@ onMounted(async () => {
 function authenticated(userId: string) {
   user.value = userId;
   error.value = "";
-}
-
-/** End the server session before returning to the login form. */
-async function logout() {
-  signingOut.value = true;
-  error.value = "";
-
-  try {
-    const response = await api.sessions.end({});
-
-    if ("error" in response) {
-      throw new ApiError(String(response.error));
-    }
-
-    clearSession();
-  } catch {
-    error.value = "Could not sign out. Please try again.";
-  } finally {
-    signingOut.value = false;
-  }
 }
 
 /** Identify the recipe screen currently open, if any. */
@@ -86,6 +67,7 @@ function openSharedRecipe(recipe: string) {
 /** Clear navigation and user state when authentication ends. */
 function clearSession() {
   selectedRecipe.value = null;
+  showingProfile.value = false;
   user.value = null;
   overview.value = "recipes";
 }
@@ -106,11 +88,12 @@ function clearSession() {
       <button
         v-if="user"
         type="button"
-        class="sign-out"
-        :disabled="signingOut"
-        @click="logout"
+        class="profile-link"
+        :aria-pressed="showingProfile"
+        :disabled="showingProfile"
+        @click="showingProfile = true"
       >
-        {{ signingOut ? "Signing out…" : "Sign out" }}
+        Profile
       </button>
     </header>
 
@@ -125,8 +108,14 @@ function clearSession() {
     </section>
 
     <section v-else class="workspace">
+      <ProfileView
+        v-if="showingProfile"
+        @back="showingProfile = false"
+        @signed-out="clearSession"
+        @session-expired="clearSession"
+      />
       <RecipeView
-        v-if="selectedRecipe"
+        v-else-if="selectedRecipe"
         :key="(selectedRecipe.collection ?? (selectedRecipe.directShared ? 'shared' : 'personal')) + ':' + selectedRecipe.recipe"
         :collection="selectedRecipe.collection ?? undefined"
         :recipe="selectedRecipe.recipe"
@@ -193,6 +182,7 @@ function clearSession() {
 </template>
 
 <style scoped>
+.profile-link { flex-shrink: 0; }
 nav[aria-label="Recipe organization"] {
   display: flex;
   flex-wrap: wrap;

@@ -12,6 +12,8 @@ import { composition as collectionsComposition } from "./compositions/Collection
 import { composition as accountsComposition } from "./compositions/Accounts.ts";
 import { composition as recipesComposition } from "./compositions/Recipes.ts";
 import { composition as sharedComposition } from "./compositions/Shared.ts";
+import { ProfilingConcept } from "./concepts/Profiling.ts";
+import { composition as profilesComposition } from "./compositions/Profiles.ts";
 import { db } from "./db.ts";
 
 /**
@@ -23,6 +25,7 @@ export function assembleApplication() {
 
     // Supply the database required by RecipeRecording's constructor.
     instances: {
+      Profiling: new ProfilingConcept(db),
       RecipeRecording: new RecipeRecordingConcept(db),
       PasswordAuthenticating: new PasswordAuthenticatingConcept(db),
       Collecting: new CollectingConcept(db),
@@ -37,6 +40,7 @@ export function assembleApplication() {
     composition: {
       Collections: collectionsComposition,
       Accounts: accountsComposition,
+      Profiles: profilesComposition,
       Recipes: recipesComposition,
       Shared: sharedComposition,
     },

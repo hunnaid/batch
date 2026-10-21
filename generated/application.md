@@ -36,9 +36,9 @@ Defined in [Collecting](../design/concepts/Collecting.md), line 1.
 
 #### Instances
 
-- `Collecting` — instance of `Collecting` — [Application types](../design/types.md), line 19.
-  - `Item` is `RecipeRecording.Recipe` — [Application types](../design/types.md), line 21.
-  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 20.
+- `Collecting` — instance of `Collecting` — [Application types](../design/types.md), line 22.
+  - `Item` is `RecipeRecording.Recipe` — [Application types](../design/types.md), line 24.
+  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 23.
 
 ### CookingLog
 
@@ -61,9 +61,9 @@ Defined in [CookingLog](../design/concepts/CookingLog.md), line 1.
 
 #### Instances
 
-- `CookingLog` — instance of `CookingLog` — [Application types](../design/types.md), line 23.
-  - `Recipe` is `RecipeRecording.Recipe` — [Application types](../design/types.md), line 25.
-  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 24.
+- `CookingLog` — instance of `CookingLog` — [Application types](../design/types.md), line 26.
+  - `Recipe` is `RecipeRecording.Recipe` — [Application types](../design/types.md), line 28.
+  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 27.
 
 ### PasswordAuthenticating
 
@@ -80,10 +80,33 @@ Defined in [PasswordAuthenticating](../design/concepts/PasswordAuthenticating.md
 #### Queries
 
 - `_byUsername(username: String) : optional (user: User)`
+- `_byUser(user: User) : optional (username: String)`
 
 #### Instances
 
 - `PasswordAuthenticating` — instance of `PasswordAuthenticating` — [Application types](../design/types.md), line 13.
+
+### Profiling
+
+Defined in [Profiling](../design/concepts/Profiling.md), line 1.
+
+#### Actions
+
+- `create(user: User, displayName: String, bio: String, picture: String) : returns ()`
+  - Refuses `INVALID_PROFILE`: The profile details are invalid.
+  - Refuses `PROFILE_ALREADY_EXISTS`: The user already has a profile.
+- `update(user: User, displayName: String, bio: String, picture: String) : returns ()`
+  - Refuses `INVALID_PROFILE`: The profile details are invalid.
+  - Refuses `PROFILE_NOT_FOUND`: The profile does not exist.
+
+#### Queries
+
+- `_get(user: User) : optional (displayName: String, bio: String, picture: String)`
+
+#### Instances
+
+- `Profiling` — instance of `Profiling` — [Application types](../design/types.md), line 15.
+  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 16.
 
 ### RecipeRecording
 
@@ -121,9 +144,9 @@ Defined in [Saving](../design/concepts/Saving.md), line 1.
 
 #### Instances
 
-- `Saving` — instance of `Saving` — [Application types](../design/types.md), line 15.
-  - `Item` is `RecipeRecording.Recipe` — [Application types](../design/types.md), line 17.
-  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 16.
+- `Saving` — instance of `Saving` — [Application types](../design/types.md), line 18.
+  - `Item` is `RecipeRecording.Recipe` — [Application types](../design/types.md), line 20.
+  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 19.
 
 ### Sessioning
 
@@ -138,8 +161,8 @@ Defined in [Sessioning](../design/concepts/Sessioning.md), line 1.
 
 #### Instances
 
-- `Sessioning` — instance of `Sessioning` — [Application types](../design/types.md), line 35.
-  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 36.
+- `Sessioning` — instance of `Sessioning` — [Application types](../design/types.md), line 38.
+  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 39.
 
 ### Sharing
 
@@ -174,12 +197,12 @@ Defined in [Sharing](../design/concepts/Sharing.md), line 1.
 
 #### Instances
 
-- `RecipeSharing` — instance of `Sharing` — [Application types](../design/types.md), line 31.
-  - `Resource` is `RecipeRecording.Recipe` — [Application types](../design/types.md), line 33.
-  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 32.
-- `Sharing` — instance of `Sharing` — [Application types](../design/types.md), line 27.
-  - `Resource` is `Collecting.Collection` — [Application types](../design/types.md), line 29.
-  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 28.
+- `RecipeSharing` — instance of `Sharing` — [Application types](../design/types.md), line 34.
+  - `Resource` is `RecipeRecording.Recipe` — [Application types](../design/types.md), line 36.
+  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 35.
+- `Sharing` — instance of `Sharing` — [Application types](../design/types.md), line 30.
+  - `Resource` is `Collecting.Collection` — [Application types](../design/types.md), line 32.
+  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 31.
 
 ## Views
 
@@ -277,6 +300,34 @@ Former "the directly shared recipe (recipe) accessible to (user)" — inputs (us
     recipe
     source
     title
+```
+
+### the profile of (user)
+
+Authored path: `Profiles.ProfileDetails`.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 11.
+
+```former
+Former "the profile of (user)" — inputs (user); bindings (displayName, bio, picture); promises at most one record — forms:
+  a record of
+    where Profiling._get (user) has (bio, displayName, picture)
+    bio
+    displayName
+    picture
+```
+
+### the presentation of (user)
+
+Authored path: `Profiles.Identity`.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 10.
+
+```former
+Former "the presentation of (user)" — inputs (user); bindings (username); promises at most one record — forms:
+  a record of
+    where PasswordAuthenticating._byUser (user) has (username)
+    profile: whether former "the profile of (user)" with (user)
+    user
+    username
 ```
 
 ### the recipe (recipe) in collection (collection)
@@ -844,6 +895,128 @@ where
   earlier, RequestBoundary.request (requestId)
 then
   RequestBoundary.respond (error: message, requestId)
+```
+
+### Profiles.GetMyProfile
+
+Authored path: `Profiles.GetMyProfile`.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 8.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 48.
+
+```reaction
+when RequestBoundary.request (path: "/profiles/me", requestId, session)
+then
+  Sessioning.resolve (session)
+```
+
+### Profiles.GetMyProfile#2
+
+Authored path: `Profiles.GetMyProfile`.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 8.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 48.
+
+```reaction
+when Sessioning.resolve (session, user), asked by Profiles.GetMyProfile
+where
+  earlier, RequestBoundary.request (path: "/profiles/me", requestId, session)
+then
+  RequestBoundary.respond (identity: former "the presentation of (user)" with (user), requestId)
+```
+
+### Profiles.GetProfile
+
+Authored path: `Profiles.GetProfile`.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 9.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 49.
+
+```reaction
+when RequestBoundary.request (path: "/profiles/get", requestId, session, user)
+then
+  Sessioning.resolve (session)
+```
+
+### Profiles.GetProfile#2
+
+Authored path: `Profiles.GetProfile`.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 9.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 49.
+
+```reaction
+when Sessioning.resolve (session, user: viewer), asked by Profiles.GetProfile
+where
+  earlier, RequestBoundary.request (path: "/profiles/get", requestId, session, user)
+then
+  RequestBoundary.respond (identity: former "the presentation of (user)" with (user), requestId)
+```
+
+### Profiles.SaveMyProfile
+
+Authored path: `Profiles.SaveMyProfile`.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 16.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 50.
+
+```reaction
+when RequestBoundary.request (bio, displayName, path: "/profiles/save", picture, requestId, session)
+then
+  Sessioning.resolve (session)
+```
+
+### Profiles.SaveMyProfile:create-profile#2
+
+Authored path: `Profiles.SaveMyProfile`.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 16.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 50.
+
+```reaction
+when Sessioning.resolve (session, user), asked by Profiles.SaveMyProfile
+where
+  no Profiling._get (user)
+  earlier, RequestBoundary.request (bio, displayName, path: "/profiles/save", picture, requestId, session)
+then
+  Profiling.create (bio, displayName, picture, user)
+```
+
+### Profiles.SaveMyProfile:create-profile#3
+
+Authored path: `Profiles.SaveMyProfile`.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 16.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 50.
+
+```reaction
+when Profiling.create (bio, displayName, picture, user), asked by Profiles.SaveMyProfile:create-profile#2
+where
+  earlier, RequestBoundary.request (bio, displayName, path: "/profiles/save", picture, requestId, session)
+then
+  RequestBoundary.respond (identity: former "the presentation of (user)" with (user), requestId)
+```
+
+### Profiles.SaveMyProfile:update-profile#2
+
+Authored path: `Profiles.SaveMyProfile`.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 16.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 50.
+
+```reaction
+when Sessioning.resolve (session, user), asked by Profiles.SaveMyProfile
+where
+  Profiling._get (user)
+  earlier, RequestBoundary.request (bio, displayName, path: "/profiles/save", picture, requestId, session)
+then
+  Profiling.update (bio, displayName, picture, user)
+```
+
+### Profiles.SaveMyProfile:update-profile#3
+
+Authored path: `Profiles.SaveMyProfile`.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 16.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 50.
+
+```reaction
+when Profiling.update (bio, displayName, picture, user), asked by Profiles.SaveMyProfile:update-profile#2
+where
+  earlier, RequestBoundary.request (bio, displayName, path: "/profiles/save", picture, requestId, session)
+then
+  RequestBoundary.respond (identity: former "the presentation of (user)" with (user), requestId)
 ```
 
 ### Recipes.AddCookingEntry
@@ -2292,6 +2465,9 @@ not listed here have no explicit input contract.
 - `/entries/edit` — requires `changes`, `collection`, `entry`, `recipe`, `result`, `session`
 - `/entries/edit-personal` — requires `changes`, `entry`, `recipe`, `result`, `session`
 - `/entries/edit-shared` — requires `changes`, `entry`, `recipe`, `result`, `session`
+- `/profiles/get` — requires `session`, `user`
+- `/profiles/me` — requires `session`
+- `/profiles/save` — requires `bio`, `displayName`, `picture`, `session`
 - `/recipes/add-personal-to-collection` — requires `destinationCollection`, `recipe`, `session`
 - `/recipes/add-to-collection` — requires `destinationCollection`, `recipe`, `session`, `sourceCollection`
 - `/recipes/delete` — requires `recipe`, `session`

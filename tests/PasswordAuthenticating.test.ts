@@ -19,6 +19,8 @@ test("registration and exact username lookup keep users and credentials distinct
   expect(await accounts.authenticate({ username: "Alice", password: "alice-password" })).toEqual(alice);
   expect(await accounts.authenticate({ username: "Bob", password: "bob-password" })).toEqual(bob);
   expect(await accounts._byUsername({ username: "Alice" })).toEqual([alice]);
+  expect(await accounts._byUser(alice)).toEqual([{ username: "Alice" }]);
+  expect(await accounts._byUser({ user: "missing" })).toEqual([]);
   for (const username of ["alice", " Alice ", "missing"]) {
     expect(await accounts._byUsername({ username })).toEqual([]);
   }

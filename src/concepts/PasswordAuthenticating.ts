@@ -134,4 +134,10 @@ export class PasswordAuthenticatingConcept {
 
         return document ? [{ user: document._id }] : [];
     }
+    /** Look up the public login name without returning password information. */
+    async _byUser({ user }: { user: string }): Promise<{ username: string }[]> {
+        const document = await this.users.findOne({ _id: user }, { projection: { username: 1 } });
+        return document ? [{ username: document.username }] : [];
+    }
+
 }
