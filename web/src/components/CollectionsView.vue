@@ -501,7 +501,8 @@ onMounted(loadCollections);
   border-color: var(--green);
 }
 .create-collection-button:hover:not(:disabled),
-.create-controls button[type="submit"]:hover:not(:disabled) {
+.create-controls button[type="submit"]:hover:not(:disabled),
+.rename-actions button[type="submit"]:hover:not(:disabled) {
   color: var(--green-ink);
   background: var(--green-soft);
   border-color: var(--green);

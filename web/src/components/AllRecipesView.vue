@@ -166,13 +166,16 @@ onMounted(loadRecipes);
           No recipes match your search.
         </p>
 
-        <ul v-else>
+        <ul v-else class="recipe-list" role="list">
           <li v-for="recipe in matchingRecipes" :key="recipe.recipe">
             <button
               type="button"
               @click="emit('openRecipe', recipe.recipe)"
             >
               <span dir="auto">{{ recipe.title }}</span>
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m9 6 6 6-6 6" />
+              </svg>
             </button>
           </li>
         </ul>
@@ -220,6 +223,32 @@ onMounted(loadRecipes);
   justify-self: end;
   grid-column: 1 / -1;
 }
+.recipe-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.recipe-list li { margin: 0; padding: 0; }
+.recipe-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 14px 16px;
+  text-align: start;
+  background: transparent;
+  border-color: transparent;
+}
+.recipe-list button:hover:not(:disabled),
+.recipe-list button:focus-visible {
+  background: var(--green-soft);
+  border-color: var(--green);
+}
+.recipe-list button > span { min-width: 0; overflow-wrap: anywhere; }
+.recipe-list svg { width: 18px; height: 18px; flex-shrink: 0; }
 @media (max-width: 600px) {
   .recipes-toolbar { grid-template-columns: minmax(0, 1fr); }
   .refresh-recipes { justify-self: start; }

@@ -3,7 +3,7 @@ defineProps<{ owner: boolean }>();
 </script>
 
 <template>
-  <span class="role-badge" :class="{ 'role-badge-owner': owner }">
+  <span class="role-badge">
     <span aria-hidden="true">{{ owner ? "♛" : "👤" }}</span>
     {{ owner ? "Owner" : "Member" }}
   </span>
@@ -16,16 +16,12 @@ defineProps<{ owner: boolean }>();
   gap: 0.35rem;
   padding: 0.2rem 0.65rem;
   border-radius: 999px;
-  background: var(--green-soft);
+  background: var(--surface);
   color: var(--green-ink);
   font-family: system-ui, sans-serif;
   font-size: 0.8rem;
   font-weight: 650;
   line-height: 1.5;
   white-space: nowrap;
-}
-.role-badge-owner {
-  background: #f2e6ca;
-  color: #674816;
 }
 </style>

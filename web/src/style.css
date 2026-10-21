@@ -6,7 +6,7 @@
   --surface: var(--page);
   --text: #292f29;
   --muted: #62695f;
-  --border: #d8dcd1;
+  --border: var(--input-border);
   --input-border: #8a8e75;
 
   --green: #8a8e75;
