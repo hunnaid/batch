@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { api, ApiError } from "../api";
 import type { BatchWireHttp } from "../../../generated/wire";
 import RecipeForm from "./RecipeForm.vue";
+import RefreshButton from "./RefreshButton.vue";
 
 type RecipeSummary =
   BatchWireHttp["/recipes/mine"]["output"]["overview"]["recipes"][number];
@@ -99,16 +100,19 @@ onMounted(loadRecipes);
 
 <template>
   <section aria-labelledby="my-recipes-heading">
-    <h2 id="my-recipes-heading">My recipes</h2>
-
-    <button
-      v-if="!addingRecipe"
-      type="button"
-      :disabled="loading"
-      @click="addingRecipe = true"
-    >
-      Add recipe
-    </button>
+    <div class="recipes-heading">
+      <h2 id="my-recipes-heading">My recipes</h2>
+      <button
+        v-if="!addingRecipe"
+        type="button"
+        class="add-recipe"
+        :disabled="loading"
+        @click="addingRecipe = true"
+      >
+        <span aria-hidden="true">+</span>
+        Add recipe
+      </button>
+    </div>
 
     <!-- No collection prop: save directly to the personal recipe list. -->
     <RecipeForm
@@ -119,29 +123,35 @@ onMounted(loadRecipes);
     />
 
     <template v-else>
-      <label for="recipe-search">Search recipes</label>
-      <input
-        id="recipe-search"
-        v-model="search"
-        type="search"
-        placeholder="Search by title"
-      />
+      <div class="recipes-toolbar">
+        <div class="toolbar-field recipe-search">
+          <label for="recipe-search">Search recipes</label>
+          <input
+            id="recipe-search"
+            v-model="search"
+            type="search"
+            placeholder="Search by title"
+          />
+        </div>
 
-      <label for="recipe-sort">Sort by</label>
-      <select id="recipe-sort" v-model="sortOrder">
-        <option value="newest">Date added: newest first</option>
-        <option value="oldest">Date added: oldest first</option>
-        <option value="az">Title: A–Z</option>
-        <option value="za">Title: Z–A</option>
-      </select>
+        <div class="toolbar-field recipe-sort">
+          <label for="recipe-sort">Sort by</label>
+          <select id="recipe-sort" v-model="sortOrder">
+            <option value="newest">Date added: newest first</option>
+            <option value="oldest">Date added: oldest first</option>
+            <option value="az">Title: A–Z</option>
+            <option value="za">Title: Z–A</option>
+          </select>
+        </div>
 
-      <button
-        type="button"
-        :disabled="loading"
-        @click="loadRecipes"
-      >
-        Refresh recipes
-      </button>
+        <RefreshButton
+          class="refresh-recipes"
+          :disabled="loading"
+          @click="loadRecipes"
+        >
+          Refresh recipes
+        </RefreshButton>
+      </div>
 
       <p v-if="loading" role="status">Loading recipes…</p>
 
@@ -170,3 +180,47 @@ onMounted(loadRecipes);
     </template>
   </section>
 </template>
+
+<style scoped>
+.recipes-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.recipes-heading h2 { margin: 0; }
+.add-recipe {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  background: var(--green);
+  border-color: var(--green);
+}
+.add-recipe:hover:not(:disabled) {
+  background: var(--green-hover);
+  border-color: var(--green-hover);
+}
+.add-recipe > span { font-size: 1.25rem; line-height: 1; }
+.recipes-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 290px);
+  align-items: end;
+  gap: 20px 24px;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.toolbar-field { display: grid; gap: 8px; min-width: 0; }
+.toolbar-field label { margin: 0; }
+.refresh-recipes {
+  justify-self: end;
+  grid-column: 1 / -1;
+}
+@media (max-width: 600px) {
+  .recipes-toolbar { grid-template-columns: minmax(0, 1fr); }
+  .refresh-recipes { justify-self: start; }
+}
+</style>

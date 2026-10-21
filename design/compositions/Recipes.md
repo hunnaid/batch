@@ -66,11 +66,10 @@ another.[add-to-collection] The endpoint resolves the session, checks
 access to both collections, and verifies that the source contains the
 recipe before adding it to the destination.
 
-The destination receives the same recipe identifier. The original
-collection keeps the recipe, and both collections refer to the same
-instructions and cooking history. Members of either collection can see
-existing and future cooking entries. Removing access to one collection
-does not remove access through another.
+Both collections refer to the same recipe. The original collection keeps
+it, and both show the same instructions and cooking history. Members of
+either collection can see existing and future cooking entries. Removing
+access to one collection does not remove access through another.
 
 If the source does not contain the recipe, the endpoint reports
 RECIPE_NOT_IN_COLLECTION. Collecting refuses the addition if the
@@ -186,7 +185,8 @@ Recipes.AddPersonalRecipeToCollection at /recipes/add-personal-to-collection
 Only the collection owner can remove a recipe membership.[remove-membership]
 The endpoint resolves the session and checks collection ownership before
 calling Collecting.remove. A member, including the recipe's creator, cannot
-remove it from someone else's collection. An absent membership is refused.
+remove it from someone else's collection. The request is refused if the
+recipe is not in the collection.
 
 Removal changes only the selected collection's item set. It preserves the
 recipe, cooking history, all personal saves and save dates, other collection

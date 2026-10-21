@@ -211,7 +211,7 @@ _Views name reusable conditions. Multiple `where` blocks are alternatives._
 ### (entry) belongs to (recipe)
 
 Authored path: `Recipes.EntryInRecipe`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 94.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 93.
 
 ```view
 (entry) belongs to (recipe) — inputs (entry, recipe); outputs (); bindings ()
@@ -221,7 +221,7 @@ Authored path: `Recipes.EntryInRecipe`.
 ### (recipe) belongs to (collection)
 
 Authored path: `Recipes.RecipeInCollection`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 89.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 88.
 
 ```view
 (recipe) belongs to (collection) — inputs (collection, recipe); outputs (); bindings ()
@@ -231,7 +231,7 @@ Authored path: `Recipes.RecipeInCollection`.
 ### (user) owns direct sharing of (recipe)
 
 Authored path: `Shared.RecipeOwner`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 32.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 33.
 
 ```view
 (user) owns direct sharing of (recipe) — inputs (user, recipe); outputs (); bindings ()
@@ -241,7 +241,7 @@ Authored path: `Shared.RecipeOwner`.
 ### (user) personally saved (recipe) before direct ownership existed
 
 Authored path: `Shared.LegacyRecipeOwner`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 42.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 45.
 
 ```view
 (user) personally saved (recipe) before direct ownership existed — inputs (user, recipe); outputs (); bindings ()
@@ -280,7 +280,7 @@ Former "the accessible collections of (user)" — inputs (user); bindings (colle
 ### the directly shared recipe (recipe) accessible to (user)
 
 Authored path: `Shared.DirectRecipeDetails`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 69.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 74.
 
 ```former
 Former "the directly shared recipe (recipe) accessible to (user)" — inputs (user, recipe); bindings (title, ingredients, instructions, source, entry, author, changes, result, createdAt); promises at most one record — forms:
@@ -305,7 +305,7 @@ Former "the directly shared recipe (recipe) accessible to (user)" — inputs (us
 ### the profile of (user)
 
 Authored path: `Profiles.ProfileDetails`.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 11.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 12.
 
 ```former
 Former "the profile of (user)" — inputs (user); bindings (displayName, bio, picture); promises at most one record — forms:
@@ -319,7 +319,7 @@ Former "the profile of (user)" — inputs (user); bindings (displayName, bio, pi
 ### the presentation of (user)
 
 Authored path: `Profiles.Identity`.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 10.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 11.
 
 ```former
 Former "the presentation of (user)" — inputs (user); bindings (username); promises at most one record — forms:
@@ -358,7 +358,7 @@ Former "the recipe (recipe) in collection (collection)" — inputs (collection, 
 ### the saved recipe (recipe) of (user)
 
 Authored path: `Recipes.SavedRecipeDetails`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 128.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 127.
 
 ```former
 Former "the saved recipe (recipe) of (user)" — inputs (user, recipe); bindings (title, ingredients, instructions, source, entry, author, changes, result, createdAt); promises at most one record — forms:
@@ -383,7 +383,7 @@ Former "the saved recipe (recipe) of (user)" — inputs (user, recipe); bindings
 ### the saved recipes of (user)
 
 Authored path: `Recipes.PersonalRecipes`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 110.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 109.
 
 ```former
 Former "the saved recipes of (user)" — inputs (user); bindings (recipe, title, savedAt); promises exactly one record — forms:
@@ -597,8 +597,8 @@ then
 ### Collections.DeleteCollection
 
 Authored path: `Collections.DeleteCollection`.
-- Covered by [Collections](../design/compositions/Collections.md), line 62.
-- Covered by [Collections](../design/compositions/Collections.md), line 75.
+- Covered by [Collections](../design/compositions/Collections.md), line 67.
+- Covered by [Collections](../design/compositions/Collections.md), line 83.
 
 ```reaction
 when RequestBoundary.request (collection, path: "/collections/delete", requestId, session)
@@ -609,8 +609,8 @@ then
 ### Collections.DeleteCollection#2
 
 Authored path: `Collections.DeleteCollection`.
-- Covered by [Collections](../design/compositions/Collections.md), line 62.
-- Covered by [Collections](../design/compositions/Collections.md), line 75.
+- Covered by [Collections](../design/compositions/Collections.md), line 67.
+- Covered by [Collections](../design/compositions/Collections.md), line 83.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Collections.DeleteCollection
@@ -623,8 +623,8 @@ then
 ### Collections.DeleteCollection#3
 
 Authored path: `Collections.DeleteCollection`.
-- Covered by [Collections](../design/compositions/Collections.md), line 62.
-- Covered by [Collections](../design/compositions/Collections.md), line 75.
+- Covered by [Collections](../design/compositions/Collections.md), line 67.
+- Covered by [Collections](../design/compositions/Collections.md), line 83.
 
 ```reaction
 when Sharing.uninitialize (owner: user, resource: collection), asked by Collections.DeleteCollection#2
@@ -635,8 +635,8 @@ then
 ### Collections.DeleteCollection#4
 
 Authored path: `Collections.DeleteCollection`.
-- Covered by [Collections](../design/compositions/Collections.md), line 62.
-- Covered by [Collections](../design/compositions/Collections.md), line 75.
+- Covered by [Collections](../design/compositions/Collections.md), line 67.
+- Covered by [Collections](../design/compositions/Collections.md), line 83.
 
 ```reaction
 when Collecting.delete (collection), asked by Collections.DeleteCollection#3
@@ -661,7 +661,7 @@ then
 
 Authored path: `Collections.ListCollections`.
 - Covered by [Collections](../design/compositions/Collections.md), line 30.
-- Covered by [Collections](../design/compositions/Collections.md), line 40.
+- Covered by [Collections](../design/compositions/Collections.md), line 45.
 
 ```reaction
 when RequestBoundary.request (path: "/collections/list", requestId, session)
@@ -673,7 +673,7 @@ then
 
 Authored path: `Collections.ListCollections`.
 - Covered by [Collections](../design/compositions/Collections.md), line 30.
-- Covered by [Collections](../design/compositions/Collections.md), line 40.
+- Covered by [Collections](../design/compositions/Collections.md), line 45.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Collections.ListCollections
@@ -686,8 +686,8 @@ then
 ### Collections.RenameCollection
 
 Authored path: `Collections.RenameCollection`.
-- Covered by [Collections](../design/compositions/Collections.md), line 59.
-- Covered by [Collections](../design/compositions/Collections.md), line 74.
+- Covered by [Collections](../design/compositions/Collections.md), line 64.
+- Covered by [Collections](../design/compositions/Collections.md), line 82.
 
 ```reaction
 when RequestBoundary.request (collection, name, path: "/collections/rename", requestId, session)
@@ -698,8 +698,8 @@ then
 ### Collections.RenameCollection#2
 
 Authored path: `Collections.RenameCollection`.
-- Covered by [Collections](../design/compositions/Collections.md), line 59.
-- Covered by [Collections](../design/compositions/Collections.md), line 74.
+- Covered by [Collections](../design/compositions/Collections.md), line 64.
+- Covered by [Collections](../design/compositions/Collections.md), line 82.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Collections.RenameCollection
@@ -712,8 +712,8 @@ then
 ### Collections.RenameCollection#3
 
 Authored path: `Collections.RenameCollection`.
-- Covered by [Collections](../design/compositions/Collections.md), line 59.
-- Covered by [Collections](../design/compositions/Collections.md), line 74.
+- Covered by [Collections](../design/compositions/Collections.md), line 64.
+- Covered by [Collections](../design/compositions/Collections.md), line 82.
 
 ```reaction
 when Sharing.authorizeOwner (resource: collection, user), asked by Collections.RenameCollection#2
@@ -726,8 +726,8 @@ then
 ### Collections.RenameCollection#4
 
 Authored path: `Collections.RenameCollection`.
-- Covered by [Collections](../design/compositions/Collections.md), line 59.
-- Covered by [Collections](../design/compositions/Collections.md), line 74.
+- Covered by [Collections](../design/compositions/Collections.md), line 64.
+- Covered by [Collections](../design/compositions/Collections.md), line 82.
 
 ```reaction
 when Collecting.rename (collection, name), asked by Collections.RenameCollection#3
@@ -740,8 +740,8 @@ then
 ### Collections.RevokeCollectionAccess
 
 Authored path: `Collections.RevokeCollectionAccess`.
-- Covered by [Collections](../design/compositions/Collections.md), line 43.
-- Covered by [Collections](../design/compositions/Collections.md), line 51.
+- Covered by [Collections](../design/compositions/Collections.md), line 48.
+- Covered by [Collections](../design/compositions/Collections.md), line 56.
 
 ```reaction
 when RequestBoundary.request (collection, path: "/collections/revoke", requestId, session, username)
@@ -752,8 +752,8 @@ then
 ### Collections.RevokeCollectionAccess#2
 
 Authored path: `Collections.RevokeCollectionAccess`.
-- Covered by [Collections](../design/compositions/Collections.md), line 43.
-- Covered by [Collections](../design/compositions/Collections.md), line 51.
+- Covered by [Collections](../design/compositions/Collections.md), line 48.
+- Covered by [Collections](../design/compositions/Collections.md), line 56.
 
 ```reaction
 when Sessioning.resolve (session, user: owner), asked by Collections.RevokeCollectionAccess
@@ -766,8 +766,8 @@ then
 ### Collections.RevokeCollectionAccess:registered-recipient#3
 
 Authored path: `Collections.RevokeCollectionAccess`.
-- Covered by [Collections](../design/compositions/Collections.md), line 43.
-- Covered by [Collections](../design/compositions/Collections.md), line 51.
+- Covered by [Collections](../design/compositions/Collections.md), line 48.
+- Covered by [Collections](../design/compositions/Collections.md), line 56.
 
 ```reaction
 when Sharing.authorize (resource: collection, user: owner), asked by Collections.RevokeCollectionAccess#2
@@ -781,8 +781,8 @@ then
 ### Collections.RevokeCollectionAccess:registered-recipient#4
 
 Authored path: `Collections.RevokeCollectionAccess`.
-- Covered by [Collections](../design/compositions/Collections.md), line 43.
-- Covered by [Collections](../design/compositions/Collections.md), line 51.
+- Covered by [Collections](../design/compositions/Collections.md), line 48.
+- Covered by [Collections](../design/compositions/Collections.md), line 56.
 
 ```reaction
 when Sharing.revoke (member, owner, resource: collection), asked by Collections.RevokeCollectionAccess:registered-recipient#3
@@ -795,8 +795,8 @@ then
 ### Collections.RevokeCollectionAccess:unknown-recipient#3
 
 Authored path: `Collections.RevokeCollectionAccess`.
-- Covered by [Collections](../design/compositions/Collections.md), line 43.
-- Covered by [Collections](../design/compositions/Collections.md), line 51.
+- Covered by [Collections](../design/compositions/Collections.md), line 48.
+- Covered by [Collections](../design/compositions/Collections.md), line 56.
 
 ```reaction
 when Sharing.authorize (resource: collection, user: owner), asked by Collections.RevokeCollectionAccess#2
@@ -901,7 +901,7 @@ then
 
 Authored path: `Profiles.GetMyProfile`.
 - Covered by [Profiles](../design/compositions/Profiles.md), line 8.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 48.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 54.
 
 ```reaction
 when RequestBoundary.request (path: "/profiles/me", requestId, session)
@@ -913,7 +913,7 @@ then
 
 Authored path: `Profiles.GetMyProfile`.
 - Covered by [Profiles](../design/compositions/Profiles.md), line 8.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 48.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 54.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Profiles.GetMyProfile
@@ -926,8 +926,8 @@ then
 ### Profiles.GetProfile
 
 Authored path: `Profiles.GetProfile`.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 9.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 49.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 10.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 55.
 
 ```reaction
 when RequestBoundary.request (path: "/profiles/get", requestId, session, user)
@@ -938,8 +938,8 @@ then
 ### Profiles.GetProfile#2
 
 Authored path: `Profiles.GetProfile`.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 9.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 49.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 10.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 55.
 
 ```reaction
 when Sessioning.resolve (session, user: viewer), asked by Profiles.GetProfile
@@ -952,8 +952,8 @@ then
 ### Profiles.SaveMyProfile
 
 Authored path: `Profiles.SaveMyProfile`.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 16.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 50.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 17.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 56.
 
 ```reaction
 when RequestBoundary.request (bio, displayName, path: "/profiles/save", picture, requestId, session)
@@ -964,8 +964,8 @@ then
 ### Profiles.SaveMyProfile:create-profile#2
 
 Authored path: `Profiles.SaveMyProfile`.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 16.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 50.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 17.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 56.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Profiles.SaveMyProfile
@@ -979,8 +979,8 @@ then
 ### Profiles.SaveMyProfile:create-profile#3
 
 Authored path: `Profiles.SaveMyProfile`.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 16.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 50.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 17.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 56.
 
 ```reaction
 when Profiling.create (bio, displayName, picture, user), asked by Profiles.SaveMyProfile:create-profile#2
@@ -993,8 +993,8 @@ then
 ### Profiles.SaveMyProfile:update-profile#2
 
 Authored path: `Profiles.SaveMyProfile`.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 16.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 50.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 17.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 56.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Profiles.SaveMyProfile
@@ -1008,8 +1008,8 @@ then
 ### Profiles.SaveMyProfile:update-profile#3
 
 Authored path: `Profiles.SaveMyProfile`.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 16.
-- Covered by [Profiles](../design/compositions/Profiles.md), line 50.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 17.
+- Covered by [Profiles](../design/compositions/Profiles.md), line 56.
 
 ```reaction
 when Profiling.update (bio, displayName, picture, user), asked by Profiles.SaveMyProfile:update-profile#2
@@ -1092,8 +1092,8 @@ then
 ### Recipes.AddPersonalCookingEntry
 
 Authored path: `Recipes.AddPersonalCookingEntry`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 143.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 158.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 142.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 157.
 
 ```reaction
 when RequestBoundary.request (changes, path: "/entries/add-personal", recipe, requestId, result, session)
@@ -1104,8 +1104,8 @@ then
 ### Recipes.AddPersonalCookingEntry#2
 
 Authored path: `Recipes.AddPersonalCookingEntry`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 143.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 158.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 142.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 157.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Recipes.AddPersonalCookingEntry
@@ -1118,8 +1118,8 @@ then
 ### Recipes.AddPersonalCookingEntry#3
 
 Authored path: `Recipes.AddPersonalCookingEntry`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 143.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 158.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 142.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 157.
 
 ```reaction
 when Saving.authorize (item: recipe, user), asked by Recipes.AddPersonalCookingEntry#2
@@ -1132,8 +1132,8 @@ then
 ### Recipes.AddPersonalCookingEntry#4
 
 Authored path: `Recipes.AddPersonalCookingEntry`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 143.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 158.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 142.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 157.
 
 ```reaction
 when CookingLog.record (author: user, changes, recipe, result, entry), asked by Recipes.AddPersonalCookingEntry#3
@@ -1146,8 +1146,8 @@ then
 ### Recipes.AddPersonalRecipeToCollection
 
 Authored path: `Recipes.AddPersonalRecipeToCollection`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 170.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 181.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 169.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 180.
 
 ```reaction
 when RequestBoundary.request (destinationCollection, path: "/recipes/add-personal-to-collection", recipe, requestId, session)
@@ -1158,8 +1158,8 @@ then
 ### Recipes.AddPersonalRecipeToCollection#2
 
 Authored path: `Recipes.AddPersonalRecipeToCollection`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 170.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 181.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 169.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 180.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Recipes.AddPersonalRecipeToCollection
@@ -1172,8 +1172,8 @@ then
 ### Recipes.AddPersonalRecipeToCollection#3
 
 Authored path: `Recipes.AddPersonalRecipeToCollection`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 170.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 181.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 169.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 180.
 
 ```reaction
 when Saving.authorize (item: recipe, user), asked by Recipes.AddPersonalRecipeToCollection#2
@@ -1186,8 +1186,8 @@ then
 ### Recipes.AddPersonalRecipeToCollection#4
 
 Authored path: `Recipes.AddPersonalRecipeToCollection`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 170.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 181.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 169.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 180.
 
 ```reaction
 when Sharing.authorize (resource: destinationCollection, user), asked by Recipes.AddPersonalRecipeToCollection#3
@@ -1200,8 +1200,8 @@ then
 ### Recipes.AddPersonalRecipeToCollection#5
 
 Authored path: `Recipes.AddPersonalRecipeToCollection`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 170.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 181.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 169.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 180.
 
 ```reaction
 when Collecting.add (collection: destinationCollection, item: recipe), asked by Recipes.AddPersonalRecipeToCollection#4
@@ -1215,7 +1215,7 @@ then
 
 Authored path: `Recipes.AddRecipeToCollection`.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 65.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 82.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 81.
 
 ```reaction
 when RequestBoundary.request (destinationCollection, path: "/recipes/add-to-collection", recipe, requestId, session, sourceCollection)
@@ -1227,7 +1227,7 @@ then
 
 Authored path: `Recipes.AddRecipeToCollection`.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 65.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 82.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 81.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Recipes.AddRecipeToCollection
@@ -1241,7 +1241,7 @@ then
 
 Authored path: `Recipes.AddRecipeToCollection`.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 65.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 82.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 81.
 
 ```reaction
 when Sharing.authorize (resource: sourceCollection, user), asked by Recipes.AddRecipeToCollection#2
@@ -1255,7 +1255,7 @@ then
 
 Authored path: `Recipes.AddRecipeToCollection`.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 65.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 82.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 81.
 
 ```reaction
 when Sharing.authorize (resource: destinationCollection, user), asked by Recipes.AddRecipeToCollection#3
@@ -1271,7 +1271,7 @@ then
 
 Authored path: `Recipes.AddRecipeToCollection`.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 65.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 82.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 81.
 
 ```reaction
 when Collecting.add (collection: destinationCollection, item: recipe), asked by Recipes.AddRecipeToCollection:recipe-in-source#4
@@ -1285,7 +1285,7 @@ then
 
 Authored path: `Recipes.AddRecipeToCollection`.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 65.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 82.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 81.
 
 ```reaction
 when Sharing.authorize (resource: destinationCollection, user), asked by Recipes.AddRecipeToCollection#3
@@ -1387,8 +1387,8 @@ then
 ### Recipes.EditPersonalCookingEntry
 
 Authored path: `Recipes.EditPersonalCookingEntry`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 148.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 159.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 147.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 158.
 
 ```reaction
 when RequestBoundary.request (changes, entry, path: "/entries/edit-personal", recipe, requestId, result, session)
@@ -1399,8 +1399,8 @@ then
 ### Recipes.EditPersonalCookingEntry#2
 
 Authored path: `Recipes.EditPersonalCookingEntry`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 148.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 159.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 147.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 158.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Recipes.EditPersonalCookingEntry
@@ -1413,8 +1413,8 @@ then
 ### Recipes.EditPersonalCookingEntry:entry-in-personal-recipe#3
 
 Authored path: `Recipes.EditPersonalCookingEntry`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 148.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 159.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 147.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 158.
 
 ```reaction
 when Saving.authorize (item: recipe, user), asked by Recipes.EditPersonalCookingEntry#2
@@ -1428,8 +1428,8 @@ then
 ### Recipes.EditPersonalCookingEntry:entry-in-personal-recipe#4
 
 Authored path: `Recipes.EditPersonalCookingEntry`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 148.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 159.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 147.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 158.
 
 ```reaction
 when CookingLog.edit (author: user, changes, entry, result), asked by Recipes.EditPersonalCookingEntry:entry-in-personal-recipe#3
@@ -1442,8 +1442,8 @@ then
 ### Recipes.EditPersonalCookingEntry:entry-not-in-personal-recipe#3
 
 Authored path: `Recipes.EditPersonalCookingEntry`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 148.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 159.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 147.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 158.
 
 ```reaction
 when Saving.authorize (item: recipe, user), asked by Recipes.EditPersonalCookingEntry#2
@@ -1457,8 +1457,8 @@ then
 ### Recipes.GetPersonalRecipe
 
 Authored path: `Recipes.GetPersonalRecipe`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 125.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 137.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 124.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 136.
 
 ```reaction
 when RequestBoundary.request (path: "/recipes/get-personal", recipe, requestId, session)
@@ -1469,8 +1469,8 @@ then
 ### Recipes.GetPersonalRecipe#2
 
 Authored path: `Recipes.GetPersonalRecipe`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 125.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 137.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 124.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 136.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Recipes.GetPersonalRecipe
@@ -1483,8 +1483,8 @@ then
 ### Recipes.GetPersonalRecipe#3
 
 Authored path: `Recipes.GetPersonalRecipe`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 125.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 137.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 124.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 136.
 
 ```reaction
 when Saving.authorize (item: recipe, user), asked by Recipes.GetPersonalRecipe#2
@@ -1537,8 +1537,8 @@ then
 ### Recipes.ListMyRecipes
 
 Authored path: `Recipes.ListMyRecipes`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 108.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 119.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 107.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 118.
 
 ```reaction
 when RequestBoundary.request (path: "/recipes/mine", requestId, session)
@@ -1549,8 +1549,8 @@ then
 ### Recipes.ListMyRecipes#2
 
 Authored path: `Recipes.ListMyRecipes`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 108.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 119.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 107.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 118.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Recipes.ListMyRecipes
@@ -1563,7 +1563,7 @@ then
 ### Recipes.RemoveRecipeFromCollection
 
 Authored path: `Recipes.RemoveRecipeFromCollection`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 186.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 185.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 200.
 
 ```reaction
@@ -1575,7 +1575,7 @@ then
 ### Recipes.RemoveRecipeFromCollection#2
 
 Authored path: `Recipes.RemoveRecipeFromCollection`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 186.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 185.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 200.
 
 ```reaction
@@ -1589,7 +1589,7 @@ then
 ### Recipes.RemoveRecipeFromCollection#3
 
 Authored path: `Recipes.RemoveRecipeFromCollection`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 186.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 185.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 200.
 
 ```reaction
@@ -1603,7 +1603,7 @@ then
 ### Recipes.RemoveRecipeFromCollection#4
 
 Authored path: `Recipes.RemoveRecipeFromCollection`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 186.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 185.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 200.
 
 ```reaction
@@ -1617,8 +1617,8 @@ then
 ### Recipes.SavePersonalRecipe
 
 Authored path: `Recipes.SavePersonalRecipe`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 103.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 118.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 102.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 117.
 
 ```reaction
 when RequestBoundary.request (ingredients, instructions, path: "/recipes/save-personal", requestId, session, source, title)
@@ -1629,8 +1629,8 @@ then
 ### Recipes.SavePersonalRecipe#2
 
 Authored path: `Recipes.SavePersonalRecipe`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 103.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 118.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 102.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 117.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Recipes.SavePersonalRecipe
@@ -1643,8 +1643,8 @@ then
 ### Recipes.SavePersonalRecipe#3
 
 Authored path: `Recipes.SavePersonalRecipe`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 103.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 118.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 102.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 117.
 
 ```reaction
 when RecipeRecording.record (ingredients, instructions, source, title, recipe), asked by Recipes.SavePersonalRecipe#2
@@ -1657,8 +1657,8 @@ then
 ### Recipes.SavePersonalRecipe#4
 
 Authored path: `Recipes.SavePersonalRecipe`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 103.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 118.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 102.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 117.
 
 ```reaction
 when RecipeSharing.initialize (owner: user, resource: recipe), asked by Recipes.SavePersonalRecipe#3
@@ -1669,8 +1669,8 @@ then
 ### Recipes.SavePersonalRecipe#5
 
 Authored path: `Recipes.SavePersonalRecipe`.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 103.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 118.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 102.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 117.
 
 ```reaction
 when Saving.save (item: recipe, user), asked by Recipes.SavePersonalRecipe#4
@@ -1685,7 +1685,7 @@ then
 Authored path: `Recipes.SaveRecipe`.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 3.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 15.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 165.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 164.
 
 ```reaction
 when RequestBoundary.request (collection, ingredients, instructions, path: "/recipes/save", requestId, session, source, title)
@@ -1698,7 +1698,7 @@ then
 Authored path: `Recipes.SaveRecipe`.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 3.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 15.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 165.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 164.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Recipes.SaveRecipe
@@ -1713,7 +1713,7 @@ then
 Authored path: `Recipes.SaveRecipe`.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 3.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 15.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 165.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 164.
 
 ```reaction
 when Sharing.authorize (resource: collection, user), asked by Recipes.SaveRecipe#2
@@ -1728,7 +1728,7 @@ then
 Authored path: `Recipes.SaveRecipe`.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 3.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 15.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 165.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 164.
 
 ```reaction
 when RecipeRecording.record (ingredients, instructions, source, title, recipe), asked by Recipes.SaveRecipe#3
@@ -1743,7 +1743,7 @@ then
 Authored path: `Recipes.SaveRecipe`.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 3.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 15.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 165.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 164.
 
 ```reaction
 when RecipeSharing.initialize (owner: user, resource: recipe), asked by Recipes.SaveRecipe#4
@@ -1756,7 +1756,7 @@ then
 Authored path: `Recipes.SaveRecipe`.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 3.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 15.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 165.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 164.
 
 ```reaction
 when Saving.save (item: recipe, user), asked by Recipes.SaveRecipe#5
@@ -1771,7 +1771,7 @@ then
 Authored path: `Recipes.SaveRecipe`.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 3.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 15.
-- Covered by [Recipes](../design/compositions/Recipes.md), line 165.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 164.
 
 ```reaction
 when Collecting.add (collection, item: recipe), asked by Recipes.SaveRecipe#6
@@ -1784,8 +1784,8 @@ then
 ### Shared.AddSharedCookingEntry
 
 Authored path: `Shared.AddSharedCookingEntry`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 69.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 93.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 74.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 97.
 
 ```reaction
 when RequestBoundary.request (changes, path: "/entries/add-shared", recipe, requestId, result, session)
@@ -1796,8 +1796,8 @@ then
 ### Shared.AddSharedCookingEntry#2
 
 Authored path: `Shared.AddSharedCookingEntry`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 69.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 93.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 74.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 97.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Shared.AddSharedCookingEntry
@@ -1810,8 +1810,8 @@ then
 ### Shared.AddSharedCookingEntry#3
 
 Authored path: `Shared.AddSharedCookingEntry`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 69.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 93.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 74.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 97.
 
 ```reaction
 when RecipeSharing.authorize (resource: recipe, user), asked by Shared.AddSharedCookingEntry#2
@@ -1824,8 +1824,8 @@ then
 ### Shared.AddSharedCookingEntry#4
 
 Authored path: `Shared.AddSharedCookingEntry`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 69.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 93.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 74.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 97.
 
 ```reaction
 when CookingLog.record (author: user, changes, recipe, result, entry), asked by Shared.AddSharedCookingEntry#3
@@ -1838,8 +1838,8 @@ then
 ### Shared.DeleteRecipe
 
 Authored path: `Shared.DeleteRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 103.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 129.
 
 ```reaction
 when RequestBoundary.request (path: "/recipes/delete", recipe, requestId, session)
@@ -1850,8 +1850,8 @@ then
 ### Shared.DeleteRecipe:existing-owner#2
 
 Authored path: `Shared.DeleteRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 103.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 129.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Shared.DeleteRecipe
@@ -1865,8 +1865,8 @@ then
 ### Shared.DeleteRecipe:existing-owner#3
 
 Authored path: `Shared.DeleteRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 103.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 129.
 
 ```reaction
 when RecipeSharing.authorizeOwner (resource: recipe, user), asked by Shared.DeleteRecipe:existing-owner#2
@@ -1877,8 +1877,8 @@ then
 ### Shared.DeleteRecipe:existing-owner#4
 
 Authored path: `Shared.DeleteRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 103.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 129.
 
 ```reaction
 when RecipeRecording.delete (recipe), asked by Shared.DeleteRecipe:existing-owner#3
@@ -1889,8 +1889,8 @@ then
 ### Shared.DeleteRecipe:existing-owner#5
 
 Authored path: `Shared.DeleteRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 103.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 129.
 
 ```reaction
 when Collecting.removeItem (item: recipe), asked by Shared.DeleteRecipe:existing-owner#4
@@ -1901,8 +1901,8 @@ then
 ### Shared.DeleteRecipe:existing-owner#6
 
 Authored path: `Shared.DeleteRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 103.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 129.
 
 ```reaction
 when CookingLog.clearRecipe (recipe), asked by Shared.DeleteRecipe:existing-owner#5
@@ -1913,8 +1913,8 @@ then
 ### Shared.DeleteRecipe:existing-owner#7
 
 Authored path: `Shared.DeleteRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 103.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 129.
 
 ```reaction
 when Saving.removeItem (item: recipe), asked by Shared.DeleteRecipe:existing-owner#6
@@ -1927,8 +1927,8 @@ then
 ### Shared.DeleteRecipe:existing-owner#8
 
 Authored path: `Shared.DeleteRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 103.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 129.
 
 ```reaction
 when RecipeSharing.uninitialize (owner: user, resource: recipe), asked by Shared.DeleteRecipe:existing-owner#7
@@ -1941,8 +1941,8 @@ then
 ### Shared.DeleteRecipe:initialize-legacy-owner#2
 
 Authored path: `Shared.DeleteRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 103.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 129.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Shared.DeleteRecipe
@@ -1956,8 +1956,8 @@ then
 ### Shared.DeleteRecipe:initialize-legacy-owner#3
 
 Authored path: `Shared.DeleteRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 103.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 129.
 
 ```reaction
 when RecipeSharing.initialize (owner: user, resource: recipe), asked by Shared.DeleteRecipe:initialize-legacy-owner#2
@@ -1968,8 +1968,8 @@ then
 ### Shared.DeleteRecipe:initialize-legacy-owner#4
 
 Authored path: `Shared.DeleteRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 103.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 129.
 
 ```reaction
 when RecipeRecording.delete (recipe), asked by Shared.DeleteRecipe:initialize-legacy-owner#3
@@ -1980,8 +1980,8 @@ then
 ### Shared.DeleteRecipe:initialize-legacy-owner#5
 
 Authored path: `Shared.DeleteRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 103.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 129.
 
 ```reaction
 when Collecting.removeItem (item: recipe), asked by Shared.DeleteRecipe:initialize-legacy-owner#4
@@ -1992,8 +1992,8 @@ then
 ### Shared.DeleteRecipe:initialize-legacy-owner#6
 
 Authored path: `Shared.DeleteRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 103.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 129.
 
 ```reaction
 when CookingLog.clearRecipe (recipe), asked by Shared.DeleteRecipe:initialize-legacy-owner#5
@@ -2004,8 +2004,8 @@ then
 ### Shared.DeleteRecipe:initialize-legacy-owner#7
 
 Authored path: `Shared.DeleteRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 103.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 129.
 
 ```reaction
 when Saving.removeItem (item: recipe), asked by Shared.DeleteRecipe:initialize-legacy-owner#6
@@ -2018,8 +2018,8 @@ then
 ### Shared.DeleteRecipe:initialize-legacy-owner#8
 
 Authored path: `Shared.DeleteRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 103.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 129.
 
 ```reaction
 when RecipeSharing.uninitialize (owner: user, resource: recipe), asked by Shared.DeleteRecipe:initialize-legacy-owner#7
@@ -2032,8 +2032,8 @@ then
 ### Shared.EditSharedCookingEntry
 
 Authored path: `Shared.EditSharedCookingEntry`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 70.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 94.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 75.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 98.
 
 ```reaction
 when RequestBoundary.request (changes, entry, path: "/entries/edit-shared", recipe, requestId, result, session)
@@ -2044,8 +2044,8 @@ then
 ### Shared.EditSharedCookingEntry#2
 
 Authored path: `Shared.EditSharedCookingEntry`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 70.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 94.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 75.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 98.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Shared.EditSharedCookingEntry
@@ -2058,8 +2058,8 @@ then
 ### Shared.EditSharedCookingEntry:entry-in-recipe#3
 
 Authored path: `Shared.EditSharedCookingEntry`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 70.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 94.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 75.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 98.
 
 ```reaction
 when RecipeSharing.authorize (resource: recipe, user), asked by Shared.EditSharedCookingEntry#2
@@ -2073,8 +2073,8 @@ then
 ### Shared.EditSharedCookingEntry:entry-in-recipe#4
 
 Authored path: `Shared.EditSharedCookingEntry`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 70.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 94.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 75.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 98.
 
 ```reaction
 when CookingLog.edit (author: user, changes, entry, result), asked by Shared.EditSharedCookingEntry:entry-in-recipe#3
@@ -2087,8 +2087,8 @@ then
 ### Shared.EditSharedCookingEntry:entry-not-in-recipe#3
 
 Authored path: `Shared.EditSharedCookingEntry`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 70.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 94.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 75.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 98.
 
 ```reaction
 when RecipeSharing.authorize (resource: recipe, user), asked by Shared.EditSharedCookingEntry#2
@@ -2102,8 +2102,8 @@ then
 ### Shared.GetSharedRecipe
 
 Authored path: `Shared.GetSharedRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 67.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 92.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 72.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 96.
 
 ```reaction
 when RequestBoundary.request (path: "/recipes/get-shared", recipe, requestId, session)
@@ -2114,8 +2114,8 @@ then
 ### Shared.GetSharedRecipe#2
 
 Authored path: `Shared.GetSharedRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 67.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 92.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 72.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 96.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Shared.GetSharedRecipe
@@ -2128,8 +2128,8 @@ then
 ### Shared.GetSharedRecipe#3
 
 Authored path: `Shared.GetSharedRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 67.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 92.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 72.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 96.
 
 ```reaction
 when RecipeSharing.authorize (resource: recipe, user), asked by Shared.GetSharedRecipe#2
@@ -2143,7 +2143,7 @@ then
 
 Authored path: `Shared.ListShared`.
 - Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 4.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 21.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 22.
 
 ```reaction
 when RequestBoundary.request (path: "/shared/list", requestId, session)
@@ -2155,7 +2155,7 @@ then
 
 Authored path: `Shared.ListShared`.
 - Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 4.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 21.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 22.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Shared.ListShared
@@ -2168,8 +2168,8 @@ then
 ### Shared.PrepareRecipeSharing
 
 Authored path: `Shared.PrepareRecipeSharing`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 43.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 60.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 46.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 65.
 
 ```reaction
 when RequestBoundary.request (path: "/recipes/prepare-sharing", recipe, requestId, session)
@@ -2180,8 +2180,8 @@ then
 ### Shared.PrepareRecipeSharing#2
 
 Authored path: `Shared.PrepareRecipeSharing`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 43.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 60.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 46.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 65.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Shared.PrepareRecipeSharing
@@ -2194,8 +2194,8 @@ then
 ### Shared.PrepareRecipeSharing:existing-owner#3
 
 Authored path: `Shared.PrepareRecipeSharing`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 43.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 60.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 46.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 65.
 
 ```reaction
 when Saving.authorize (item: recipe, user), asked by Shared.PrepareRecipeSharing#2
@@ -2208,8 +2208,8 @@ then
 ### Shared.PrepareRecipeSharing:existing-owner#4
 
 Authored path: `Shared.PrepareRecipeSharing`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 43.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 60.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 46.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 65.
 
 ```reaction
 when RecipeSharing.authorizeOwner (resource: recipe, user), asked by Shared.PrepareRecipeSharing:existing-owner#3
@@ -2222,8 +2222,8 @@ then
 ### Shared.PrepareRecipeSharing:initialize-legacy-owner#3
 
 Authored path: `Shared.PrepareRecipeSharing`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 43.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 60.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 46.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 65.
 
 ```reaction
 when Saving.authorize (item: recipe, user), asked by Shared.PrepareRecipeSharing#2
@@ -2236,8 +2236,8 @@ then
 ### Shared.PrepareRecipeSharing:initialize-legacy-owner#4
 
 Authored path: `Shared.PrepareRecipeSharing`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 43.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 60.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 46.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 65.
 
 ```reaction
 when RecipeSharing.initialize (owner: user, resource: recipe), asked by Shared.PrepareRecipeSharing:initialize-legacy-owner#3
@@ -2250,8 +2250,8 @@ then
 ### Shared.RecipeSharingStatus
 
 Authored path: `Shared.RecipeSharingStatus`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 38.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 59.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 40.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 64.
 
 ```reaction
 when RequestBoundary.request (path: "/recipes/sharing-status", recipe, requestId, session)
@@ -2262,8 +2262,8 @@ then
 ### Shared.RecipeSharingStatus:legacy-owner#2
 
 Authored path: `Shared.RecipeSharingStatus`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 38.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 59.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 40.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 64.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Shared.RecipeSharingStatus
@@ -2277,8 +2277,8 @@ then
 ### Shared.RecipeSharingStatus:not-owner#2
 
 Authored path: `Shared.RecipeSharingStatus`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 38.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 59.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 40.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 64.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Shared.RecipeSharingStatus
@@ -2293,8 +2293,8 @@ then
 ### Shared.RecipeSharingStatus:owner#2
 
 Authored path: `Shared.RecipeSharingStatus`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 38.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 59.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 40.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 64.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Shared.RecipeSharingStatus
@@ -2308,8 +2308,8 @@ then
 ### Shared.RevokeRecipeAccess
 
 Authored path: `Shared.RevokeRecipeAccess`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 33.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 62.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 34.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 67.
 
 ```reaction
 when RequestBoundary.request (path: "/recipes/revoke", recipe, requestId, session, username)
@@ -2320,8 +2320,8 @@ then
 ### Shared.RevokeRecipeAccess#2
 
 Authored path: `Shared.RevokeRecipeAccess`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 33.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 62.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 34.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 67.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Shared.RevokeRecipeAccess
@@ -2334,8 +2334,8 @@ then
 ### Shared.RevokeRecipeAccess:registered-recipient#3
 
 Authored path: `Shared.RevokeRecipeAccess`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 33.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 62.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 34.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 67.
 
 ```reaction
 when RecipeSharing.authorizeOwner (resource: recipe, user), asked by Shared.RevokeRecipeAccess#2
@@ -2349,8 +2349,8 @@ then
 ### Shared.RevokeRecipeAccess:registered-recipient#4
 
 Authored path: `Shared.RevokeRecipeAccess`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 33.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 62.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 34.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 67.
 
 ```reaction
 when RecipeSharing.revoke (member, owner: user, resource: recipe), asked by Shared.RevokeRecipeAccess:registered-recipient#3
@@ -2363,8 +2363,8 @@ then
 ### Shared.RevokeRecipeAccess:unknown-recipient#3
 
 Authored path: `Shared.RevokeRecipeAccess`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 33.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 62.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 34.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 67.
 
 ```reaction
 when RecipeSharing.authorizeOwner (resource: recipe, user), asked by Shared.RevokeRecipeAccess#2
@@ -2378,8 +2378,8 @@ then
 ### Shared.ShareRecipe
 
 Authored path: `Shared.ShareRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 33.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 61.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 34.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 66.
 
 ```reaction
 when RequestBoundary.request (path: "/recipes/share", recipe, requestId, session, username)
@@ -2390,8 +2390,8 @@ then
 ### Shared.ShareRecipe#2
 
 Authored path: `Shared.ShareRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 33.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 61.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 34.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 66.
 
 ```reaction
 when Sessioning.resolve (session, user), asked by Shared.ShareRecipe
@@ -2404,8 +2404,8 @@ then
 ### Shared.ShareRecipe:registered-recipient#3
 
 Authored path: `Shared.ShareRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 33.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 61.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 34.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 66.
 
 ```reaction
 when RecipeSharing.authorizeOwner (resource: recipe, user), asked by Shared.ShareRecipe#2
@@ -2419,8 +2419,8 @@ then
 ### Shared.ShareRecipe:registered-recipient#4
 
 Authored path: `Shared.ShareRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 33.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 61.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 34.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 66.
 
 ```reaction
 when RecipeSharing.grant (member, owner: user, resource: recipe), asked by Shared.ShareRecipe:registered-recipient#3
@@ -2433,8 +2433,8 @@ then
 ### Shared.ShareRecipe:unknown-recipient#3
 
 Authored path: `Shared.ShareRecipe`.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 33.
-- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 61.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 34.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 66.
 
 ```reaction
 when RecipeSharing.authorizeOwner (resource: recipe, user), asked by Shared.ShareRecipe#2

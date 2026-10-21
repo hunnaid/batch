@@ -4,7 +4,12 @@ import { api, ApiError } from "../api";
 import { prepareProfilePicture } from "../profile-picture";
 import UserAvatar from "./UserAvatar.vue";
 
-const emit = defineEmits<{ back: []; signedOut: []; sessionExpired: [] }>();
+const emit = defineEmits<{
+  back: [];
+  signedOut: [];
+  sessionExpired: [];
+  saved: [profile: { displayName: string; picture: string }];
+}>();
 const loading = ref(true);
 const loaded = ref(false);
 const saving = ref(false);
@@ -85,6 +90,7 @@ async function save() {
     picture.value = profile.picture;
     saved.value = draft.value;
     notice.value = "Profile saved. Your name and picture will appear beside your cooking entries.";
+    emit("saved", { displayName: profile.displayName, picture: profile.picture });
   } catch (cause) { reportError(cause); }
   finally { saving.value = false; }
 }

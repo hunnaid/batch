@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { api, ApiError } from "./api";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import AuthForm from "./components/AuthForm.vue";
 import CollectionsView from "./components/CollectionsView.vue";
 import RecipeView from "./components/RecipeView.vue";
@@ -8,6 +8,7 @@ import RecipeView from "./components/RecipeView.vue";
 import AllRecipesView from "./components/AllRecipesView.vue";
 import SharedView from "./components/SharedView.vue";
 import ProfileView from "./components/ProfileView.vue";
+import UserAvatar from "./components/UserAvatar.vue";
 
 /** Remember which overview to return to after viewing a recipe. */
 const overview = ref<"recipes" | "collections" | "shared">("recipes");
@@ -16,6 +17,31 @@ const user = ref<string | null>(null);
 const checkingSession = ref(true);
 const showingProfile = ref(false);
 const error = ref("");
+const headerProfile = ref<{ name: string; picture: string | null } | null>(null);
+let profileRequest = 0;
+
+/** Load the avatar for the current session, discarding outdated responses. */
+watch(user, async (currentUser) => {
+  const request = ++profileRequest;
+  headerProfile.value = null;
+  if (!currentUser) return;
+
+  try {
+    const response = await api["/profiles/me"]({});
+    if (request !== profileRequest || "error" in response || !response.identity) return;
+    headerProfile.value = {
+      name: response.identity.profile?.displayName ?? response.identity.username,
+      picture: response.identity.profile?.picture ?? null,
+    };
+  } catch {
+    // The default avatar still provides access to the profile page.
+  }
+});
+
+function profileSaved(profile: { displayName: string; picture: string }) {
+  ++profileRequest;
+  headerProfile.value = { name: profile.displayName, picture: profile.picture };
+}
 
 /** Restore an existing login when the page loads or refreshes. */
 onMounted(async () => {
@@ -89,11 +115,17 @@ function clearSession() {
         v-if="user"
         type="button"
         class="profile-link"
+        aria-label="Your profile"
+        :title="headerProfile?.name ? `${headerProfile.name} · Your profile` : 'Your profile'"
         :aria-pressed="showingProfile"
         :disabled="showingProfile"
         @click="showingProfile = true"
       >
-        Profile
+        <UserAvatar
+          :name="headerProfile?.name ?? ''"
+          :picture="headerProfile?.picture"
+          default-icon
+        />
       </button>
     </header>
 
@@ -113,6 +145,7 @@ function clearSession() {
         @back="showingProfile = false"
         @signed-out="clearSession"
         @session-expired="clearSession"
+        @saved="profileSaved"
       />
       <RecipeView
         v-else-if="selectedRecipe"
@@ -182,7 +215,24 @@ function clearSession() {
 </template>
 
 <style scoped>
-.profile-link { flex-shrink: 0; }
+.app-header > div { flex: 1; min-width: 0; }
+.profile-link {
+  display: inline-flex;
+  flex: 0 0 56px;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  padding: 5px;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgb(41 47 41 / 6%);
+}
+.profile-link:disabled {
+  opacity: 1;
+  cursor: default;
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px var(--green-soft);
+}
 nav[aria-label="Recipe organization"] {
   display: flex;
   flex-wrap: wrap;

@@ -33,6 +33,11 @@ names and recipe titles.[overview] Each collection includes its owner so the
 interface can distinguish owned collections from shared ones. Empty lists
 remain visible as empty arrays.
 
+The Collections tab shows only collections the signed-in user owns. Its
+search and empty state use this same list. Collections shared with the user
+appear in the Shared tab. Collections the user owns and shares with others
+appear in both tabs.
+
 [list]: reaction:Collections.ListCollections
 [overview]: former:Collections.AccessibleCollections
 
@@ -60,9 +65,12 @@ Only the collection owner can rename a collection.[rename]
 Renaming preserves its recipes and membership.
 
 Only the owner can delete a collection.[delete] Deletion first removes its
-sharing information, then removes the collection. Recipes and cooking entries
-remain stored, preserving any use through other collections. Recipes with no
-remaining collection are no longer discoverable through the interface.
+sharing information, then removes the collection.
+
+Deleting a collection preserves recipes, cooking entries, personal saves,
+and direct recipe sharing. A recipe remains accessible through any surviving
+personal save, collection membership, or direct-sharing permission. Stored
+recipes with none of these access paths are inaccessible through the interface.
 
 These steps are not transactional. If collection deletion fails after sharing
 is removed, the collection remains stored without access and requires repair.

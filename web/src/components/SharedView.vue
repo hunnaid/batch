@@ -4,6 +4,7 @@ import { api, ApiError } from "../api";
 import type { BatchWireHttp } from "../../../generated/wire";
 import RoleBadge from "./RoleBadge.vue";
 import SharingForm from "./SharingForm.vue";
+import RefreshButton from "./RefreshButton.vue";
 
 type Overview = BatchWireHttp["/shared/list"]["output"]["overview"];
 const props = defineProps<{ user: string }>();
@@ -55,7 +56,7 @@ onMounted(loadShared);
 <template>
   <section aria-labelledby="shared-heading">
     <h2 id="shared-heading">Shared</h2>
-    <p>Collections and recipes you share with other cooks.</p>
+    <p>Collections and recipes shared between cooks.</p>
 
     <div class="shared-toolbar">
       <div>
@@ -66,7 +67,9 @@ onMounted(loadShared);
           <option value="sent">Shared with others</option>
         </select>
       </div>
-      <button type="button" :disabled="loading" @click="loadShared">Refresh shared items</button>
+      <RefreshButton class="refresh-shared" :disabled="loading" @click="loadShared">
+        Refresh shared items
+      </RefreshButton>
     </div>
 
     <p v-if="loading" role="status">Loading shared items…</p>
@@ -124,14 +127,23 @@ onMounted(loadShared);
 </template>
 
 <style scoped>
-.shared-toolbar, .shared-title {
+.shared-title {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
 }
-.shared-toolbar { align-items: flex-end; }
-.shared-toolbar > div { flex: 1 1 220px; }
+.shared-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  padding-bottom: 24px;
+  margin-block: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.shared-toolbar > div { display: grid; gap: 8px; min-width: 0; }
+.shared-toolbar label { margin: 0; }
+.refresh-shared { justify-self: end; }
 .shared-title h4 { margin: 0; }
 .shared-recipes { list-style: none; padding: 0; }
 .shared-recipes li { padding: 0; }
@@ -146,4 +158,7 @@ onMounted(loadShared);
 }
 .individual-recipes > li { margin-block: 1rem; }
 .individual-recipes p { margin: 0.3rem 0 0; color: var(--muted); font-size: 0.85rem; }
+@media (max-width: 600px) {
+  .refresh-shared { justify-self: start; }
+}
 </style>

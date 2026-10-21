@@ -1,18 +1,19 @@
 # Shared collections and individual recipes
 
 The Shared tab lists collections and directly shared recipes in separate
-sections.[list] The overview combines the two kinds of shared resources.[overview]
-Each list includes resources the signed-in user owns
-and has shared with at least one other user, and resources where they are a
-member. Private resources, unrelated resources, and revoked memberships are
-excluded. Revoking the final member also removes the resource from its owner's
-Shared list. Ownership remains recorded so it can be shared again.
+sections.[list] The overview includes both lists.[overview]
+Each list shows items the signed-in user has shared with others and items
+shared with them. It excludes private items, items they cannot access, and
+memberships that have been revoked.
 
-The interface labels owners with a crown and "Owner", and other authorized
-users with a person icon and "Member". A recipe belongs to the individual list
-only when it is shared directly; being inside a shared collection is not enough.
-Directly shared recipes can also belong to collections. Each direct recipe is
-listed once, regardless of its collection memberships.
+Removing the last member also removes the item from its owner's Shared list.
+The ownership record stays, so the owner can share it again.
+
+Owners have a crown and an "Owner" label. Other authorized users have a person
+icon and a "Member" label. A recipe appears in the individual list only when
+it is shared directly. Being in a shared collection does not add it to that
+list. Directly shared recipes can also belong to collections, but each recipe
+appears only once in the individual list.
 
 [list]: reaction:Shared.ListShared
 [overview]: former:Shared.SharedOverview
@@ -23,30 +24,34 @@ Shared.ListShared at /shared/list
 
 ## Direct recipe ownership and sharing
 
-RecipeSharing is a separate instance of Sharing with separate storage, using
-recipe identifiers as resources. Creating a recipe through either save endpoint
-initializes RecipeSharing with the signed-in creator as owner and no members.
-Creating a recipe inside someone else's collection does not give that collection
-owner ownership of the recipe's direct sharing.
+RecipeSharing is a separate instance of Sharing with its own storage. It uses
+recipe identifiers instead of collection identifiers. Creating a recipe through
+either save endpoint makes its creator the direct-sharing owner, with no members.
+Creating a recipe in someone else's collection does not give the collection
+owner control of its direct sharing.
 
-Only the direct owner can grant or revoke access by registered username.[owner]
-Granting adds a member.[share] Revoking removes a member.[revoke]
-Unknown recipients, duplicate grants, self-sharing, and revoking nonmembers are
-refused. Direct sharing does not create personal saves or collection memberships.
-The ownership-status endpoint returns only whether the signed-in user may manage
-this recipe's direct sharing; knowing its identifier does not reveal recipe
-contents or another user's identity.[status]
+Only the recipe's direct owner can manage access by registered username.[owner]
+Granting access adds a member.[share] Revoking access removes one.[revoke]
+The request is refused if the username is unknown, access was already granted,
+the owner tries to share with themselves, or the user being revoked is not a
+member. Direct sharing does not add personal saves or collection memberships.
 
-For personally saved recipes created before RecipeSharing existed, a personal
-save plus an existing recipe and absent direct ownership permits initialization
-through an explicit preparation endpoint before sharing.[legacy]
-Preparation establishes the ownership record.[prepare] Existing application save endpoints created
-personal saves only for recipe creators. The first sharing owner is then fixed;
-later personal saves or collection ownership cannot replace it. Concurrent first
-preparations may refuse initialization and can be retried. Older recipes with no
-personal-saving record cannot claim ownership through collection membership.
-Preparation grants no members access. A later refused grant leaves that prepared
-ownership intact and does not add any member.
+The ownership-status endpoint reports whether the signed-in user can manage
+this recipe's direct sharing.[status] It does not return recipe contents or
+another user's identity.
+
+Older recipes may have personal saves but no direct-sharing owner. A user can
+prepare such a recipe for sharing if they have saved it, the recipe exists,
+and it has no direct owner.[legacy] The preparation endpoint records that user
+as the owner.[prepare] The existing save endpoints created personal saves only
+for recipe creators. Once a direct owner is recorded, another personal save or
+collection ownership cannot replace them.
+
+If two requests try to prepare the same recipe at once, one may be refused and
+can be retried. Collection membership alone cannot establish ownership of an
+older recipe without a personal save. Preparation does not grant anyone access.
+If a later sharing request is refused, the owner stays recorded and no member
+is added.
 
 [owner]: view:Shared.RecipeOwner
 [legacy]: view:Shared.LegacyRecipeOwner
@@ -64,24 +69,23 @@ Shared.RevokeRecipeAccess at /recipes/revoke
 
 ## Opening and contributing
 
-Opening an individual recipe checks RecipeSharing access.[get] It returns the
-same recipe details and complete cooking history as the personal and collection
-routes.[details] Members can add cooking entries and edit their own entries.[add]
-Editing uses a separate endpoint.[edit]
-Editing checks both recipe access and the entry's association with that recipe;
-CookingLog enforces authorship. Neither direct membership nor collection membership
-permits managing direct recipe sharing.
+Opening an individual recipe checks RecipeSharing access.[get] The response
+contains the same details and cooking history as opening it from My recipes
+or a collection.[details] Members can add cooking entries.[add] They can also
+edit their own entries.[edit] Editing checks recipe access and verifies that
+the entry belongs to that recipe. CookingLog checks that the user wrote the
+entry. Direct or collection membership does not give control of direct sharing.
 
-The recipe page offers direct sharing to owners from any access path. Direct
-members use the same recipe display and cooking-entry form, without the owner's
-sharing controls. Owners can organize their personally saved recipe into
-collections using the existing personal route.
+Owners can manage direct sharing from any recipe view. Members see the same
+recipe and cooking-entry form, without the owner's sharing controls. Owners
+can also add their personally saved recipes to collections.
 
-Revoking direct access blocks direct reads and entry changes immediately. It
-preserves recipe data, personal saves, cooking history, and collection access.
-A user with another access path can still open the recipe through that path.
-Deleting or unsharing a collection likewise leaves direct recipe access intact.
-All endpoints resolve identity from the session and validate supplied field types.
+Revoking direct access immediately blocks reads and entry changes through
+that permission. It preserves the recipe, personal saves, cooking history,
+and collection access. A user who still has access through a personal save
+or collection can use that route. Deleting or unsharing a collection also
+leaves direct recipe access intact. All endpoints identify the user through
+the session and check input types.
 
 [get]: reaction:Shared.GetSharedRecipe
 [details]: former:Shared.DirectRecipeDetails
@@ -97,22 +101,27 @@ Shared.EditSharedCookingEntry at /entries/edit-shared
 ## Permanently deleting a recipe
 
 Only the recipe's direct owner can permanently delete it.[delete-recipe]
-The endpoint resolves the session and uses the same ownership rule as sharing.
-A legacy personal saver can initialize ownership when the recipe exists and
-has no direct owner. Established ownership cannot be replaced by another
-personal save, collection ownership, or shared membership.
+The endpoint checks the session and uses the same ownership rule as sharing.
+For an older recipe with no direct owner, a personal saver can establish
+ownership if the recipe exists. Another personal save, collection ownership,
+or shared membership cannot replace an existing owner.
 
-After authorization, deletion removes the original recipe, every collection
-reference, all cooking entries (including other users' attempts), all personal
-saves, and the direct-sharing resource. Collections themselves and unrelated
-recipes, saves, histories, and permissions remain unchanged. Cleanup actions
-are coordinated here; each concept modifies only its own state.
+After checking ownership, the endpoint removes the original recipe, its
+references in every collection, all cooking entries (including other users'
+attempts), all personal saves, and its direct-sharing record. It leaves the
+collections themselves and unrelated recipes, saves, histories, and permissions
+unchanged. The endpoint calls each concept to remove its own records.
 
-The recipe page shows "Delete recipe permanently" only to its owner and asks
-for confirmation that includes the loss of shared access and all cooking
-history. After success it returns to the refreshed overview. Repeated or
-unauthorized deletion is refused without changing unrelated state. The actions
-run sequentially; success is returned only after every cleanup completes.
+The recipe page shows "Delete recipe permanently" only to the owner. The
+confirmation explains that everyone loses access and all cooking history is
+deleted. After success, the page returns to the refreshed overview. Deleting
+an already deleted recipe or deleting without ownership is refused without
+changing unrelated state. The actions run in order. The endpoint returns
+success only after every cleanup action finishes.
+
+Deletion is not transactional across concepts. If a cleanup action fails,
+earlier changes may remain even though the endpoint does not return success.
+The recipe may be partially deleted and require repair.
 
 [delete-recipe]: reaction:Shared.DeleteRecipe
 
