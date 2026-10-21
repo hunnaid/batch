@@ -19,7 +19,7 @@ const initials = computed(() => props.name.trim().split(/\s+/).slice(0, 2)
 </template>
 
 <style scoped>
-.avatar { display: inline-flex; flex: 0 0 auto; width: 44px; height: 44px; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden; background: var(--green-soft); color: var(--green); font-weight: 650; vertical-align: middle; }
+.avatar { display: inline-flex; flex: 0 0 auto; width: 44px; height: 44px; align-items: center; justify-content: center; border-radius: 50%; overflow: hidden; background: var(--green-soft); color: var(--green-ink); font-weight: 650; vertical-align: middle; }
 .avatar.large { width: 112px; height: 112px; font-size: 2rem; }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
 .avatar svg { width: 60%; height: 60%; }

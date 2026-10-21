@@ -20,6 +20,7 @@ const example: RecipeData = {
   ingredients: ["2 cups rice", "1 tsp chili"],
   instructions: ["Prepare the rice.", "Add spices and steam."],
   source: "Mom, through iMessage",
+  notes: "Let the rice rest for 10 minutes.\nFluff gently before serving.",
 };
 
 test("records and retrieves all recipe details in order", async () => {
@@ -41,6 +42,13 @@ test("allows a recipe without a source", async () => {
 
   expect(rows).toEqual([input]);
   expect(rows[0]).not.toHaveProperty("source");
+  expect(rows[0]).not.toHaveProperty("notes");
+});
+
+test("preserves empty notes without requiring a source", async () => {
+  const input = { title: "Rice", ingredients: ["Rice"], instructions: ["Cook."], notes: "" };
+  const { recipe } = await recipes.record(input);
+  expect(await recipes._get({ recipe })).toEqual([input]);
 });
 
 test("returns no rows for an unknown recipe", async () => {

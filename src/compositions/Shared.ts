@@ -130,13 +130,14 @@ const RevokeRecipeAccess = endpoint(
 /** Direct and collection access expose the same original recipe and cooking entries. */
 const directRecipeDetails = former(
     "the directly shared recipe (recipe) accessible to (user)",
-    ({ user, recipe }, { title, ingredients, instructions, source, entry, author, changes, result, createdAt }) =>
+    ({ user, recipe }, { title, ingredients, instructions, source, notes, entry, author, changes, result, createdAt }) =>
         where(
             RecipeSharing._accessible({ user }).is({ resource: recipe }),
             RecipeRecording._get({ recipe }).is({ title, ingredients, instructions }),
-            whether(RecipeRecording._get({ recipe }).is({ source }))
+            whether(RecipeRecording._get({ recipe }).is({ source })),
+            whether(RecipeRecording._get({ recipe }).is({ notes }))
         ).form({
-            recipe, title, ingredients, instructions, source,
+            recipe, title, ingredients, instructions, source, notes,
             entries: each(CookingLog._forRecipe({ recipe }).is({
                 _id: entry, author, changes, result, createdAt,
             })).form({ entry, author, changes, result, createdAt }),

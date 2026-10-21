@@ -14,6 +14,7 @@ const emit = defineEmits<{
 
 const title = ref("");
 const source = ref("");
+const notes = ref("");
 const busy = ref(false);
 const error = ref("");
 
@@ -33,12 +34,12 @@ function createRow(): RecipeRow {
 const ingredients = ref<RecipeRow[]>([createRow()]);
 const instructions = ref<RecipeRow[]>([createRow()]);
 
-/** Add a blank row and move keyboard focus to its input. */
-async function addRow(rows: RecipeRow[]) {
+/** Insert a blank row after this item and focus its input. */
+async function addRow(rows: RecipeRow[], index: number) {
   if (busy.value) return;
 
   const row = createRow();
-  rows.push(row);
+  rows.splice(index + 1, 0, row);
 
   // Wait until Vue has rendered the new input before focusing it.
   await nextTick();
@@ -98,6 +99,7 @@ async function save() {
       ingredients: ingredientList,
       instructions: instructionList,
       source: source.value.trim(),
+      notes: notes.value,
     };
 
     const response = props.collection !== undefined
@@ -173,19 +175,30 @@ async function save() {
             required
           />
 
-          <button
-            type="button"
-            :disabled="ingredients.length === 1"
-            :aria-label="`Remove ingredient ${index + 1}`"
-            @click="removeRow(ingredients, index)"
-          >
-            Remove
-          </button>
+          <div class="row-actions">
+            <button
+              type="button"
+              class="add-row"
+              :aria-label="`Add below ingredient ${index + 1}`"
+              title="Add ingredient below"
+              @click="addRow(ingredients, index)"
+            >
+              Add below
+            </button>
+            <button
+              type="button"
+              class="remove-row"
+              :disabled="ingredients.length === 1"
+              :aria-label="`Remove ingredient ${index + 1}`"
+              :title="`Remove ingredient ${index + 1}`"
+              @click="removeRow(ingredients, index)"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6" />
+              </svg>
+            </button>
+          </div>
         </div>
-
-        <button type="button" @click="addRow(ingredients)">
-          Add ingredient
-        </button>
       </section>
 
       <section aria-labelledby="instructions-heading">
@@ -208,19 +221,30 @@ async function save() {
             required
           ></textarea>
 
-          <button
-            type="button"
-            :disabled="instructions.length === 1"
-            :aria-label="`Remove step ${index + 1}`"
-            @click="removeRow(instructions, index)"
-          >
-            Remove
-          </button>
+          <div class="row-actions">
+            <button
+              type="button"
+              class="add-row"
+              :aria-label="`Add below step ${index + 1}`"
+              title="Add step below"
+              @click="addRow(instructions, index)"
+            >
+              Add below
+            </button>
+            <button
+              type="button"
+              class="remove-row"
+              :disabled="instructions.length === 1"
+              :aria-label="`Remove step ${index + 1}`"
+              :title="`Remove step ${index + 1}`"
+              @click="removeRow(instructions, index)"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6" />
+              </svg>
+            </button>
+          </div>
         </div>
-
-        <button type="button" @click="addRow(instructions)">
-          Add step
-        </button>
       </section>
 
       <label for="recipe-source">Source (optional)</label>
@@ -231,7 +255,16 @@ async function save() {
         placeholder="Website URL, cookbook, or Mom through iMessage"
       />
 
-      <button type="submit">
+      <label for="recipe-notes">Notes (optional)</label>
+      <textarea
+        id="recipe-notes"
+        v-model="notes"
+        rows="4"
+        dir="auto"
+        placeholder="Extra tips, substitutions, or reminders for this recipe"
+      />
+
+      <button type="submit" class="save-recipe">
         {{ busy ? "Saving…" : "Save recipe" }}
       </button>
 
@@ -245,13 +278,59 @@ async function save() {
 </template>
 
 <style scoped>
+.save-recipe {
+  color: var(--on-green);
+  background: var(--green);
+  border-color: var(--green);
+}
+.save-recipe:hover:not(:disabled) {
+  color: var(--green-ink);
+  background: var(--green-soft);
+  border-color: var(--green);
+}
 .recipe-row {
   display: grid;
-  gap: 0.4rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 1rem;
 }
 
-.recipe-row button {
-  justify-self: start;
+.recipe-row label { grid-column: 1; margin: 0; }
+.recipe-row input, .recipe-row textarea { grid-column: 1; grid-row: 2; }
+.row-actions {
+  display: flex;
+  align-items: center;
+  grid-column: 2;
+  grid-row: 2;
+  gap: 8px;
+}
+.row-actions button { padding: 8px 12px; font-size: 0.9rem; }
+.row-actions .remove-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 8px;
+  color: var(--error);
+  border-color: var(--error);
+}
+.row-actions .remove-row:hover:not(:disabled) {
+  background: var(--error-soft);
+  border-color: var(--error);
+}
+.remove-row svg { width: 18px; height: 18px; }
+.add-row {
+  color: var(--on-green);
+  background: var(--green);
+  border-color: var(--green);
+}
+.add-row:hover:not(:disabled) {
+  color: var(--green-ink);
+  background: var(--green-soft);
+  border-color: var(--green);
+}
+@media (max-width: 480px) {
+  .row-actions { flex-direction: column; align-items: stretch; }
 }
 </style>

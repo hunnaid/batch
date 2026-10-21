@@ -292,6 +292,7 @@ export type BatchWire = {
         }[];
         "ingredients": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["ingredients"]>>;
         "instructions": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["instructions"]>>;
+        "notes": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["notes"]>> | null;
         "recipe": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>[0], ["recipe"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collecting"]["_items"]>>>, ["item"]>]>>;
         "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["source"]>> | null;
         "title": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["title"]>>;
@@ -315,6 +316,7 @@ export type BatchWire = {
         }[];
         "ingredients": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["ingredients"]>>;
         "instructions": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["instructions"]>>;
+        "notes": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["notes"]>> | null;
         "recipe": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Saving"]["authorize"]>[0], ["item"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>[0], ["recipe"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Saving"]["_forUser"]>>>, ["item"]>]>>;
         "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["source"]>> | null;
         "title": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["title"]>>;
@@ -338,6 +340,7 @@ export type BatchWire = {
         }[];
         "ingredients": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["ingredients"]>>;
         "instructions": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["instructions"]>>;
+        "notes": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["notes"]>> | null;
         "recipe": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["authorize"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>[0], ["recipe"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["_accessible"]>>>, ["resource"]>]>>;
         "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["source"]>> | null;
         "title": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["title"]>>;
@@ -400,6 +403,7 @@ export type BatchWire = {
       "collection": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["collection"]>]>>;
       "ingredients": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["ingredients"]>>;
       "instructions": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["instructions"]>>;
+      "notes"?: Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["notes"]>>;
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
       "source"?: Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["source"]>>;
       "title": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["title"]>>;
@@ -413,6 +417,7 @@ export type BatchWire = {
     input: {
       "ingredients": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["ingredients"]>>;
       "instructions": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["instructions"]>>;
+      "notes"?: Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["notes"]>>;
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
       "source"?: Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["source"]>>;
       "title": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["title"]>>;
@@ -759,6 +764,7 @@ export type BatchWireHttp = {
         }[];
         "ingredients": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["ingredients"]>>;
         "instructions": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["instructions"]>>;
+        "notes": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["notes"]>> | null;
         "recipe": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>[0], ["recipe"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Collecting"]["_items"]>>>, ["item"]>]>>;
         "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["source"]>> | null;
         "title": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["title"]>>;
@@ -781,6 +787,7 @@ export type BatchWireHttp = {
         }[];
         "ingredients": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["ingredients"]>>;
         "instructions": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["instructions"]>>;
+        "notes": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["notes"]>> | null;
         "recipe": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Saving"]["authorize"]>[0], ["item"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>[0], ["recipe"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Saving"]["_forUser"]>>>, ["item"]>]>>;
         "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["source"]>> | null;
         "title": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["title"]>>;
@@ -803,6 +810,7 @@ export type BatchWireHttp = {
         }[];
         "ingredients": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["ingredients"]>>;
         "instructions": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["instructions"]>>;
+        "notes": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["notes"]>> | null;
         "recipe": Jsonify<AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["authorize"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>[0], ["recipe"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["_accessible"]>>>, ["resource"]>]>>;
         "source": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["source"]>> | null;
         "title": Jsonify<AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>>>, ["title"]>>;
@@ -860,6 +868,7 @@ export type BatchWireHttp = {
       "collection": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["add"]>[0], ["collection"]>]>>;
       "ingredients": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["ingredients"]>>;
       "instructions": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["instructions"]>>;
+      "notes"?: Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["notes"]>>;
       "source"?: Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["source"]>>;
       "title": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["title"]>>;
     };
@@ -872,6 +881,7 @@ export type BatchWireHttp = {
     input: {
       "ingredients": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["ingredients"]>>;
       "instructions": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["instructions"]>>;
+      "notes"?: Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["notes"]>>;
       "source"?: Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["source"]>>;
       "title": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["record"]>[0], ["title"]>>;
     };

@@ -792,6 +792,7 @@ test("a recipe can be saved without a collection and appears only in the saver's
         ingredients: ["1 cup rice", "Water"],
         instructions: ["Cook the rice."],
         source: "My notes",
+        notes: "Let the rice rest before serving.\nFluff with a fork.",
     };
 
     const { recipe } = await invokeSuccessfully<{ recipe: string }>(
@@ -855,6 +856,7 @@ test("a personal recipe can be opened by its saver but not another user", async 
         ingredients: ["Rice", "Water"],
         instructions: ["Cook the rice."],
         source: "My notes",
+        notes: "Let the rice rest before serving.\nFluff with a fork.",
     };
 
     const { recipe } = await invokeSuccessfully<{ recipe: string }>(
@@ -1109,6 +1111,7 @@ for (const creatorRole of ["owner", "member"] as const) {
       ingredients: ["Rice", "Water"],
       instructions: ["Cook the rice."],
       source: "My notes",
+      notes: "Let the rice rest before serving.\nFluff with a fork.",
     };
 
     const before = Date.now();
@@ -1159,6 +1162,7 @@ async function createPersonalRecipeTransferFixture() {
       ingredients: ["Rice", "Water"],
       instructions: ["Cook the rice."],
       source: "My notes",
+      notes: "Let the rice rest before serving.\nFluff with a fork.",
     }
   );
   const { entry } = await invokeSuccessfully<{ entry: string }>(
@@ -1329,6 +1333,11 @@ test("refused recipe saves leave no orphan recipes, personal saves, ownership or
     expect(await app.invoker.invoke(path, { ...input, ingredients: [123] }, { timeoutMs: 2000 }))
       .toMatchObject({ ok: false, error: { kind: "framework", code: "INVALID_INPUT" } });
     expect(await recipeStorage()).toEqual(before);
+    for (const notes of [null, 123, {}, []]) {
+      expect(await app.invoker.invoke(path, { ...input, notes }, { timeoutMs: 2000 }))
+        .toMatchObject({ ok: false, error: { kind: "framework", code: "INVALID_INPUT" } });
+      expect(await recipeStorage()).toEqual(before);
+    }
   }
   await refuses("/recipes/save", {
     session: outsiderSession, collection: f.collection, ...valid,

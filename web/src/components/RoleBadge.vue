@@ -17,7 +17,7 @@ defineProps<{ owner: boolean }>();
   padding: 0.2rem 0.65rem;
   border-radius: 999px;
   background: var(--green-soft);
-  color: var(--green);
+  color: var(--green-ink);
   font-family: system-ui, sans-serif;
   font-size: 0.8rem;
   font-weight: 650;

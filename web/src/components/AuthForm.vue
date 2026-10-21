@@ -117,7 +117,7 @@ function toggleMode() {
     <p v-if="error" role="alert">{{ error }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
 
-    <button type="button" :disabled="busy" @click="toggleMode">
+    <button type="button" class="auth-mode-toggle" :disabled="busy" @click="toggleMode">
       {{
         mode === "login"
           ? "Need an account? Register"
@@ -126,3 +126,7 @@ function toggleMode() {
     </button>
   </section>
 </template>
+
+<style scoped>
+.auth-mode-toggle { width: 100%; }
+</style>

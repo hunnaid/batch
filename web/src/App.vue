@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { api, ApiError } from "./api";
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import AuthForm from "./components/AuthForm.vue";
 import CollectionsView from "./components/CollectionsView.vue";
 import RecipeView from "./components/RecipeView.vue";
@@ -12,6 +12,10 @@ import UserAvatar from "./components/UserAvatar.vue";
 
 /** Remember which overview to return to after viewing a recipe. */
 const overview = ref<"recipes" | "collections" | "shared">("recipes");
+const overviewReturnLabel = computed(() =>
+  overview.value === "recipes" ? "Return to my recipes"
+    : overview.value === "shared" ? "Return to shared" : "Return to collections"
+);
 
 const user = ref<string | null>(null);
 const checkingSession = ref(true);
@@ -142,6 +146,7 @@ function clearSession() {
     <section v-else class="workspace">
       <ProfileView
         v-if="showingProfile"
+        :back-label="selectedRecipe ? 'Return to recipe' : overviewReturnLabel"
         @back="showingProfile = false"
         @signed-out="clearSession"
         @session-expired="clearSession"
@@ -154,11 +159,7 @@ function clearSession() {
         :recipe="selectedRecipe.recipe"
         :direct-shared="selectedRecipe.directShared"
         :user="user"
-        :back-label="
-          overview === 'recipes'
-            ? 'Back to my recipes'
-            : overview === 'shared' ? 'Back to shared' : 'Back to collections'
-        "
+        :back-label="overviewReturnLabel"
         @back="selectedRecipe = null"
         @session-expired="clearSession"
       />
@@ -242,6 +243,6 @@ nav[aria-label="Recipe organization"] {
 nav button[aria-pressed="true"] {
   background: var(--green);
   border-color: var(--green);
-  color: white;
+  color: var(--on-green);
 }
 </style>

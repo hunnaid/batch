@@ -74,6 +74,7 @@ const SaveRecipe = endpoint(
         ingredients,
         instructions,
         source,
+        notes,
         user,
         recipe,
     }) =>
@@ -84,6 +85,7 @@ const SaveRecipe = endpoint(
             ingredients,
             instructions,
             source,
+            notes,
         })
         .then(Sessioning.resolve({ session }).responds({ user }))
         .then(Sharing.authorize({ user, resource: collection }))
@@ -93,6 +95,7 @@ const SaveRecipe = endpoint(
                 ingredients,
                 instructions,
                 source,
+                notes,
             }).responds({ recipe })
         )
         .then(RecipeSharing.initialize({ resource: recipe, owner: user }))
@@ -110,6 +113,7 @@ const SaveRecipe = endpoint(
             ],
             defaults: {
                 source: "",
+                notes: "",
             },
         },
         validators: {
@@ -135,7 +139,8 @@ const SaveRecipe = endpoint(
                         isStringArray(input.ingredients) &&
                         isStringArray(input.instructions) &&
                         (input.source === undefined ||
-                        typeof input.source === "string"),
+                        typeof input.source === "string") &&
+                        (input.notes === undefined || typeof input.notes === "string"),
                 };
             },
         },
@@ -155,6 +160,7 @@ const recipeDetails = former(
       ingredients,
       instructions,
       source,
+      notes,
       entry,
       author,
       changes,
@@ -169,13 +175,15 @@ const recipeDetails = former(
             ingredients,
             instructions,
         }),
-        whether(RecipeRecording._get({ recipe }).is({ source }))
+        whether(RecipeRecording._get({ recipe }).is({ source })),
+        whether(RecipeRecording._get({ recipe }).is({ notes }))
     ).form({
         recipe,
         title,
         ingredients,
         instructions,
         source,
+        notes,
         entries: each(
             CookingLog._forRecipe({ recipe }).is({
                 _id: entry,
@@ -410,6 +418,7 @@ const SavePersonalRecipe = endpoint(
         ingredients,
         instructions,
         source,
+        notes,
         user,
         recipe,
     }) =>
@@ -419,6 +428,7 @@ const SavePersonalRecipe = endpoint(
             ingredients,
             instructions,
             source,
+            notes,
         })
             .then(Sessioning.resolve({ session }).responds({ user }))
             .then(
@@ -427,6 +437,7 @@ const SavePersonalRecipe = endpoint(
                     ingredients,
                     instructions,
                     source,
+                    notes,
                 }).responds({ recipe })
             )
             .then(RecipeSharing.initialize({ resource: recipe, owner: user }))
@@ -442,6 +453,7 @@ const SavePersonalRecipe = endpoint(
             ],
             defaults: {
                 source: "",
+                notes: "",
             },
         },
         validators: {
@@ -464,7 +476,8 @@ const SavePersonalRecipe = endpoint(
                         (
                             value.source === undefined ||
                             typeof value.source === "string"
-                        ),
+                        ) &&
+                        (value.notes === undefined || typeof value.notes === "string"),
                 };
             },
         },
@@ -529,6 +542,7 @@ const savedRecipeDetails = former(
             ingredients,
             instructions,
             source,
+            notes,
             entry,
             author,
             changes,
@@ -545,13 +559,15 @@ const savedRecipeDetails = former(
             }),
             whether(
                 RecipeRecording._get({ recipe }).is({ source })
-            )
+            ),
+            whether(RecipeRecording._get({ recipe }).is({ notes }))
         ).form({
             recipe,
             title,
             ingredients,
             instructions,
             source,
+            notes,
             entries: each(
                 CookingLog._forRecipe({ recipe }).is({
                     _id: entry,

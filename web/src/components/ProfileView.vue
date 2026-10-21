@@ -3,6 +3,9 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { api, ApiError } from "../api";
 import { prepareProfilePicture } from "../profile-picture";
 import UserAvatar from "./UserAvatar.vue";
+import ReturnButton from "./ReturnButton.vue";
+
+const props = defineProps<{ backLabel?: string }>();
 
 const emit = defineEmits<{
   back: [];
@@ -117,7 +120,7 @@ onBeforeUnmount(() => window.removeEventListener("beforeunload", beforeUnload));
 
 <template>
   <section aria-labelledby="profile-heading">
-    <button type="button" :disabled="busy" @click="back">Back to Batch</button>
+    <ReturnButton :disabled="busy" @click="back">{{ props.backLabel ?? "Return to Batch" }}</ReturnButton>
     <h2 id="profile-heading">Your profile</h2>
     <p v-if="loading" role="status">Loading profile…</p>
     <p v-if="error" role="alert">{{ error }}</p>
@@ -140,7 +143,7 @@ onBeforeUnmount(() => window.removeEventListener("beforeunload", beforeUnload));
         <p>Your username for signing in and sharing remains @{{ username }}.</p>
         <label for="profile-bio">Bio (optional)</label>
         <textarea id="profile-bio" v-model="bio" maxlength="500" rows="4" dir="auto" placeholder="Tell other cooks a little about yourself." />
-        <button type="submit">{{ saving ? "Saving…" : "Save profile" }}</button>
+        <button type="submit" class="save-profile">{{ saving ? "Saving…" : "Save profile" }}</button>
       </fieldset>
     </form>
     <footer class="profile-footer">
@@ -150,6 +153,11 @@ onBeforeUnmount(() => window.removeEventListener("beforeunload", beforeUnload));
 </template>
 
 <style scoped>
+.save-profile:hover:not(:disabled) {
+  color: var(--green-ink);
+  background: var(--green-soft);
+  border-color: var(--green);
+}
 h2 { margin-top: 24px; }
 .profile-preview { display: flex; align-items: center; gap: 20px; min-width: 0; }
 .profile-preview > div { min-width: 0; overflow-wrap: anywhere; }

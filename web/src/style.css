@@ -2,16 +2,18 @@
 :root {
   color-scheme: light;
 
-  --page: #f6f3ec;
-  --surface: #fffdf8;
+  --page: #d5c7ad;
+  --surface: var(--page);
   --text: #292f29;
   --muted: #62695f;
   --border: #d8dcd1;
-  --input-border: #858e80;
+  --input-border: #8a8e75;
 
-  --green: #365442;
-  --green-hover: #294233;
-  --green-soft: #e8eee5;
+  --green: #8a8e75;
+  --green-hover: #969a81;
+  --green-soft: #bec5a4;
+  --green-ink: #454938;
+  --on-green: #20251d;
 
   --error: #933c32;
   --error-soft: #fbeee9;
@@ -51,7 +53,7 @@ a {
 
 ::selection {
   color: var(--text);
-  background: #dce7d3;
+  background: var(--green-soft);
 }
 
 /* The header frames both the signed-in and signed-out screens. */
@@ -73,7 +75,7 @@ a {
 
 .brand-label {
   margin: 0 0 4px;
-  color: var(--green);
+  color: var(--green-ink);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -147,7 +149,7 @@ p {
 }
 
 a {
-  color: var(--green);
+  color: var(--green-ink);
   text-underline-offset: 4px;
 }
 
@@ -231,7 +233,7 @@ textarea::placeholder {
 button {
   min-height: 44px;
   padding: 10px 16px;
-  color: var(--green);
+  color: var(--green-ink);
   background: var(--surface);
   border: 1px solid var(--input-border);
   border-radius: 10px;
@@ -246,7 +248,7 @@ button:hover:not(:disabled) {
 }
 
 button[type="submit"] {
-  color: white;
+  color: var(--on-green);
   background: var(--green);
   border-color: var(--green);
 }
@@ -330,7 +332,7 @@ details {
 }
 
 summary {
-  color: var(--green);
+  color: var(--green-ink);
   font-weight: 600;
   cursor: pointer;
 }
@@ -355,7 +357,7 @@ time {
 }
 
 [role="status"] {
-  color: var(--green);
+  color: var(--green-ink);
 }
 
 /* Logical spacing above preserves mixed-language layouts. */

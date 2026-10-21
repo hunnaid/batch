@@ -6,8 +6,11 @@ recording the recipe. It initializes direct-sharing ownership with no members,
 then saves the new recipe to the creator's personal
 list, adds it to the collection, and returns its identifier.
 
-Ingredients and instructions retain their supplied order. An omitted source
-defaults to an empty string at the endpoint.
+Ingredients and instructions retain their supplied order. Cooks can include
+optional notes for extra tips or reminders when saving a recipe, with or
+without a collection. Notes belong to the original recipe and are visible to
+anyone who can open it. Notes keep their text and line breaks. An omitted
+source or notes field defaults to an empty string at either save endpoint.
 
 [save]: reaction:Recipes.SaveRecipe
 
@@ -18,7 +21,9 @@ Recipes.SaveRecipe at /recipes/save
 A signed-in cook retrieves a recipe through a collection they can access.[get]
 The recipe details combine collection membership with the original recipe
 data.[details] If the recipe does not belong to the collection or does not
-exist, the response contains a null recipe. An absent source is shown as null.
+exist, the response contains a null recipe. An absent source or notes field
+is shown as null. Older recipes without notes remain accessible. The recipe
+page shows notes below the instructions when they contain text.
 
 [get]: reaction:Recipes.GetRecipe
 [details]: former:Recipes.RecipeDetails

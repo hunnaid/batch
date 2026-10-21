@@ -195,13 +195,14 @@ onMounted(loadRecipes);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: white;
+  color: var(--on-green);
   background: var(--green);
   border-color: var(--green);
 }
 .add-recipe:hover:not(:disabled) {
-  background: var(--green-hover);
-  border-color: var(--green-hover);
+  color: var(--green-ink);
+  background: var(--green-soft);
+  border-color: var(--green);
 }
 .add-recipe > span { font-size: 1.25rem; line-height: 1; }
 .recipes-toolbar {

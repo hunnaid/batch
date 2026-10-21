@@ -65,6 +65,7 @@ async function account(label: string) {
 const recipeData = {
   title: "Simple Rice", ingredients: ["Rice", "Water"],
   instructions: ["Cook the rice."], source: "My notes",
+  notes: "Let the rice rest before serving.\nFluff with a fork.",
 };
 
 async function fixture() {
@@ -80,6 +81,64 @@ async function fixture() {
 async function list(session: string) {
   return call<BatchWire["/shared/list"]["output"]>("/shared/list", { session });
 }
+
+for (const path of ["/recipes/save-personal", "/recipes/save"]) {
+  test(`${path} preserves optional notes across personal, collection, and direct access`, async () => {
+    const owner = await account("owner");
+    const member = await account("member");
+    const { collection } = await call<{ collection: string }>("/collections/create", {
+      session: owner.session, name: "Recipe notes",
+    });
+    await call("/collections/share", { session: owner.session, collection, username: member.username });
+
+    for (const notes of [undefined, "", "  Toast spices first.\nLet the rice rest.  "]) {
+      const { recipe } = await call<{ recipe: string }>(path, {
+        session: owner.session, collection,
+        title: "Rice", ingredients: ["Rice"], instructions: ["Cook."],
+        ...(notes === undefined ? {} : { notes }),
+      });
+      if (path === "/recipes/save-personal") {
+        await call("/recipes/add-personal-to-collection", {
+          session: owner.session, destinationCollection: collection, recipe,
+        });
+      }
+      await call("/recipes/share", { session: owner.session, recipe, username: member.username });
+      const expected = { recipe: {
+        recipe, title: "Rice", ingredients: ["Rice"], instructions: ["Cook."],
+        source: "", notes: notes ?? "", entries: [],
+      } };
+      expect(await call<unknown>("/recipes/get-personal", { session: owner.session, recipe })).toEqual(expected);
+      expect(await call<unknown>("/recipes/get", { session: member.session, collection, recipe })).toEqual(expected);
+      expect(await call<unknown>("/recipes/get-shared", { session: member.session, recipe })).toEqual(expected);
+      expect((await recording._get({ recipe }))[0]?.notes).toBe(notes ?? "");
+    }
+  });
+}
+
+test("recipes with absent optional fields remain accessible through every route", async () => {
+  const owner = await account("owner");
+  const member = await account("member");
+  const { collection } = await call<{ collection: string }>("/collections/create", {
+    session: owner.session, name: "Older recipes",
+  });
+  await call("/collections/share", { session: owner.session, collection, username: member.username });
+  for (const notes of [undefined, "Notes without a source.\nKeep line breaks."]) {
+    const data = {
+      title: "Rice", ingredients: ["Rice"], instructions: ["Cook."],
+      ...(notes === undefined ? {} : { notes }),
+    };
+    const { recipe } = await recording.record(data);
+    await saving.save({ user: owner.user, item: recipe });
+    await collecting.add({ collection, item: recipe });
+    await call("/recipes/prepare-sharing", { session: owner.session, recipe });
+    await call("/recipes/share", { session: owner.session, recipe, username: member.username });
+    const expected = { recipe: { recipe, ...data, source: null, notes: notes ?? null, entries: [] } };
+    expect(await call<unknown>("/recipes/get-personal", { session: owner.session, recipe })).toEqual(expected);
+    expect(await call<unknown>("/recipes/get", { session: member.session, collection, recipe })).toEqual(expected);
+    expect(await call<unknown>("/recipes/get-shared", { session: member.session, recipe })).toEqual(expected);
+    expect(await recording._get({ recipe })).toEqual([data]);
+  }
+});
 
 async function state(f: Awaited<ReturnType<typeof fixture>>) {
   return {

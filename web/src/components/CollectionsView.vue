@@ -167,8 +167,26 @@ async function createCollection() {
   }
 }
 
-/** Only one collection's recipe form is open at a time. */
+/** Show the recipe form separately, retaining its destination collection. */
 const addingTo = ref<string | null>(null);
+const recipeDestinationName = computed(() =>
+  ownedCollections.value.find((collection) => collection.collection === addingTo.value)?.name ?? ""
+);
+
+async function beginAddRecipe(collection: string) {
+  if (loading.value || creating.value || managing.value) return;
+  addingTo.value = collection;
+  error.value = "";
+  await nextTick();
+  document.getElementById("recipe-title")?.focus();
+}
+
+async function cancelAddRecipe() {
+  const collection = addingTo.value;
+  addingTo.value = null;
+  await nextTick();
+  document.getElementById(`add-recipe-${collection}`)?.focus();
+}
 
 /** Open the saved recipe; returning to collections will reload the list. */
 function recipeSaved(collection: string, recipe: string) {
@@ -253,7 +271,7 @@ onMounted(loadCollections);
     <div class="collections-heading">
       <h2 id="collections-heading">Collections</h2>
       <button
-        v-if="!addingCollection"
+        v-if="!addingCollection && addingTo === null"
         ref="createCollectionButton"
         type="button"
         class="create-collection-button"
@@ -265,196 +283,201 @@ onMounted(loadCollections);
       </button>
     </div>
 
-    <form v-if="addingCollection" class="create-collection" @submit.prevent="createCollection">
-      <fieldset :disabled="creating || loading || managing">
-        <label for="collection-name">Collection name</label>
-        <input
-          id="collection-name"
-          ref="collectionNameInput"
-          v-model="name"
-          placeholder="For example, Family Recipes"
-          required
-        />
-        <div class="create-controls">
-          <button type="submit">
-            {{ creating ? "Creating…" : "Create collection" }}
-          </button>
-          <button type="button" @click="cancelCreateCollection">Cancel</button>
-        </div>
-      </fieldset>
-    </form>
-
-    <div v-else class="collections-toolbar">
-      <div class="search-field">
-        <label for="collection-search">Search collections and recipes</label>
-
-        <div class="search-controls">
-          <input
-            id="collection-search"
-            v-model="search"
-            type="search"
-            dir="auto"
-            placeholder="Search by collection or recipe title"
-            aria-describedby="collection-search-help"
-          />
-
-          <button v-if="search" type="button" @click="search = ''">
-            Clear search
-          </button>
-        </div>
-      </div>
-
-      <p id="collection-search-help">
-        Matching collections show all their recipes.
-      </p>
-
-      <RefreshButton
-        class="refresh-collections"
-        :disabled="loading || creating || managing"
-        @click="loadCollections"
-      >
-        Refresh collections
-      </RefreshButton>
-
+    <div v-if="addingTo !== null">
+      <p>Adding to <strong dir="auto">{{ recipeDestinationName }}</strong></p>
+      <RecipeForm
+        :key="addingTo"
+        :collection="addingTo"
+        @saved="recipeSaved(addingTo, $event)"
+        @cancel="cancelAddRecipe"
+        @session-expired="emit('sessionExpired')"
+      />
     </div>
 
-    <p v-if="error" role="alert">{{ error }}</p>
-
-    <p v-if="loading" role="status">Loading collections…</p>
-
     <template v-else>
-      <p v-if="!error && ownedCollections.length === 0">
-        No collections yet. Choose Create collection to start saving recipes.
-      </p>
-
-      <p
-        v-if="
-          !error &&
-          ownedCollections.length > 0 &&
-          matchingCollectionIds.size === 0
-        "
-        role="status"
-      >
-        No collections or recipe titles match “{{ search.trim() }}”.
-      </p>
-
-      <article
-        v-for="collection in ownedCollections"
-        :key="collection.collection"
-        v-show="matchingCollectionIds.has(collection.collection)"
-        class="collection-card"
-      >
-        <header class="collection-header">
-          <div class="collection-info">
-            <div class="collection-title">
-              <h3 dir="auto">{{ collection.name }}</h3>
-              <RoleBadge :owner="collection.owner === user" />
-            </div>
-          </div>
-
-          <button
-            v-if="addingTo === null"
-            type="button"
-            class="add-recipe"
-            @click="addingTo = collection.collection"
-          >
-            <span aria-hidden="true">+</span>
-            Add recipe
-          </button>
-        </header>
-
-        <details>
-          <summary>View recipes ({{ collection.recipes.length }})</summary>
-          <ul v-if="collection.recipes.length" class="collection-recipes">
-            <li
-              v-for="recipe in collection.recipes"
-              :key="recipe.recipe"
-            >
-              <button
-                type="button"
-                @click="emit('openRecipe', collection.collection, recipe.recipe)"
-              >
-                <span dir="auto">{{ recipe.title }}</span>
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="m9 6 6 6-6 6" />
-                </svg>
-              </button>
-            </li>
-          </ul>
-
-          <p v-else class="empty-collection">No recipes yet. Add a recipe to start this collection.</p>
-        </details>
-
-        <RecipeForm
-          v-if="addingTo === collection.collection"
-          :key="collection.collection"
-          :collection="collection.collection"
-          @saved="recipeSaved(collection.collection, $event)"
-          @cancel="addingTo = null"
-          @session-expired="emit('sessionExpired')"
-        />
-
-        <details v-if="collection.owner === user">
-          <summary>Manage sharing</summary>
-
-          <SharingForm
-            :collection="collection.collection"
-            @session-expired="emit('sessionExpired')"
+      <form v-if="addingCollection" class="create-collection" @submit.prevent="createCollection">
+        <fieldset :disabled="creating || loading || managing">
+          <label for="collection-name">Collection name</label>
+          <input
+            id="collection-name"
+            ref="collectionNameInput"
+            v-model="name"
+            placeholder="For example, Family Recipes"
+            required
           />
-        </details>
+          <div class="create-controls">
+            <button type="submit">
+              {{ creating ? "Creating…" : "Create collection" }}
+            </button>
+            <button type="button" @click="cancelCreateCollection">Cancel</button>
+          </div>
+        </fieldset>
+      </form>
 
-        <div v-if="collection.owner === user" class="collection-actions">
-          <button
-            v-if="renaming !== collection.collection"
-            type="button"
-            :disabled="managing || loading || creating || addingTo !== null"
-            @click="beginRename(collection)"
-          >
-            Rename
-          </button>
+      <div v-else class="collections-toolbar">
+        <div class="search-field">
+          <label for="collection-search">Search collections and recipes</label>
 
-          <form
-            v-if="renaming === collection.collection"
-            class="rename-form"
-            @submit.prevent="renameCollection(collection)"
-          >
-            <fieldset :disabled="managing || creating">
-              <label :for="`rename-${collection.collection}`">
-                Collection name
-              </label>
+          <div class="search-controls">
+            <input
+              id="collection-search"
+              v-model="search"
+              type="search"
+              dir="auto"
+              placeholder="Search by collection or recipe title"
+              aria-describedby="collection-search-help"
+            />
 
-              <input
-                :id="`rename-${collection.collection}`"
-                v-model="replacementName"
-                required
-              />
-
-              <div class="rename-actions">
-                <button type="submit">
-                  {{ managing ? "Saving…" : "Save name" }}
-                </button>
-
-                <button type="button" @click="renaming = null">
-                  Cancel
-                </button>
-              </div>
-            </fieldset>
-          </form>
-
-          <button
-            type="button"
-            class="delete-collection"
-            :disabled="
-              managing || loading || creating ||
-              addingTo !== null || renaming !== null
-            "
-            @click="deleteCollection(collection)"
-          >
-            Delete collection
-          </button>
+            <button v-if="search" type="button" @click="search = ''">
+              Clear search
+            </button>
+          </div>
         </div>
 
-      </article>
+        <p id="collection-search-help">
+          Matching collections show all their recipes.
+        </p>
+
+        <RefreshButton
+          class="refresh-collections"
+          :disabled="loading || creating || managing"
+          @click="loadCollections"
+        >
+          Refresh collections
+        </RefreshButton>
+
+      </div>
+
+      <p v-if="error" role="alert">{{ error }}</p>
+
+      <p v-if="loading" role="status">Loading collections…</p>
+
+      <template v-else>
+        <p v-if="!error && ownedCollections.length === 0">
+          No collections yet. Choose Create collection to start saving recipes.
+        </p>
+
+        <p
+          v-if="
+            !error &&
+            ownedCollections.length > 0 &&
+            matchingCollectionIds.size === 0
+          "
+          role="status"
+        >
+          No collections or recipe titles match “{{ search.trim() }}”.
+        </p>
+
+        <article
+          v-for="collection in ownedCollections"
+          :key="collection.collection"
+          v-show="matchingCollectionIds.has(collection.collection)"
+          class="collection-card"
+        >
+          <header class="collection-header">
+            <div class="collection-info">
+              <div class="collection-title">
+                <h3 dir="auto">{{ collection.name }}</h3>
+                <RoleBadge :owner="collection.owner === user" />
+              </div>
+            </div>
+
+            <button
+              :id="`add-recipe-${collection.collection}`"
+              type="button"
+              class="add-recipe"
+              :disabled="loading || creating || managing"
+              @click="beginAddRecipe(collection.collection)"
+            >
+              <span aria-hidden="true">+</span>
+              Add recipe
+            </button>
+          </header>
+
+          <details>
+            <summary>View recipes ({{ collection.recipes.length }})</summary>
+            <ul v-if="collection.recipes.length" class="collection-recipes">
+              <li
+                v-for="recipe in collection.recipes"
+                :key="recipe.recipe"
+              >
+                <button
+                  type="button"
+                  @click="emit('openRecipe', collection.collection, recipe.recipe)"
+                >
+                  <span dir="auto">{{ recipe.title }}</span>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m9 6 6 6-6 6" />
+                  </svg>
+                </button>
+              </li>
+            </ul>
+
+            <p v-else class="empty-collection">No recipes yet. Add a recipe to start this collection.</p>
+          </details>
+
+          <details v-if="collection.owner === user">
+            <summary>Manage sharing</summary>
+
+            <SharingForm
+              :collection="collection.collection"
+              @session-expired="emit('sessionExpired')"
+            />
+          </details>
+
+          <div v-if="collection.owner === user" class="collection-actions">
+            <button
+              v-if="renaming !== collection.collection"
+              type="button"
+              :disabled="managing || loading || creating || addingTo !== null"
+              @click="beginRename(collection)"
+            >
+              Rename
+            </button>
+
+            <form
+              v-if="renaming === collection.collection"
+              class="rename-form"
+              @submit.prevent="renameCollection(collection)"
+            >
+              <fieldset :disabled="managing || creating">
+                <label :for="`rename-${collection.collection}`">
+                  Collection name
+                </label>
+
+                <input
+                  :id="`rename-${collection.collection}`"
+                  v-model="replacementName"
+                  required
+                />
+
+                <div class="rename-actions">
+                  <button type="submit">
+                    {{ managing ? "Saving…" : "Save name" }}
+                  </button>
+
+                  <button type="button" @click="renaming = null">
+                    Cancel
+                  </button>
+                </div>
+              </fieldset>
+            </form>
+
+            <button
+              type="button"
+              class="delete-collection"
+              :disabled="
+                managing || loading || creating ||
+                addingTo !== null || renaming !== null
+              "
+              @click="deleteCollection(collection)"
+            >
+              Delete collection
+            </button>
+          </div>
+
+        </article>
+      </template>
     </template>
   </section>
 </template>
@@ -473,13 +496,15 @@ onMounted(loadCollections);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: white;
+  color: var(--on-green);
   background: var(--green);
   border-color: var(--green);
 }
-.create-collection-button:hover:not(:disabled) {
-  background: var(--green-hover);
-  border-color: var(--green-hover);
+.create-collection-button:hover:not(:disabled),
+.create-controls button[type="submit"]:hover:not(:disabled) {
+  color: var(--green-ink);
+  background: var(--green-soft);
+  border-color: var(--green);
 }
 .collections-toolbar {
   display: grid;

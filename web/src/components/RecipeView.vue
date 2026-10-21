@@ -6,6 +6,7 @@ import CookingEntryForm from "./CookingEntryForm.vue";
 import SharingForm from "./SharingForm.vue";
 import RoleBadge from "./RoleBadge.vue";
 import UserAvatar from "./UserAvatar.vue";
+import ReturnButton from "./ReturnButton.vue";
 
 type RecipeDetails = NonNullable<
   BatchWireHttp["/recipes/get"]["output"]["recipe"]
@@ -329,9 +330,9 @@ onMounted(loadDestinations);
 
 <template>
   <section>
-    <button type="button" :disabled="managingRecipe" @click="emit('back')">
-      {{ props.backLabel ?? "Back to collections" }}
-    </button>
+    <ReturnButton :disabled="managingRecipe" @click="emit('back')">
+      {{ props.backLabel ?? "Return to collections" }}
+    </ReturnButton>
 
     <p v-if="loading" role="status">Loading recipe…</p>
 
@@ -449,6 +450,11 @@ onMounted(loadDestinations);
           {{ instruction }}
         </li>
       </ol>
+
+      <section v-if="details.notes?.trim()" aria-labelledby="recipe-notes-heading">
+        <h3 id="recipe-notes-heading">Notes</h3>
+        <p class="recipe-text" dir="auto">{{ details.notes }}</p>
+      </section>
 
       <h3>Cooking history</h3>
       <p v-if="contributorError" role="status">
