@@ -118,6 +118,11 @@ _get(resource: Resource) : optional (owner: User)
   Return the resource's owner when initialized, otherwise no rows.
   This query does not authorize a user; compositions enforce access.
 
+_members(resource: Resource) : many (member: User)
+  Return the resource's member identifiers in ascending order, excluding its owner.
+  Return no rows for an unknown resource or one without members.
+  Make no state change. This query does not authorize a user; compositions enforce access.
+
 _shared(user: User) : many (resource: Resource, owner: User)
   Return each resource with at least one member where the user is owner or member.
   Include the resource identifier and owner, ordered by resource identifier.

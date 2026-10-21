@@ -67,6 +67,28 @@ Shared.ShareRecipe at /recipes/share
 Shared.RevokeRecipeAccess at /recipes/revoke
 ```
 
+## Managing recipients
+
+Owners can retrieve a recipe's direct recipients through their session.[recipients]
+The endpoint checks direct ownership and returns member identifiers and registered
+usernames, excluding the owner.[recipient-list] Members and unrelated users are
+refused. A legacy personal saver who can prepare ownership can read an empty
+list before preparation; reading does not initialize sharing or change records.
+
+Manage sharing lists direct recipients with a Revoke access button beside each
+username. A separate username field grants new access. Grants and revocations
+update the list without a page refresh. A failed load offers a retry instead of
+claiming there are no recipients. The list includes only direct recipe grants.
+Collection permissions remain separate, and revoking a direct recipient preserves
+any access through a collection or personal save.
+
+[recipients]: reaction:Shared.ListRecipeRecipients
+[recipient-list]: former:Shared.RecipeRecipients
+
+```endpoints
+Shared.ListRecipeRecipients at /recipes/recipients
+```
+
 ## Opening and contributing
 
 Opening an individual recipe checks RecipeSharing access.[get] The response

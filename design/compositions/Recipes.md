@@ -10,7 +10,10 @@ Ingredients and instructions retain their supplied order. Cooks can include
 optional notes for extra tips or reminders when saving a recipe, with or
 without a collection. Notes belong to the original recipe and are visible to
 anyone who can open it. Notes keep their text and line breaks. An omitted
-source or notes field defaults to an empty string at either save endpoint.
+source, notes, or description field defaults to an empty string at either
+save endpoint. An optional description introduces the dish beneath its title.
+It is stored with the original recipe, preserves text and line breaks, and
+is visible through the same access permissions as the rest of the recipe.
 
 [save]: reaction:Recipes.SaveRecipe
 
@@ -21,9 +24,10 @@ Recipes.SaveRecipe at /recipes/save
 A signed-in cook retrieves a recipe through a collection they can access.[get]
 The recipe details combine collection membership with the original recipe
 data.[details] If the recipe does not belong to the collection or does not
-exist, the response contains a null recipe. An absent source or notes field
-is shown as null. Older recipes without notes remain accessible. The recipe
-page shows notes below the instructions when they contain text.
+exist, the response contains a null recipe. An absent source, notes, or
+description field is shown as null. Older recipes without these optional
+fields remain accessible. The recipe page shows a description beneath the
+title and notes below the instructions when those fields contain text.
 
 [get]: reaction:Recipes.GetRecipe
 [details]: former:Recipes.RecipeDetails

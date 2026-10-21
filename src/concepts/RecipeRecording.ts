@@ -11,6 +11,7 @@ export type RecipeData = {
   instructions: string[];
   source?: string;
   notes?: string;
+  description?: string;
 };
 
 /**
@@ -54,7 +55,7 @@ export class RecipeRecordingConcept {
      * @throws InvalidRecipe if the title or recipe lists contain missing details.
      */
     async record(input: RecipeData): Promise<{ recipe: string }> {
-        const { title, ingredients, instructions, source, notes } = input;
+        const { title, ingredients, instructions, source, notes, description } = input;
 
         if (title.trim().length === 0) {
             throw new InvalidRecipe("The recipe title cannot be blank.");
@@ -91,6 +92,9 @@ export class RecipeRecordingConcept {
         if (notes !== undefined) {
             document.notes = notes;
         }
+        if (description !== undefined) {
+            document.description = description;
+        }
 
         await this.recipes.insertOne(document);
 
@@ -123,6 +127,9 @@ export class RecipeRecordingConcept {
         }
         if (document.notes !== undefined) {
             details.notes = document.notes;
+        }
+        if (document.description !== undefined) {
+            details.description = document.description;
         }
 
         return [details];

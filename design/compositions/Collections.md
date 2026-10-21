@@ -27,6 +27,25 @@ the recipient as a member. Unknown usernames produce an error response.
 Collections.ShareCollection at /collections/share
 ```
 
+Only the collection owner can retrieve its current sharing recipients.[recipients]
+The endpoint checks the session and ownership before returning member identifiers
+and registered usernames.[recipient-list] It excludes the owner and returns an
+empty list when nobody has been added. Reading the list changes no records.
+Members and unrelated users cannot retrieve it.
+
+Manage sharing lists these usernames with a Revoke access button beside each.
+The owner can share with another cook through a separate username field.
+Successful grants and revocations update the list without a page refresh.
+If loading fails, the interface offers a retry and does not show an empty list
+as though it had loaded successfully.
+
+[recipients]: reaction:Collections.ListCollectionRecipients
+[recipient-list]: former:Collections.CollectionRecipients
+
+```endpoints
+Collections.ListCollectionRecipients at /collections/recipients
+```
+
 A signed-in user lists their accessible collections.[list]
 The collections overview combines owned and shared resources with collection
 names and recipe titles.[overview] Each collection includes its owner so the

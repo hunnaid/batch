@@ -152,9 +152,32 @@ const accessibleCollections = former(
         })
 );
 
-/**
- * List collections using the identity established by the session.
- */
+/** Resolve usernames here so Sharing remains independent of accounts. */
+const collectionRecipients = former(
+    "the recipients of collection (collection)",
+    ({ collection }, { member, username }) => form({
+        recipients: each(Sharing._members({ resource: collection }).is({ member }))
+            .where(PasswordAuthenticating._byUser({ user: member }).is({ username }))
+            .form({ user: member, username }),
+    })
+);
+
+const ListCollectionRecipients = endpoint(
+    "/collections/recipients",
+    ({ session, collection, user }) => receive({ session, collection })
+        .then(Sessioning.resolve({ session }).responds({ user }))
+        .then(Sharing.authorizeOwner({ user, resource: collection }))
+        .then(respond({ sharing: collectionRecipients({ collection }) })),
+    {
+        validators: {
+            input: (value: unknown) => ({
+                ok: hasSessionInput(value) && typeof value.collection === "string",
+            }),
+        },
+    }
+);
+
+/** List collections using the identity established by the session. */
 const ListCollections = endpoint(
     "/collections/list",
     ({ session, user }) =>
@@ -269,6 +292,8 @@ export const composition = {
     CreateCollection,
     ShareCollection,
     ListCollections,
+    ListCollectionRecipients,
+    CollectionRecipients: collectionRecipients,
     AccessibleCollections: accessibleCollections,
     RevokeCollectionAccess,
     RenameCollection,

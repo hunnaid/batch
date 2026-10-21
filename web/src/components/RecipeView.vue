@@ -348,113 +348,39 @@ onMounted(loadDestinations);
     <div v-else :inert="managingRecipe">
       <h2 dir="auto">{{ details.title }}</h2>
       <RoleBadge v-if="props.directShared" :owner="canManageSharing" />
+      <p v-if="details.description?.trim()" class="recipe-description recipe-text" dir="auto">{{ details.description }}</p>
       <p v-if="details.source" dir="auto">
         Source: {{ details.source }}
       </p>
 
-      <details v-if="canManageSharing">
-        <summary>Share recipe</summary>
-        <SharingForm
-          :recipe="props.recipe"
-          @session-expired="emit('sessionExpired')"
-        />
-      </details>
+      <div class="recipe-card">
+        <section class="recipe-ingredients" aria-labelledby="recipe-ingredients-heading">
+          <h3 id="recipe-ingredients-heading" class="recipe-section-heading">Ingredients</h3>
+          <ul class="ingredient-list" role="list">
+            <li
+              v-for="(ingredient, index) in details.ingredients"
+              :key="index"
+              class="recipe-text"
+              dir="auto"
+            >{{ ingredient }}</li>
+          </ul>
+        </section>
 
-      <section v-if="!props.directShared || canManageSharing" aria-labelledby="add-to-collection-heading">
-        <h3 id="add-to-collection-heading">Add to a collection</h3>
+        <section class="recipe-preparation" aria-labelledby="recipe-instructions-heading">
+          <h3 id="recipe-instructions-heading" class="recipe-section-heading">Instructions</h3>
+          <ol class="instruction-list" role="list">
+            <li v-for="(instruction, index) in details.instructions" :key="index">
+              <strong class="step-label">Step {{ index + 1 }}</strong>
+              <p class="instruction-text recipe-text" dir="auto">{{ instruction }}</p>
+            </li>
+          </ol>
 
-        <p id="collection-sharing-help">
-          Members of the destination collection will see this recipe and
-          all existing and future cooking entries. Adding it does not
-          remove it from My recipes or any existing collection.
-        </p>
-
-        <p v-if="loadingDestinations" role="status">
-          Loading collections…
-        </p>
-
-        <p v-if="collectionError" role="alert">
-          {{ collectionError }}
-        </p>
-
-        <p v-if="collectionSuccess" role="status">
-          {{ collectionSuccess }}
-        </p>
-
-        <template v-if="!loadingDestinations && !destinationsFailed">
-          <form
-            v-if="destinations.length > 0"
-            @submit.prevent="addToCollection"
-          >
-            <fieldset :disabled="addingToCollection">
-              <legend>Destination collection</legend>
-
-              <label for="recipe-destination">Collection</label>
-              <select
-                id="recipe-destination"
-                v-model="destination"
-                aria-describedby="collection-sharing-help"
-                required
-              >
-                <option disabled value="">Choose a collection</option>
-
-                <option
-                  v-for="collection in destinations"
-                  :key="collection.collection"
-                  :value="collection.collection"
-                  dir="auto"
-                >
-                  {{ collection.name }}
-                </option>
-              </select>
-
-              <button type="submit" :disabled="!destination">
-                {{ addingToCollection ? "Adding…" : "Add to collection" }}
-              </button>
-            </fieldset>
-          </form>
-
-          <p v-else>
-            No other available collections are missing this recipe.
-            Create another collection or ask someone to share one with you.
-          </p>
-        </template>
-
-        <button
-          type="button"
-          :disabled="loadingDestinations || addingToCollection"
-          @click="loadDestinations"
-        >
-          Refresh collections
-        </button>
-      </section>
-
-      <h3>Ingredients</h3>
-      <ul>
-        <li
-          v-for="(ingredient, index) in details.ingredients"
-          :key="index"
-          dir="auto"
-        >
-          {{ ingredient }}
-        </li>
-      </ul>
-
-      <h3>Instructions</h3>
-      <ol>
-        <li
-          v-for="(instruction, index) in details.instructions"
-          :key="index"
-          dir="auto"
-        >
-          {{ instruction }}
-        </li>
-      </ol>
-
-      <section v-if="details.notes?.trim()" aria-labelledby="recipe-notes-heading">
-        <h3 id="recipe-notes-heading">Notes</h3>
-        <p class="recipe-text" dir="auto">{{ details.notes }}</p>
-      </section>
+          <section v-if="details.notes?.trim()" class="recipe-notes" aria-labelledby="recipe-notes-heading">
+            <h3 id="recipe-notes-heading">Notes</h3>
+            <p class="recipe-text" dir="auto">{{ details.notes }}</p>
+          </section>
+        </section>
+      </div>
 
       <h3>Cooking history</h3>
       <p v-if="contributorError" role="status">
@@ -522,34 +448,156 @@ onMounted(loadDestinations);
         </button>
       </article>
 
-      <section v-if="canManageSharing || currentCollection?.owner === user" aria-labelledby="manage-recipe-heading">
-        <h3 id="manage-recipe-heading">Manage recipe</h3>
+      <details v-if="!props.directShared || canManageSharing">
+        <summary>Add to a collection</summary>
+
+        <p id="collection-sharing-help">
+          Members of the destination collection will see this recipe and
+          all existing and future cooking entries. Adding it does not
+          remove it from My recipes or any existing collection.
+        </p>
+
+        <p v-if="loadingDestinations" role="status">
+          Loading collections…
+        </p>
+
+        <p v-if="collectionError" role="alert">
+          {{ collectionError }}
+        </p>
+
+        <p v-if="collectionSuccess" role="status">
+          {{ collectionSuccess }}
+        </p>
+
+        <template v-if="!loadingDestinations && !destinationsFailed">
+          <form
+            v-if="destinations.length > 0"
+            @submit.prevent="addToCollection"
+          >
+            <fieldset :disabled="addingToCollection">
+              <legend>Destination collection</legend>
+
+              <label for="recipe-destination">Collection</label>
+              <select
+                id="recipe-destination"
+                v-model="destination"
+                aria-describedby="collection-sharing-help"
+                required
+              >
+                <option disabled value="">Choose a collection</option>
+
+                <option
+                  v-for="collection in destinations"
+                  :key="collection.collection"
+                  :value="collection.collection"
+                  dir="auto"
+                >
+                  {{ collection.name }}
+                </option>
+              </select>
+
+              <button type="submit" class="add-to-collection" :disabled="!destination">
+                {{ addingToCollection ? "Adding…" : "Add to collection" }}
+              </button>
+            </fieldset>
+          </form>
+
+          <p v-else>
+            No other available collections are missing this recipe.
+            Create another collection or ask someone to share one with you.
+          </p>
+        </template>
+
+        <button
+          type="button"
+          :disabled="loadingDestinations || addingToCollection"
+          @click="loadDestinations"
+        >
+          Refresh collections
+        </button>
+      </details>
+
+      <details v-if="canManageSharing">
+        <summary>Share recipe</summary>
+        <SharingForm
+          :recipe="props.recipe"
+          @session-expired="emit('sessionExpired')"
+        />
+      </details>
+
+      <details v-if="canManageSharing || currentCollection?.owner === user">
+        <summary>Manage recipe</summary>
         <p v-if="managementError" role="alert">{{ managementError }}</p>
         <p v-if="showEntryForm">Save or cancel your cooking entry before managing this recipe.</p>
-        <button
-          v-if="currentCollection?.owner === user"
-          type="button"
-          :disabled="managingRecipe || addingToCollection || showEntryForm"
-          @click="manageRecipe('remove')"
-        >
-          Remove from collection
-        </button>
-        <button
-          v-if="canManageSharing"
-          type="button"
-          class="delete-recipe"
-          :disabled="managingRecipe || addingToCollection || showEntryForm"
-          @click="manageRecipe('delete')"
-        >
-          Delete recipe permanently
-        </button>
-      </section>
+        <div class="management-actions">
+          <button
+            v-if="currentCollection?.owner === user"
+            type="button"
+            :disabled="managingRecipe || addingToCollection || showEntryForm"
+            @click="manageRecipe('remove')"
+          >
+            Remove from collection
+          </button>
+          <button
+            v-if="canManageSharing"
+            type="button"
+            class="delete-recipe"
+            :disabled="managingRecipe || addingToCollection || showEntryForm"
+            @click="manageRecipe('delete')"
+          >
+            Delete recipe permanently
+          </button>
+        </div>
+      </details>
     </div>
     <p v-if="managingRecipe" role="status">Updating recipe…</p>
   </section>
 </template>
 
 <style scoped>
+.recipe-description { max-width: 70ch; margin-block: 16px; }
+.recipe-card {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.65fr);
+  gap: 40px;
+  margin-block: 32px 40px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--border);
+}
+.recipe-card > section { min-width: 0; }
+.recipe-section-heading {
+  margin: 0 0 24px;
+  padding-top: 10px;
+  border-top: 3px solid var(--green-ink);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ingredient-list, .instruction-list { margin: 0; padding: 0; list-style: none; }
+.ingredient-list li { margin: 0 0 16px; padding: 0; }
+.instruction-list li { margin: 0 0 28px; padding: 0; }
+.ingredient-list li:last-child, .instruction-list li:last-child { margin-bottom: 0; }
+.step-label { display: block; margin-bottom: 4px; font-size: 0.95rem; }
+.instruction-text { margin: 0; }
+.recipe-notes { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--border); }
+.recipe-notes h3 {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.recipe-notes p { margin: 0; }
+@media (max-width: 700px) {
+  .recipe-card { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+}
+.add-to-collection:hover:not(:disabled) {
+  color: var(--green-ink);
+  background: var(--green-soft);
+  border-color: var(--green);
+}
+.management-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
 .attempt-author { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .attempt-author > div { min-width: 0; }
 .attempt-author h4 { margin: 0; }

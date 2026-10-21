@@ -255,6 +255,12 @@ export class SharingConcept {
         return document ? [{ owner: document.owner }] : [];
     }
 
+    /** List member identifiers only; compositions enforce access and resolve usernames. */
+    async _members({ resource }: { resource: string }): Promise<{ member: string }[]> {
+        const document = await this.resources.findOne({ _id: resource });
+        return document ? [...document.members].sort().map((member) => ({ member })) : [];
+    }
+
     /** List accessible resources that currently have at least one member. */
     async _shared({ user }: { user: string }): Promise<{
         resource: string;

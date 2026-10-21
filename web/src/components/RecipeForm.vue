@@ -15,6 +15,7 @@ const emit = defineEmits<{
 const title = ref("");
 const source = ref("");
 const notes = ref("");
+const description = ref("");
 const busy = ref(false);
 const error = ref("");
 
@@ -100,6 +101,7 @@ async function save() {
       instructions: instructionList,
       source: source.value.trim(),
       notes: notes.value,
+      description: description.value,
     };
 
     const response = props.collection !== undefined
@@ -153,6 +155,15 @@ async function save() {
         v-model="title"
         dir="auto"
         required
+      />
+
+      <label for="recipe-description">Description (optional)</label>
+      <textarea
+        id="recipe-description"
+        v-model="description"
+        rows="3"
+        dir="auto"
+        placeholder="Introduce the dish or share what makes it special"
       />
 
       <section aria-labelledby="ingredients-heading">

@@ -24,12 +24,13 @@ a set of Recipes with
   an instructions seq of String
   an optional source String
   an optional notes String
+  an optional description String
 ```
 
 ## Actions
 
 ```actions
-record(title: String, ingredients: TextSequence, instructions: TextSequence, source?: String, notes?: String) : returns (recipe: Recipe)
+record(title: String, ingredients: TextSequence, instructions: TextSequence, source?: String, notes?: String, description?: String) : returns (recipe: Recipe)
   where title is blank, either sequence is empty, or any sequence item is blank
   then
     refuses INVALID_RECIPE "Recipe details must include a nonblank title and nonempty ingredient and instruction sequences without blank items."
@@ -40,6 +41,8 @@ record(title: String, ingredients: TextSequence, instructions: TextSequence, sou
     set source if provided, otherwise leave it absent
     set notes if provided, otherwise leave them absent
     preserve the supplied notes text, including line breaks
+    set description if provided, otherwise leave it absent
+    preserve the supplied description text, including line breaks
     returns recipe
 delete(recipe: Recipe) : returns ()
   where recipe does not exist
@@ -56,9 +59,10 @@ delete(recipe: Recipe) : returns ()
 ## Queries
 
 ```queries
-_get(recipe: Recipe) : optional (title: String, ingredients: TextSequence, instructions: TextSequence, source?: String, notes?: String)
+_get(recipe: Recipe) : optional (title: String, ingredients: TextSequence, instructions: TextSequence, source?: String, notes?: String, description?: String)
   Return one row containing the original recipe details when the recipe exists.
   Return no rows when the recipe does not exist.
   Omit source when it was not supplied.
   Omit notes when they were not supplied.
+  Omit description when it was not supplied.
 ```

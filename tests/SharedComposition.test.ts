@@ -3,6 +3,9 @@ import { expect, test } from "bun:test";
 import type { Document } from "mongodb";
 import { testDatabase } from "./helpers/database.ts";
 import { assemble } from "@mit-sdg/sync-engine/assembly";
+import { createGateway } from "@mit-sdg/sync-engine/boundary";
+import { createHttpHandler } from "@mit-sdg/sync-engine-http/handler";
+import { policy } from "../src/http-policy.ts";
 import { applicationConceptSet } from "../src/concepts.ts";
 import { PasswordAuthenticatingConcept } from "../src/concepts/PasswordAuthenticating.ts";
 import { SessioningConcept } from "../src/concepts/Sessioning.ts";
@@ -66,6 +69,7 @@ const recipeData = {
   title: "Simple Rice", ingredients: ["Rice", "Water"],
   instructions: ["Cook the rice."], source: "My notes",
   notes: "Let the rice rest before serving.\nFluff with a fork.",
+  description: "A simple rice dish to serve with curry.",
 };
 
 async function fixture() {
@@ -82,8 +86,97 @@ async function list(session: string) {
   return call<BatchWire["/shared/list"]["output"]>("/shared/list", { session });
 }
 
+test("owners list current recipients while collection and direct recipe grants stay independent", async () => {
+  const f = await fixture();
+  const { collection } = await call<{ collection: string }>("/collections/create", {
+    session: f.owner.session, name: "Family",
+  });
+  const recipient = (user: typeof f.member) => ({ user: user.user, username: user.username });
+  const input = { session: f.owner.session, recipe: f.recipe, collection };
+  for (const path of ["/collections/recipients", "/recipes/recipients"]) {
+    expect(await call<unknown>(path, input)).toEqual({ sharing: { recipients: [] } });
+  }
+  await call("/collections/share", { ...input, username: f.member.username });
+  await call("/recipes/share", { ...input, username: f.outsider.username });
+  const collectionsBefore = await sharing._members({ resource: collection });
+  const recipesBefore = await recipeSharing._members({ resource: f.recipe });
+  expect(await call<unknown>("/collections/recipients", input))
+    .toEqual({ sharing: { recipients: [recipient(f.member)] } });
+  expect(await call<unknown>("/recipes/recipients", input))
+    .toEqual({ sharing: { recipients: [recipient(f.outsider)] } });
+  expect(await sharing._members({ resource: collection })).toEqual(collectionsBefore);
+  expect(await recipeSharing._members({ resource: f.recipe })).toEqual(recipesBefore);
+
+  await call("/recipes/share", { ...input, username: f.member.username });
+  const both = await call<BatchWire["/recipes/recipients"]["output"]>("/recipes/recipients", input);
+  expect(both.sharing.recipients).toHaveLength(2);
+  expect(both.sharing.recipients).toEqual(expect.arrayContaining([recipient(f.member), recipient(f.outsider)]));
+  await call("/recipes/revoke", { ...input, username: f.member.username });
+  expect(await call<unknown>("/recipes/recipients", input))
+    .toEqual({ sharing: { recipients: [recipient(f.outsider)] } });
+  expect(await call<unknown>("/collections/recipients", input))
+    .toEqual({ sharing: { recipients: [recipient(f.member)] } });
+  await call("/collections/revoke", { ...input, username: f.member.username });
+  expect(await call<unknown>("/collections/recipients", input)).toEqual({ sharing: { recipients: [] } });
+});
+
+test("recipient lists are private to owners and HTTP refusals do not disclose usernames", async () => {
+  const f = await fixture();
+  const { collection } = await call<{ collection: string }>("/collections/create", {
+    session: f.owner.session, name: "Private membership",
+  });
+  await call("/collections/share", { session: f.owner.session, collection, username: f.member.username });
+  await call("/recipes/share", { session: f.owner.session, recipe: f.recipe, username: f.member.username });
+  const before = await state(f);
+  const collectionBefore = await sharing._members({ resource: collection });
+  const gateway = createGateway({ application: app });
+  const handler = createHttpHandler({ application: app, gateway, policy });
+  for (const [path, field, resource] of [
+    ["/collections/recipients", "collection", collection],
+    ["/recipes/recipients", "recipe", f.recipe],
+  ] as const) {
+    const input = { [field]: resource };
+    for (const session of [f.member.session, f.outsider.session]) {
+      await refuses(path, { ...input, session }, "OWNER_ACCESS_REQUIRED");
+    }
+    await refuses(path, { ...input, session: null }, "INVALID_SESSION");
+    await refuses(path, { [field]: "missing", session: f.owner.session }, "OWNER_ACCESS_REQUIRED");
+    expect(await app.invoker.invoke(path, { [field]: 123, session: f.owner.session }, { timeoutMs: 2000 }))
+      .toMatchObject({ ok: false, error: { kind: "framework", code: "INVALID_INPUT" } });
+    for (const [session, status] of [[undefined, 401], [f.member.session, 403], [f.owner.session, 200]] as const) {
+      const response = await handler(new Request(new URL(`/api${path}`, policy.publicOrigin), {
+        method: "POST", headers: {
+          "Content-Type": "application/json",
+          ...(session ? { Cookie: `__Host-batch-session=${session}` } : {}),
+        }, body: JSON.stringify(input),
+      }));
+      expect(response.status).toBe(status);
+      if (status === 200) expect(await response.json()).toEqual({ sharing: { recipients: [{ user: f.member.user, username: f.member.username }] } });
+      else expect(await response.json()).toEqual({ error: status === 401 ? "UNAUTHORIZED" : "FORBIDDEN" });
+    }
+  }
+  expect(await state(f)).toEqual(before);
+  expect(await sharing._members({ resource: collection })).toEqual(collectionBefore);
+  await gateway.whenIdle();
+});
+
+test("reading legacy recipe recipients does not initialize ownership or permit other savers to inspect it", async () => {
+  const f = await fixture();
+  const { recipe } = await recording.record(recipeData);
+  await saving.save({ user: f.owner.user, item: recipe });
+  const before = await saving._forUser({ user: f.owner.user });
+  expect(await call<unknown>("/recipes/recipients", { session: f.owner.session, recipe }))
+    .toEqual({ sharing: { recipients: [] } });
+  expect(await recipeSharing._get({ resource: recipe })).toEqual([]);
+  expect(await saving._forUser({ user: f.owner.user })).toEqual(before);
+  await refuses("/recipes/recipients", { session: f.outsider.session, recipe }, "OWNER_ACCESS_REQUIRED");
+  await call("/recipes/share", { session: f.owner.session, recipe: f.recipe, username: f.member.username });
+  await saving.save({ user: f.member.user, item: f.recipe });
+  await refuses("/recipes/recipients", { session: f.member.session, recipe: f.recipe }, "OWNER_ACCESS_REQUIRED");
+});
+
 for (const path of ["/recipes/save-personal", "/recipes/save"]) {
-  test(`${path} preserves optional notes across personal, collection, and direct access`, async () => {
+  test(`${path} preserves optional descriptions and notes across personal, collection, and direct access`, async () => {
     const owner = await account("owner");
     const member = await account("member");
     const { collection } = await call<{ collection: string }>("/collections/create", {
@@ -91,11 +184,16 @@ for (const path of ["/recipes/save-personal", "/recipes/save"]) {
     });
     await call("/collections/share", { session: owner.session, collection, username: member.username });
 
-    for (const notes of [undefined, "", "  Toast spices first.\nLet the rice rest.  "]) {
+    for (const optional of [
+      {},
+      { notes: "", description: "" },
+      { notes: "  Toast spices first.\nLet the rice rest.  ", description: "  Family favorite.\nPerfect with curry.  " },
+      { description: "An introduction without cooking notes." },
+    ] as { notes?: string; description?: string }[]) {
       const { recipe } = await call<{ recipe: string }>(path, {
         session: owner.session, collection,
         title: "Rice", ingredients: ["Rice"], instructions: ["Cook."],
-        ...(notes === undefined ? {} : { notes }),
+        ...optional,
       });
       if (path === "/recipes/save-personal") {
         await call("/recipes/add-personal-to-collection", {
@@ -105,12 +203,14 @@ for (const path of ["/recipes/save-personal", "/recipes/save"]) {
       await call("/recipes/share", { session: owner.session, recipe, username: member.username });
       const expected = { recipe: {
         recipe, title: "Rice", ingredients: ["Rice"], instructions: ["Cook."],
-        source: "", notes: notes ?? "", entries: [],
+        source: "", notes: optional.notes ?? "", description: optional.description ?? "", entries: [],
       } };
       expect(await call<unknown>("/recipes/get-personal", { session: owner.session, recipe })).toEqual(expected);
       expect(await call<unknown>("/recipes/get", { session: member.session, collection, recipe })).toEqual(expected);
       expect(await call<unknown>("/recipes/get-shared", { session: member.session, recipe })).toEqual(expected);
-      expect((await recording._get({ recipe }))[0]?.notes).toBe(notes ?? "");
+      expect((await recording._get({ recipe }))[0]).toMatchObject({
+        notes: optional.notes ?? "", description: optional.description ?? "",
+      });
     }
   });
 }
@@ -122,17 +222,24 @@ test("recipes with absent optional fields remain accessible through every route"
     session: owner.session, name: "Older recipes",
   });
   await call("/collections/share", { session: owner.session, collection, username: member.username });
-  for (const notes of [undefined, "Notes without a source.\nKeep line breaks."]) {
+  for (const optional of [
+    {},
+    { notes: "Notes without a source.\nKeep line breaks." },
+    { description: "Description without a source or notes.\nKeep line breaks." },
+  ] as { notes?: string; description?: string }[]) {
     const data = {
       title: "Rice", ingredients: ["Rice"], instructions: ["Cook."],
-      ...(notes === undefined ? {} : { notes }),
+      ...optional,
     };
     const { recipe } = await recording.record(data);
     await saving.save({ user: owner.user, item: recipe });
     await collecting.add({ collection, item: recipe });
     await call("/recipes/prepare-sharing", { session: owner.session, recipe });
     await call("/recipes/share", { session: owner.session, recipe, username: member.username });
-    const expected = { recipe: { recipe, ...data, source: null, notes: notes ?? null, entries: [] } };
+    const expected = { recipe: {
+      recipe, ...data, source: null, notes: optional.notes ?? null,
+      description: optional.description ?? null, entries: [],
+    } };
     expect(await call<unknown>("/recipes/get-personal", { session: owner.session, recipe })).toEqual(expected);
     expect(await call<unknown>("/recipes/get", { session: member.session, collection, recipe })).toEqual(expected);
     expect(await call<unknown>("/recipes/get-shared", { session: member.session, recipe })).toEqual(expected);

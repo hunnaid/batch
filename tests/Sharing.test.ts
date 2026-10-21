@@ -103,6 +103,28 @@ test("reinitialization preserves the original owner and members", async () => {
   ).rejects.toBeInstanceOf(AccessDenied);
 });
 
+test("member queries reflect grants and revocations without mixing resources or instances", async () => {
+  const resource = await createResource();
+  const other = await createResource();
+  const independent = new SharingConcept(db, "recipeSharing.resources");
+  await independent.initialize({ resource, owner: "different-owner" });
+  await independent.grant({ resource, owner: "different-owner", member: "other-instance-member" });
+  expect(await sharing._members({ resource })).toEqual([]);
+  expect(await sharing._members({ resource: "missing" })).toEqual([]);
+  for (const member of ["zebra", "alice"]) await sharing.grant({ resource, owner: "owner", member });
+  await sharing.grant({ resource: other, owner: "owner", member: "other-resource-member" });
+  const stored = db.collection("sharing.resources");
+  const before = await stored.find().sort({ _id: 1 }).toArray();
+  expect(await sharing._members({ resource })).toEqual([{ member: "alice" }, { member: "zebra" }]);
+  expect(await stored.find().sort({ _id: 1 }).toArray()).toEqual(before);
+  await sharing.revoke({ resource, owner: "owner", member: "alice" });
+  expect(await sharing._members({ resource })).toEqual([{ member: "zebra" }]);
+  expect(await sharing._members({ resource: other })).toEqual([{ member: "other-resource-member" }]);
+  expect(await independent._members({ resource })).toEqual([{ member: "other-instance-member" }]);
+  await sharing.uninitialize({ resource, owner: "owner" });
+  expect(await sharing._members({ resource })).toEqual([]);
+});
+
 // Each rejection is independent and must leave ownership and every membership intact.
 for (const scenario of [
   { label: "member granting access", action: "grant", owner: "friend", member: "outsider", error: GrantNotOwner },

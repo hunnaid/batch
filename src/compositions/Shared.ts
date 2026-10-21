@@ -79,6 +79,30 @@ const RecipeSharingStatus = endpoint(
     { validators: { input: inputWith("recipe") } }
 );
 
+const recipeRecipients = former(
+    "the direct recipients of recipe (recipe)",
+    ({ recipe }, { member, username }) => form({
+        recipients: each(RecipeSharing._members({ resource: recipe }).is({ member }))
+            .where(PasswordAuthenticating._byUser({ user: member }).is({ username }))
+            .form({ user: member, username }),
+    })
+);
+
+/** A legacy owner can inspect an empty list without a read creating sharing records. */
+const ListRecipeRecipients = endpoint(
+    "/recipes/recipients",
+    ({ session, recipe, user }) => receive({ session, recipe })
+        .then(Sessioning.resolve({ session }).responds({ user }))
+        .then(
+            where(legacyRecipeOwner({ user, recipe }))
+                .then(respond({ sharing: recipeRecipients({ recipe }) })).named("legacy-owner"),
+            where(no(legacyRecipeOwner({ user, recipe })))
+                .then(RecipeSharing.authorizeOwner({ user, resource: recipe }))
+                .then(respond({ sharing: recipeRecipients({ recipe }) })).named("existing-owner")
+        ),
+    { validators: { input: inputWith("recipe") } }
+);
+
 /** Establish ownership for a pre-existing personal recipe without granting access. */
 const PrepareRecipeSharing = endpoint(
     "/recipes/prepare-sharing",
@@ -130,14 +154,15 @@ const RevokeRecipeAccess = endpoint(
 /** Direct and collection access expose the same original recipe and cooking entries. */
 const directRecipeDetails = former(
     "the directly shared recipe (recipe) accessible to (user)",
-    ({ user, recipe }, { title, ingredients, instructions, source, notes, entry, author, changes, result, createdAt }) =>
+    ({ user, recipe }, { title, ingredients, instructions, source, notes, description, entry, author, changes, result, createdAt }) =>
         where(
             RecipeSharing._accessible({ user }).is({ resource: recipe }),
             RecipeRecording._get({ recipe }).is({ title, ingredients, instructions }),
             whether(RecipeRecording._get({ recipe }).is({ source })),
-            whether(RecipeRecording._get({ recipe }).is({ notes }))
+            whether(RecipeRecording._get({ recipe }).is({ notes })),
+            whether(RecipeRecording._get({ recipe }).is({ description }))
         ).form({
-            recipe, title, ingredients, instructions, source, notes,
+            recipe, title, ingredients, instructions, source, notes, description,
             entries: each(CookingLog._forRecipe({ recipe }).is({
                 _id: entry, author, changes, result, createdAt,
             })).form({ entry, author, changes, result, createdAt }),
@@ -207,6 +232,8 @@ export const composition = {
     RecipeOwner: recipeOwner,
     LegacyRecipeOwner: legacyRecipeOwner,
     RecipeSharingStatus,
+    ListRecipeRecipients,
+    RecipeRecipients: recipeRecipients,
     PrepareRecipeSharing,
     ShareRecipe,
     RevokeRecipeAccess,
