@@ -714,8 +714,27 @@ const AddPersonalRecipeToCollection = endpoint(
     }
 );
 
+/** Only the collection owner may remove a membership; personal saves remain intact. */
+const RemoveRecipeFromCollection = endpoint(
+    "/recipes/remove-from-collection",
+    ({ session, collection, recipe, user }) => receive({ session, collection, recipe })
+        .then(Sessioning.resolve({ session }).responds({ user }))
+        .then(Sharing.authorizeOwner({ user, resource: collection }))
+        .then(Collecting.remove({ collection, item: recipe }))
+        .then(respond({ collection, recipe })),
+    {
+        validators: {
+            input: (value: unknown) => ({
+                ok: hasSessionInput(value) &&
+                    typeof value.collection === "string" && typeof value.recipe === "string",
+            }),
+        },
+    }
+);
+
 export const composition = {
     SaveRecipe,
+    RemoveRecipeFromCollection,
     GetRecipe,
     RecipeDetails: recipeDetails,
     RecipeInCollection: recipeInCollection,

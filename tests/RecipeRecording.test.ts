@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { testDatabase } from "./helpers/database.ts";
 import {
   InvalidRecipe,
+  DeleteRecipeNotFound,
   RecipeRecordingConcept,
   type RecipeData,
 } from "../src/concepts/RecipeRecording.ts";
@@ -89,3 +90,15 @@ for (const [description, changes] of invalidCases) {
     expect(await stored.find().toArray()).toEqual(before);
   });
 }
+
+test("deletion removes only the selected recipe and rejects repeated or unknown deletion", async () => {
+  const first = await recipes.record(example);
+  const other = await recipes.record({ ...example, title: "Keep" });
+  const before = await recipes._get(other);
+  expect(await recipes.delete(first)).toEqual({});
+  expect(await recipes._get(first)).toEqual([]);
+  for (const recipe of [first.recipe, "missing"]) {
+    await expect(recipes.delete({ recipe })).rejects.toBeInstanceOf(DeleteRecipeNotFound);
+    expect(await recipes._get(other)).toEqual(before);
+  }
+});

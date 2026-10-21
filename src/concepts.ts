@@ -7,6 +7,7 @@ import spec from "@design/concepts/RecipeRecording.md" with {type: "text"};
 
 import {
     InvalidRecipe,
+    DeleteRecipeNotFound,
     RecipeRecordingConcept,
 } from "./concepts/RecipeRecording.ts";
 
@@ -29,6 +30,8 @@ import {
     InvalidCollectionRename,
     RenameCollectionNotFound,
     DeleteCollectionNotFound,
+    RemoveCollectionNotFound,
+    ItemNotCollected,
 } from "./concepts/Collecting.ts";
 
 import cookingLogSpec from "@design/concepts/CookingLog.md" with { type: "text" };
@@ -81,6 +84,7 @@ const recipeRecording = registerConcept({
     spec,
     refusals: {
         INVALID_RECIPE: InvalidRecipe,
+        DELETE_RECIPE_NOT_FOUND: DeleteRecipeNotFound,
     },
 });
 
@@ -110,6 +114,8 @@ const collecting = registerConcept({
         INVALID_COLLECTION_RENAME: InvalidCollectionRename,
         RENAME_COLLECTION_NOT_FOUND: RenameCollectionNotFound,
         DELETE_COLLECTION_NOT_FOUND: DeleteCollectionNotFound,
+        REMOVE_COLLECTION_NOT_FOUND: RemoveCollectionNotFound,
+        ITEM_NOT_COLLECTED: ItemNotCollected,
     },
 });
 

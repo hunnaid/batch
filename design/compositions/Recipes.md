@@ -180,3 +180,22 @@ history. An existing destination membership is refused.
 ```endpoints
 Recipes.AddPersonalRecipeToCollection at /recipes/add-personal-to-collection
 ```
+
+## Removing a recipe from a collection
+
+Only the collection owner can remove a recipe membership.[remove-membership]
+The endpoint resolves the session and checks collection ownership before
+calling Collecting.remove. A member, including the recipe's creator, cannot
+remove it from someone else's collection. An absent membership is refused.
+
+Removal changes only the selected collection's item set. It preserves the
+recipe, cooking history, all personal saves and save dates, other collection
+memberships, and direct sharing. The creator can still open it from My recipes.
+The interface distinguishes "Remove from collection" from permanent deletion
+and explains this scope before asking for confirmation.
+
+[remove-membership]: reaction:Recipes.RemoveRecipeFromCollection
+
+```endpoints
+Recipes.RemoveRecipeFromCollection at /recipes/remove-from-collection
+```

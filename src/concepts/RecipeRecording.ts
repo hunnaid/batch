@@ -25,6 +25,9 @@ type RecipeDocument = RecipeData & {
  */
 export class InvalidRecipe extends Error{}
 
+/** The recipe to delete does not exist. */
+export class DeleteRecipeNotFound extends Error {}
+
 /**
  * Stores original recipes independently of collections and cooking entries
  */
@@ -117,4 +120,13 @@ export class RecipeRecordingConcept {
 
         return [details];
     }
+    /** Delete only the original recipe; the composition coordinates related cleanup. */
+    async delete({ recipe }: { recipe: string }): Promise<{}> {
+        const result = await this.recipes.deleteOne({ _id: recipe });
+        if (result.deletedCount === 0) {
+            throw new DeleteRecipeNotFound("The recipe does not exist.");
+        }
+        return {};
+    }
+
 }

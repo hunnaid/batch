@@ -6,7 +6,7 @@ Keep original recipe instructions available in a consistent structure so cooks c
 
 ## Principle
 
-After a cook records a recipe, they can retrieve its original details using its identifier. Recording another recipe leaves the earlier recipe unchanged.
+After a cook records a recipe, they can retrieve its original details using its identifier. Recording another recipe leaves the earlier recipe unchanged. Deleting a recipe makes its original details unavailable without changing other recipes.
 
 ## Types
 
@@ -38,6 +38,16 @@ record(title: String, ingredients: TextSequence, instructions: TextSequence, sou
     preserve the order and text of the supplied items
     set source if provided, otherwise leave it absent
     returns recipe
+delete(recipe: Recipe) : returns ()
+  where recipe does not exist
+  then
+    refuses DELETE_RECIPE_NOT_FOUND "The recipe does not exist."
+  where recipe exists
+  then
+    remove the original recipe
+    leave other recipes unchanged
+    returns
+
 ```
 
 ## Queries

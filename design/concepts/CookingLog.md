@@ -6,7 +6,7 @@ Help cooks remember their adjustments and results so they can repeat successful 
 
 ## Principle
 
-After a cook records an attempt, they can retrieve its changes and result. They can edit their own entry to add results later. Recording another attempt preserves earlier entries.
+After a cook records an attempt, they can retrieve its changes and result. They can edit their own entry to add results later. Recording another attempt preserves earlier entries. Clearing a recipe’s history removes all its attempts while preserving other recipes’ histories.
 
 ## Types
 
@@ -59,6 +59,14 @@ edit(author: User, entry: Entry, changes: String, result: String) : returns ()
     preserve its identifier, author, recipe, and createdAt
     leave other entries unchanged
     returns
+clearRecipe(recipe: Recipe) : returns ()
+  where true
+  then
+    remove every entry associated with recipe regardless of author
+    preserve entries for other recipes
+    succeed without changes if recipe has no entries
+    returns
+
 ```
 
 ## Queries

@@ -220,3 +220,16 @@ test("lists attempts newest first, preserving earlier entries and excluding othe
     rows[1]!.createdAt.getTime()
   );
 });
+
+test("clearing a recipe removes attempts by all authors and preserves other histories", async () => {
+  for (const author of ["alice", "bob"]) {
+    await log.record({ ...example, author, recipe: "delete" });
+    await log.record({ ...example, author, recipe: "keep" });
+  }
+  const before = await log._forRecipe({ recipe: "keep" });
+  for (const recipe of ["delete", "delete", "missing"]) {
+    expect(await log.clearRecipe({ recipe })).toEqual({});
+    expect(await log._forRecipe({ recipe: "delete" })).toEqual([]);
+    expect(await log._forRecipe({ recipe: "keep" })).toEqual(before);
+  }
+});

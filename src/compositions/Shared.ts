@@ -177,8 +177,31 @@ const EditSharedCookingEntry = endpoint(
     { validators: { input: inputWith("recipe", "entry", "changes", "result") } }
 );
 
+/** Permanent deletion uses the same ownership rule as direct sharing, including legacy saves. */
+const DeleteRecipe = endpoint(
+    "/recipes/delete",
+    ({ session, recipe, user }) => receive({ session, recipe })
+        .then(Sessioning.resolve({ session }).responds({ user }))
+        .then(
+            where(legacyRecipeOwner({ user, recipe }))
+                .then(RecipeSharing.initialize({ resource: recipe, owner: user }))
+                .named("initialize-legacy-owner"),
+            where(no(legacyRecipeOwner({ user, recipe })))
+                .then(RecipeSharing.authorizeOwner({ user, resource: recipe }))
+                .named("existing-owner")
+        )
+        .then(RecipeRecording.delete({ recipe }))
+        .then(Collecting.removeItem({ item: recipe }))
+        .then(CookingLog.clearRecipe({ recipe }))
+        .then(Saving.removeItem({ item: recipe }))
+        .then(RecipeSharing.uninitialize({ resource: recipe, owner: user }))
+        .then(respond({ recipe })),
+    { validators: { input: inputWith("recipe") } }
+);
+
 export const composition = {
     ListShared,
+    DeleteRecipe,
     SharedOverview: sharedOverview,
     RecipeOwner: recipeOwner,
     LegacyRecipeOwner: legacyRecipeOwner,

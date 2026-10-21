@@ -28,6 +28,8 @@ export class InvalidCollectionRename extends Error {}
 
 /** The collection being deleted does not exist. */
 export class DeleteCollectionNotFound extends Error {}
+export class RemoveCollectionNotFound extends Error {}
+export class ItemNotCollected extends Error {}
 
 /**
  * Organizes items into collections.
@@ -209,4 +211,24 @@ export class CollectingConcept {
 
         return {};
     }
+    /** Remove one membership without changing the item or other collections. */
+    async remove({ collection, item }: { collection: string; item: string }): Promise<{}> {
+        const result = await this.collections.updateOne(
+            { _id: collection }, { $pull: { items: item } }
+        );
+        if (result.matchedCount === 0) {
+            throw new RemoveCollectionNotFound("The collection does not exist.");
+        }
+        if (result.modifiedCount === 0) {
+            throw new ItemNotCollected("The item is not in the collection.");
+        }
+        return {};
+    }
+
+    /** Forget an item across all collections, preserving the collections themselves. */
+    async removeItem({ item }: { item: string }): Promise<{}> {
+        await this.collections.updateMany({ items: item }, { $pull: { items: item } });
+        return {};
+    }
+
 }

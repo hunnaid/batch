@@ -137,3 +137,18 @@ test("equal save timestamps have a consistent item order independent of insertio
         ["recipe-a", "recipe-m", "recipe-z"].map((item) => ({ item, savedAt: now }))
     );
 });
+
+test("removing an item clears every user's save and preserves other items and dates", async () => {
+    for (const user of ["alice", "bob"]) {
+        await saving.save({ user, item: "delete" });
+        await saving.save({ user, item: "keep" });
+    }
+    const before = await db.collection("saving.items").find({ item: "keep" }).sort({ _id: 1 }).toArray();
+    for (const item of ["delete", "delete", "missing"]) {
+        expect(await saving.removeItem({ item })).toEqual({});
+        expect(await db.collection("saving.items").find().sort({ _id: 1 }).toArray()).toEqual(before);
+        for (const user of ["alice", "bob"]) {
+            await expect(saving.authorize({ user, item: "delete" })).rejects.toBeInstanceOf(ItemNotSaved);
+        }
+    }
+});

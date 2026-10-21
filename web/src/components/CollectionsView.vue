@@ -184,8 +184,8 @@ async function deleteCollection(collection: CollectionSummary) {
 
   const confirmed = window.confirm(
     `Delete "${collection.name}" and remove everyone's access to this collection?\n\n` +
-    "Recipes and cooking entries will remain stored. Recipes saved only " +
-    "in this collection will no longer appear in the app."
+    "Recipes and cooking entries are kept. Personally saved recipes remain " +
+    "in My recipes; other collections and direct shares are unchanged."
   );
 
   if (!confirmed) return;

@@ -152,4 +152,10 @@ export class CookingLogConcept {
             .sort({ createdAt: -1, _id: 1 })
             .toArray();
     }
+    /** Clear all attempts for a recipe, including attempts by different authors. */
+    async clearRecipe({ recipe }: { recipe: string }): Promise<{}> {
+        await this.entries.deleteMany({ recipe });
+        return {};
+    }
+
 }

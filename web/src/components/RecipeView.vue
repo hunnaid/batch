@@ -29,6 +29,47 @@ const details = ref<RecipeDetails | null>(null);
 const loading = ref(true);
 const error = ref("");
 const canManageSharing = ref(false);
+const currentCollection = ref<CollectionSummary | null>(null);
+const managingRecipe = ref(false);
+const managementError = ref("");
+
+/** The server checks ownership again; visible controls are only a convenience. */
+async function manageRecipe(action: "remove" | "delete") {
+  if (managingRecipe.value || addingToCollection.value || showEntryForm.value || !details.value) return;
+  const removing = action === "remove";
+  if (removing && (!props.collection || currentCollection.value?.owner !== props.user)) return;
+  if (!removing && !canManageSharing.value) return;
+
+  const message = removing
+    ? `Remove “${details.value.title}” from “${currentCollection.value!.name}”?\n\n` +
+      "The recipe stays in its owner's My recipes, other collections, and direct shares. Its cooking history is kept."
+    : `Permanently delete “${details.value.title}”?\n\n` +
+      "This removes it from My recipes, every collection, and Shared for everyone. " +
+      "All cooking entries, including other people's attempts, will be deleted. This cannot be undone.";
+  if (!window.confirm(message)) return;
+
+  managingRecipe.value = true;
+  managementError.value = "";
+  try {
+    const response = removing
+      ? await api["/recipes/remove-from-collection"]({ collection: props.collection!, recipe: props.recipe })
+      : await api["/recipes/delete"]({ recipe: props.recipe });
+    if ("error" in response) throw new ApiError(String(response.error));
+    emit("back");
+  } catch (cause) {
+    if (cause instanceof ApiError && cause.code === "UNAUTHORIZED") {
+      emit("sessionExpired");
+      return;
+    }
+    managementError.value = cause instanceof ApiError && cause.code === "FORBIDDEN"
+      ? "You no longer have permission to perform this action."
+      : cause instanceof ApiError && cause.code === "NOT_FOUND"
+      ? "The recipe or collection membership no longer exists. Return to the list and refresh."
+      : "Could not confirm the change. Return to the list and refresh before trying again.";
+  } finally {
+    managingRecipe.value = false;
+  }
+}
 
 /** Retrieve the original recipe and its cooking entries together. */
 async function loadRecipe() {
@@ -123,6 +164,7 @@ async function loadDestinations() {
   collectionError.value = "";
   collectionSuccess.value = "";
   destinations.value = [];
+  currentCollection.value = null;
   destination.value = "";
 
   try {
@@ -132,6 +174,10 @@ async function loadDestinations() {
       throw new ApiError(String(response.error));
     }
 
+    currentCollection.value = response.overview.collections.find(
+      (collection) => collection.collection === props.collection &&
+        collection.recipes.some((recipe) => recipe.recipe === props.recipe)
+    ) ?? null;
     destinations.value = response.overview.collections.filter(
       (collection) =>
         collection.collection !== props.collection &&
@@ -244,7 +290,7 @@ onMounted(loadDestinations);
 
 <template>
   <section>
-    <button type="button" @click="emit('back')">
+    <button type="button" :disabled="managingRecipe" @click="emit('back')">
       {{ props.backLabel ?? "Back to collections" }}
     </button>
 
@@ -259,7 +305,7 @@ onMounted(loadDestinations);
       This recipe is no longer available.
     </p>
 
-    <template v-else>
+    <div v-else :inert="managingRecipe">
       <h2 dir="auto">{{ details.title }}</h2>
       <RoleBadge v-if="props.directShared" :owner="canManageSharing" />
       <p v-if="details.source" dir="auto">
@@ -422,6 +468,41 @@ onMounted(loadDestinations);
           Edit this entry
         </button>
       </article>
-    </template>
+
+      <section v-if="canManageSharing || currentCollection?.owner === user" aria-labelledby="manage-recipe-heading">
+        <h3 id="manage-recipe-heading">Manage recipe</h3>
+        <p v-if="managementError" role="alert">{{ managementError }}</p>
+        <p v-if="showEntryForm">Save or cancel your cooking entry before managing this recipe.</p>
+        <button
+          v-if="currentCollection?.owner === user"
+          type="button"
+          :disabled="managingRecipe || addingToCollection || showEntryForm"
+          @click="manageRecipe('remove')"
+        >
+          Remove from collection
+        </button>
+        <button
+          v-if="canManageSharing"
+          type="button"
+          class="delete-recipe"
+          :disabled="managingRecipe || addingToCollection || showEntryForm"
+          @click="manageRecipe('delete')"
+        >
+          Delete recipe permanently
+        </button>
+      </section>
+    </div>
+    <p v-if="managingRecipe" role="status">Updating recipe…</p>
   </section>
 </template>
+
+<style scoped>
+.delete-recipe {
+  color: var(--error);
+  border-color: var(--error);
+}
+.delete-recipe:hover:not(:disabled) {
+  background: var(--error-soft);
+  border-color: var(--error);
+}
+</style>

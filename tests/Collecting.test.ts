@@ -8,6 +8,8 @@ import {
   InvalidCollectionRename,
   RenameCollectionNotFound,
   DeleteCollectionNotFound,
+  RemoveCollectionNotFound,
+  ItemNotCollected,
 } from "../src/concepts/Collecting.ts";
 
 const db = testDatabase("collecting");
@@ -189,5 +191,39 @@ test("deleting removes only that collection and repeating deletion is refused", 
   for (const collection of [first.collection, "never-existed"]) {
     await expect(collecting.delete({ collection })).rejects.toBeInstanceOf(DeleteCollectionNotFound);
     expect(await collecting._get(second)).toEqual(before);
+  }
+});
+
+test("removing a membership preserves other items and collections and refuses missing memberships", async () => {
+  const first = await collecting.create({ creator: "owner", name: "First" });
+  const second = await collecting.create({ creator: "owner", name: "Second" });
+  for (const { collection } of [first, second]) {
+    await collecting.add({ collection, item: "recipe" });
+    await collecting.add({ collection, item: "keep" });
+  }
+  const otherBefore = await collecting._get(second);
+  expect(await collecting.remove({ ...first, item: "recipe" })).toEqual({});
+  expect(await collecting._get(first)).toEqual([{ creator: "owner", name: "First", items: ["keep"] }]);
+  expect(await collecting._get(second)).toEqual(otherBefore);
+  const stored = db.collection("collecting.collections");
+  const before = await stored.find().sort({ _id: 1 }).toArray();
+  for (const item of ["recipe", "never-added"]) {
+    await expect(collecting.remove({ ...first, item })).rejects.toBeInstanceOf(ItemNotCollected);
+  }
+  await expect(collecting.remove({ collection: "missing", item: "recipe" }))
+    .rejects.toBeInstanceOf(RemoveCollectionNotFound);
+  expect(await stored.find().sort({ _id: 1 }).toArray()).toEqual(before);
+});
+
+test("removing an item everywhere preserves collection metadata and unrelated items and is repeatable", async () => {
+  const first = await collecting.create({ creator: "alice", name: "First" });
+  const second = await collecting.create({ creator: "bob", name: "Second" });
+  await collecting.add({ ...first, item: "recipe" });
+  await collecting.add({ ...first, item: "keep" });
+  await collecting.add({ ...second, item: "recipe" });
+  for (const item of ["recipe", "recipe", "missing"]) {
+    expect(await collecting.removeItem({ item })).toEqual({});
+    expect(await collecting._get(first)).toEqual([{ creator: "alice", name: "First", items: ["keep"] }]);
+    expect(await collecting._get(second)).toEqual([{ creator: "bob", name: "Second", items: [] }]);
   }
 });

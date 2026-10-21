@@ -198,6 +198,18 @@ export type BatchWire = {
     };
     error: { error: AppWideError | "ACCESS_DENIED" | "COLLECTION_NOT_FOUND" | "INVALID_INPUT" | "INVALID_SESSION" | "ITEM_ALREADY_COLLECTED" | "RECIPE_NOT_IN_COLLECTION" };
   };
+  "/recipes/delete": {
+    input: {
+      "recipe": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["authorizeOwner"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["uninitialize"]>[0], ["resource"]>, AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["initialize"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>[0], ["recipe"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["_get"]>[0], ["resource"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Saving"]["_forUser"]>>>, ["item"]>]>]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+    };
+    output: {
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["uninitialize"]>[0], ["resource"]>>;
+    } | {
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["uninitialize"]>[0], ["resource"]>>;
+    };
+    error: { error: AppWideError | "CANNOT_UNINITIALIZE_RESOURCE" | "DELETE_RECIPE_NOT_FOUND" | "INVALID_INPUT" | "INVALID_SESSION" | "OWNER_ACCESS_REQUIRED" | "RESOURCE_ALREADY_INITIALIZED" };
+  };
   "/recipes/get": {
     input: {
       "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>>;
@@ -294,6 +306,18 @@ export type BatchWire = {
       "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["initialize"]>[0], ["resource"]>>;
     };
     error: { error: AppWideError | "INVALID_INPUT" | "INVALID_SESSION" | "ITEM_NOT_SAVED" | "OWNER_ACCESS_REQUIRED" | "RESOURCE_ALREADY_INITIALIZED" };
+  };
+  "/recipes/remove-from-collection": {
+    input: {
+      "collection": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorizeOwner"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["remove"]>[0], ["collection"]>]>>;
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["remove"]>[0], ["item"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+    };
+    output: {
+      "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["remove"]>[0], ["collection"]>>;
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["remove"]>[0], ["item"]>>;
+    };
+    error: { error: AppWideError | "INVALID_INPUT" | "INVALID_SESSION" | "ITEM_NOT_COLLECTED" | "OWNER_ACCESS_REQUIRED" | "REMOVE_COLLECTION_NOT_FOUND" };
   };
   "/recipes/revoke": {
     input: {
@@ -582,6 +606,17 @@ export type BatchWireHttp = {
     };
     error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
+  "/recipes/delete": {
+    input: {
+      "recipe": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["authorizeOwner"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["uninitialize"]>[0], ["resource"]>, AllOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["initialize"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeRecording"]["_get"]>[0], ["recipe"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["_get"]>[0], ["resource"]>, AtPath<QueryRow<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["Saving"]["_forUser"]>>>, ["item"]>]>]>>;
+    };
+    output: {
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["uninitialize"]>[0], ["resource"]>>;
+    } | {
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["uninitialize"]>[0], ["resource"]>>;
+    };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INTERNAL_ERROR" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
   "/recipes/get": {
     input: {
       "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>>;
@@ -672,6 +707,17 @@ export type BatchWireHttp = {
       "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeSharing"]["initialize"]>[0], ["resource"]>>;
     };
     error: { error: HttpAppWideError | "FORBIDDEN" | "INTERNAL_ERROR" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
+  "/recipes/remove-from-collection": {
+    input: {
+      "collection": Jsonify<OneOf<[AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorizeOwner"]>[0], ["resource"]>, AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["remove"]>[0], ["collection"]>]>>;
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["remove"]>[0], ["item"]>>;
+    };
+    output: {
+      "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["remove"]>[0], ["collection"]>>;
+      "recipe": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Collecting"]["remove"]>[0], ["item"]>>;
+    };
+    error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/recipes/revoke": {
     input: {

@@ -24,6 +24,10 @@ Defined in [Collecting](../design/concepts/Collecting.md), line 1.
   - Refuses `RENAME_COLLECTION_NOT_FOUND`: The collection does not exist.
 - `delete(collection: Collection) : returns ()`
   - Refuses `DELETE_COLLECTION_NOT_FOUND`: The collection does not exist.
+- `remove(collection: Collection, item: Item) : returns ()`
+  - Refuses `REMOVE_COLLECTION_NOT_FOUND`: The collection does not exist.
+  - Refuses `ITEM_NOT_COLLECTED`: The item is not in the collection.
+- `removeItem(item: Item) : returns ()`
 
 #### Queries
 
@@ -48,6 +52,7 @@ Defined in [CookingLog](../design/concepts/CookingLog.md), line 1.
   - Refuses `COOKING_ENTRY_NOT_FOUND`: The cooking entry does not exist.
   - Refuses `COOKING_ENTRY_NOT_OWNED`: Only the author can edit this cooking entry.
   - Refuses `INVALID_COOKING_ENTRY_EDIT`: A cooking entry needs changes or a result.
+- `clearRecipe(recipe: Recipe) : returns ()`
 
 #### Queries
 
@@ -88,6 +93,8 @@ Defined in [RecipeRecording](../design/concepts/RecipeRecording.md), line 1.
 
 - `record(title: String, ingredients: TextSequence, instructions: TextSequence, source?: String) : returns (recipe: Recipe)`
   - Refuses `INVALID_RECIPE`: Recipe details must include a nonblank title and nonempty ingredient and instruction sequences without blank items.
+- `delete(recipe: Recipe) : returns ()`
+  - Refuses `DELETE_RECIPE_NOT_FOUND`: The recipe does not exist.
 
 #### Queries
 
@@ -106,6 +113,7 @@ Defined in [Saving](../design/concepts/Saving.md), line 1.
 - `save(user: User, item: Item) : returns ()`
 - `authorize(user: User, item: Item) : returns ()`
   - Refuses `ITEM_NOT_SAVED`: This item is not in your saved list.
+- `removeItem(item: Item) : returns ()`
 
 #### Queries
 
@@ -1379,6 +1387,60 @@ then
   RequestBoundary.respond (overview: former "the saved recipes of (user)" with (user), requestId)
 ```
 
+### Recipes.RemoveRecipeFromCollection
+
+Authored path: `Recipes.RemoveRecipeFromCollection`.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 186.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 200.
+
+```reaction
+when RequestBoundary.request (collection, path: "/recipes/remove-from-collection", recipe, requestId, session)
+then
+  Sessioning.resolve (session)
+```
+
+### Recipes.RemoveRecipeFromCollection#2
+
+Authored path: `Recipes.RemoveRecipeFromCollection`.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 186.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 200.
+
+```reaction
+when Sessioning.resolve (session, user), asked by Recipes.RemoveRecipeFromCollection
+where
+  earlier, RequestBoundary.request (collection, path: "/recipes/remove-from-collection", recipe, requestId, session)
+then
+  Sharing.authorizeOwner (resource: collection, user)
+```
+
+### Recipes.RemoveRecipeFromCollection#3
+
+Authored path: `Recipes.RemoveRecipeFromCollection`.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 186.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 200.
+
+```reaction
+when Sharing.authorizeOwner (resource: collection, user), asked by Recipes.RemoveRecipeFromCollection#2
+where
+  earlier, RequestBoundary.request (collection, path: "/recipes/remove-from-collection", recipe, requestId, session)
+then
+  Collecting.remove (collection, item: recipe)
+```
+
+### Recipes.RemoveRecipeFromCollection#4
+
+Authored path: `Recipes.RemoveRecipeFromCollection`.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 186.
+- Covered by [Recipes](../design/compositions/Recipes.md), line 200.
+
+```reaction
+when Collecting.remove (collection, item: recipe), asked by Recipes.RemoveRecipeFromCollection#3
+where
+  earlier, RequestBoundary.request (collection, path: "/recipes/remove-from-collection", recipe, requestId, session)
+then
+  RequestBoundary.respond (collection, recipe, requestId)
+```
+
 ### Recipes.SavePersonalRecipe
 
 Authored path: `Recipes.SavePersonalRecipe`.
@@ -1598,6 +1660,200 @@ where
   earlier, RequestBoundary.request (changes, path: "/entries/add-shared", recipe, requestId, result, session)
 then
   RequestBoundary.respond (entry, requestId)
+```
+
+### Shared.DeleteRecipe
+
+Authored path: `Shared.DeleteRecipe`.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+
+```reaction
+when RequestBoundary.request (path: "/recipes/delete", recipe, requestId, session)
+then
+  Sessioning.resolve (session)
+```
+
+### Shared.DeleteRecipe:existing-owner#2
+
+Authored path: `Shared.DeleteRecipe`.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+
+```reaction
+when Sessioning.resolve (session, user), asked by Shared.DeleteRecipe
+where
+  earlier, RequestBoundary.request (path: "/recipes/delete", recipe, requestId, session)
+  no view "(user) personally saved (recipe) before direct ownership existed" with (recipe, user)
+then
+  RecipeSharing.authorizeOwner (resource: recipe, user)
+```
+
+### Shared.DeleteRecipe:existing-owner#3
+
+Authored path: `Shared.DeleteRecipe`.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+
+```reaction
+when RecipeSharing.authorizeOwner (resource: recipe, user), asked by Shared.DeleteRecipe:existing-owner#2
+then
+  RecipeRecording.delete (recipe)
+```
+
+### Shared.DeleteRecipe:existing-owner#4
+
+Authored path: `Shared.DeleteRecipe`.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+
+```reaction
+when RecipeRecording.delete (recipe), asked by Shared.DeleteRecipe:existing-owner#3
+then
+  Collecting.removeItem (item: recipe)
+```
+
+### Shared.DeleteRecipe:existing-owner#5
+
+Authored path: `Shared.DeleteRecipe`.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+
+```reaction
+when Collecting.removeItem (item: recipe), asked by Shared.DeleteRecipe:existing-owner#4
+then
+  CookingLog.clearRecipe (recipe)
+```
+
+### Shared.DeleteRecipe:existing-owner#6
+
+Authored path: `Shared.DeleteRecipe`.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+
+```reaction
+when CookingLog.clearRecipe (recipe), asked by Shared.DeleteRecipe:existing-owner#5
+then
+  Saving.removeItem (item: recipe)
+```
+
+### Shared.DeleteRecipe:existing-owner#7
+
+Authored path: `Shared.DeleteRecipe`.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+
+```reaction
+when Saving.removeItem (item: recipe), asked by Shared.DeleteRecipe:existing-owner#6
+where
+  earlier, Sessioning.resolve (session, user), asked by Shared.DeleteRecipe
+then
+  RecipeSharing.uninitialize (owner: user, resource: recipe)
+```
+
+### Shared.DeleteRecipe:existing-owner#8
+
+Authored path: `Shared.DeleteRecipe`.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+
+```reaction
+when RecipeSharing.uninitialize (owner: user, resource: recipe), asked by Shared.DeleteRecipe:existing-owner#7
+where
+  earlier, RequestBoundary.request (path: "/recipes/delete", recipe, requestId, session)
+then
+  RequestBoundary.respond (recipe, requestId)
+```
+
+### Shared.DeleteRecipe:initialize-legacy-owner#2
+
+Authored path: `Shared.DeleteRecipe`.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+
+```reaction
+when Sessioning.resolve (session, user), asked by Shared.DeleteRecipe
+where
+  earlier, RequestBoundary.request (path: "/recipes/delete", recipe, requestId, session)
+  view "(user) personally saved (recipe) before direct ownership existed" with (recipe, user)
+then
+  RecipeSharing.initialize (owner: user, resource: recipe)
+```
+
+### Shared.DeleteRecipe:initialize-legacy-owner#3
+
+Authored path: `Shared.DeleteRecipe`.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+
+```reaction
+when RecipeSharing.initialize (owner: user, resource: recipe), asked by Shared.DeleteRecipe:initialize-legacy-owner#2
+then
+  RecipeRecording.delete (recipe)
+```
+
+### Shared.DeleteRecipe:initialize-legacy-owner#4
+
+Authored path: `Shared.DeleteRecipe`.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+
+```reaction
+when RecipeRecording.delete (recipe), asked by Shared.DeleteRecipe:initialize-legacy-owner#3
+then
+  Collecting.removeItem (item: recipe)
+```
+
+### Shared.DeleteRecipe:initialize-legacy-owner#5
+
+Authored path: `Shared.DeleteRecipe`.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+
+```reaction
+when Collecting.removeItem (item: recipe), asked by Shared.DeleteRecipe:initialize-legacy-owner#4
+then
+  CookingLog.clearRecipe (recipe)
+```
+
+### Shared.DeleteRecipe:initialize-legacy-owner#6
+
+Authored path: `Shared.DeleteRecipe`.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+
+```reaction
+when CookingLog.clearRecipe (recipe), asked by Shared.DeleteRecipe:initialize-legacy-owner#5
+then
+  Saving.removeItem (item: recipe)
+```
+
+### Shared.DeleteRecipe:initialize-legacy-owner#7
+
+Authored path: `Shared.DeleteRecipe`.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+
+```reaction
+when Saving.removeItem (item: recipe), asked by Shared.DeleteRecipe:initialize-legacy-owner#6
+where
+  earlier, Sessioning.resolve (session, user), asked by Shared.DeleteRecipe
+then
+  RecipeSharing.uninitialize (owner: user, resource: recipe)
+```
+
+### Shared.DeleteRecipe:initialize-legacy-owner#8
+
+Authored path: `Shared.DeleteRecipe`.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 99.
+- Covered by [Shared collections and individual recipes](../design/compositions/Shared.md), line 120.
+
+```reaction
+when RecipeSharing.uninitialize (owner: user, resource: recipe), asked by Shared.DeleteRecipe:initialize-legacy-owner#7
+where
+  earlier, RequestBoundary.request (path: "/recipes/delete", recipe, requestId, session)
+then
+  RequestBoundary.respond (recipe, requestId)
 ```
 
 ### Shared.EditSharedCookingEntry
@@ -2038,11 +2294,13 @@ not listed here have no explicit input contract.
 - `/entries/edit-shared` — requires `changes`, `entry`, `recipe`, `result`, `session`
 - `/recipes/add-personal-to-collection` — requires `destinationCollection`, `recipe`, `session`
 - `/recipes/add-to-collection` — requires `destinationCollection`, `recipe`, `session`, `sourceCollection`
+- `/recipes/delete` — requires `recipe`, `session`
 - `/recipes/get` — requires `collection`, `recipe`, `session`
 - `/recipes/get-personal` — requires `recipe`, `session`
 - `/recipes/get-shared` — requires `recipe`, `session`
 - `/recipes/mine` — requires `session`
 - `/recipes/prepare-sharing` — requires `recipe`, `session`
+- `/recipes/remove-from-collection` — requires `collection`, `recipe`, `session`
 - `/recipes/revoke` — requires `recipe`, `session`, `username`
 - `/recipes/save` — requires `session`, `collection`, `title`, `ingredients`, `instructions`; fills `source` with "" when absent
 - `/recipes/save-personal` — requires `session`, `title`, `ingredients`, `instructions`; fills `source` with "" when absent

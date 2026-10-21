@@ -6,7 +6,7 @@ Keep related items together in named collections so users can find them later.
 
 ## Principle
 
-After a user creates a collection and adds items, they can retrieve the collection and its contents. Adding an item to one collection leaves other collections unchanged, and the same item can belong to multiple collections.
+After a user creates a collection and adds items, they can retrieve the collection and its contents. Adding an item to one collection leaves other collections unchanged, and the same item can belong to multiple collections. Removing an item from one collection preserves it in other collections; removing the item everywhere leaves the collections themselves intact.
 
 ## Types
 
@@ -77,6 +77,28 @@ delete(collection: Collection) : returns ()
     remove the collection and its item memberships
     leave the items themselves and other collections unchanged
     returns
+remove(collection: Collection, item: Item) : returns ()
+  where collection does not exist
+  then
+    refuses REMOVE_COLLECTION_NOT_FOUND "The collection does not exist."
+  where collection exists and item is not in its items
+  then
+    refuses ITEM_NOT_COLLECTED "The item is not in the collection."
+  where collection exists and item is in its items
+  then
+    remove item from the collection's items
+    preserve the collection's name, creator, and other items
+    leave the item itself and other collections unchanged
+    returns
+
+removeItem(item: Item) : returns ()
+  where true
+  then
+    remove item from every collection's items
+    preserve all collections, their names, creators, and other items
+    succeed without changes if no collection contains item
+    returns
+
 ```
 
 ## Queries

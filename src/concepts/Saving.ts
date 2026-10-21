@@ -93,4 +93,10 @@ export class SavingConcept {
             savedAt: document.savedAt,
         }));
     }
+    /** Remove all personal references to an item, leaving other saves unchanged. */
+    async removeItem({ item }: { item: string }): Promise<{}> {
+        await this.savedItems.deleteMany({ item });
+        return {};
+    }
+
 }

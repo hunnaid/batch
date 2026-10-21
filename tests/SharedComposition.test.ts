@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import type { Document } from "mongodb";
 import { testDatabase } from "./helpers/database.ts";
 import { assemble } from "@mit-sdg/sync-engine/assembly";
 import { applicationConceptSet } from "../src/concepts.ts";
@@ -338,4 +339,147 @@ test("a dangling personal save cannot establish ownership of a nonexistent recip
   await refuses("/recipes/prepare-sharing", { session: owner.session, recipe }, "OWNER_ACCESS_REQUIRED");
   expect(await recipeSharing._get({ resource: recipe })).toEqual([]);
   expect(await saving._forUser({ user: owner.user })).toEqual(before);
+});
+
+/** Include every affected concept so destructive actions cannot leave hidden references. */
+type StoredRecord = Document & { _id: string };
+
+async function deletionState(): Promise<Record<string, StoredRecord[]>> {
+  const names = ["recipeRecording.recipes", "cookingLog.entries", "saving.items",
+    "collecting.collections", "sharing.resources", "recipeSharing.resources"];
+  return Object.fromEntries(await Promise.all(names.map(async (name) =>
+    [name, await db.collection<StoredRecord>(name).find().sort({ _id: 1 }).toArray()]
+  )));
+}
+
+async function deletionFixture() {
+  const f = await fixture();
+  const { collection: first } = await call<{ collection: string }>("/collections/create", {
+    session: f.owner.session, name: "Owner's collection",
+  });
+  const { collection: second } = await call<{ collection: string }>("/collections/create", {
+    session: f.member.session, name: "Member's collection",
+  });
+  await sharing.grant({ owner: f.owner.user, resource: first, member: f.member.user });
+  await sharing.grant({ owner: f.member.user, resource: second, member: f.owner.user });
+  await call("/recipes/share", { session: f.owner.session, recipe: f.recipe, username: f.member.username });
+  const { recipe: keep } = await call<{ recipe: string }>("/recipes/save-personal", {
+    session: f.member.session, ...recipeData, title: "Keep this recipe",
+  });
+  for (const collection of [first, second]) {
+    await collecting.add({ collection, item: f.recipe });
+    await collecting.add({ collection, item: keep });
+  }
+  for (const session of [f.owner.session, f.member.session]) {
+    await call("/entries/add-shared", { session, recipe: f.recipe, changes: "An attempt", result: "Good" });
+  }
+  await cooking.record({ author: f.member.user, recipe: keep, changes: "Keep this history", result: "Good" });
+  return { ...f, first, second, keep };
+}
+
+test("collection removal preserves personal access, direct sharing, other collections and cooking history", async () => {
+  const f = await deletionFixture();
+  const before = await deletionState();
+  // The collection owner can remove another person's recipe without owning that recipe.
+  await call("/recipes/remove-from-collection", {
+    session: f.member.session, collection: f.second, recipe: f.recipe,
+  });
+  const expected = { ...before, "collecting.collections": before["collecting.collections"]!.map(row =>
+    row._id === f.second ? { ...row, items: row.items.filter((id: string) => id !== f.recipe) } : row
+  ) };
+  expect(await deletionState()).toEqual(expected);
+  const personal = await call<unknown>("/recipes/get-personal", { session: f.owner.session, recipe: f.recipe });
+  expect(await call<unknown>("/recipes/get-shared", { session: f.member.session, recipe: f.recipe })).toEqual(personal);
+  expect(await call<unknown>("/recipes/get", { session: f.member.session, collection: f.first, recipe: f.recipe }))
+    .toEqual(personal);
+  expect(await call<unknown>("/recipes/get", { session: f.member.session, collection: f.second, recipe: f.recipe }))
+    .toEqual({ recipe: null });
+  await refuses("/recipes/remove-from-collection", {
+    session: f.member.session, collection: f.second, recipe: f.recipe,
+  }, "ITEM_NOT_COLLECTED");
+  expect(await deletionState()).toEqual(expected);
+});
+
+test("recipe ownership does not permit removal from someone else's collection", async () => {
+  const f = await deletionFixture();
+  const before = await deletionState();
+  for (const session of [f.owner.session, f.outsider.session]) {
+    await refuses("/recipes/remove-from-collection", {
+      session, collection: f.second, recipe: f.recipe,
+    }, "OWNER_ACCESS_REQUIRED");
+    expect(await deletionState()).toEqual(before);
+  }
+  await refuses("/recipes/remove-from-collection", {
+    session: f.member.session, collection: f.second, recipe: "missing",
+  }, "ITEM_NOT_COLLECTED");
+  expect(await deletionState()).toEqual(before);
+});
+
+test("permanent deletion clears every reference and all authors' entries while preserving unrelated data", async () => {
+  const f = await deletionFixture();
+  // Generic Saving permits more than one saver; all references need cleanup.
+  await saving.save({ user: f.member.user, item: f.recipe });
+  const before = await deletionState();
+  expect(await call<unknown>("/recipes/delete", { session: f.owner.session, recipe: f.recipe }))
+    .toEqual({ recipe: f.recipe });
+  expect(await deletionState()).toEqual({
+    "recipeRecording.recipes": before["recipeRecording.recipes"]!.filter(row => row._id !== f.recipe),
+    "cookingLog.entries": before["cookingLog.entries"]!.filter(row => row.recipe !== f.recipe),
+    "saving.items": before["saving.items"]!.filter(row => row.item !== f.recipe),
+    "collecting.collections": before["collecting.collections"]!.map(row => ({
+      ...row, items: row.items.filter((id: string) => id !== f.recipe),
+    })),
+    "sharing.resources": before["sharing.resources"],
+    "recipeSharing.resources": before["recipeSharing.resources"]!.filter(row => row._id !== f.recipe),
+  });
+  expect((await list(f.owner.session)).overview.recipes).toEqual([]);
+  expect((await list(f.member.session)).overview.recipes).toEqual([]);
+  await refuses("/recipes/get-personal", { session: f.owner.session, recipe: f.recipe }, "ITEM_NOT_SAVED");
+  await refuses("/recipes/get-shared", { session: f.member.session, recipe: f.recipe }, "ACCESS_DENIED");
+  expect(await call<unknown>("/recipes/get", {
+    session: f.member.session, collection: f.second, recipe: f.recipe,
+  })).toEqual({ recipe: null });
+  const after = await deletionState();
+  await refuses("/recipes/delete", { session: f.owner.session, recipe: f.recipe }, "OWNER_ACCESS_REQUIRED");
+  expect(await deletionState()).toEqual(after);
+});
+
+test("direct members, collection owners and other savers cannot delete someone else's recipe", async () => {
+  const f = await deletionFixture();
+  await saving.save({ user: f.member.user, item: f.recipe });
+  const before = await deletionState();
+  for (const session of [f.member.session, f.outsider.session]) {
+    await refuses("/recipes/delete", { session, recipe: f.recipe }, "OWNER_ACCESS_REQUIRED");
+    expect(await deletionState()).toEqual(before);
+  }
+  await refuses("/recipes/delete", { session: f.owner.session, recipe: "missing" }, "OWNER_ACCESS_REQUIRED");
+  expect(await deletionState()).toEqual(before);
+});
+
+test("restored legacy recipes can be deleted by their saver without first sharing them", async () => {
+  const f = await fixture();
+  const { recipe } = await recording.record(recipeData);
+  await saving.save({ user: f.owner.user, item: recipe });
+  await cooking.record({ author: f.member.user, recipe, changes: "Old attempt", result: "Good" });
+  const before = await deletionState();
+  await refuses("/recipes/delete", { session: f.outsider.session, recipe }, "OWNER_ACCESS_REQUIRED");
+  expect(await deletionState()).toEqual(before);
+  await call("/recipes/delete", { session: f.owner.session, recipe });
+  expect(await recording._get({ recipe })).toEqual([]);
+  expect(await cooking._forRecipe({ recipe })).toEqual([]);
+  expect(await recipeSharing._get({ resource: recipe })).toEqual([]);
+  expect(await saving._forUser({ user: f.owner.user })).toHaveLength(1);
+  expect(await recording._get({ recipe: f.recipe })).toEqual([recipeData]);
+});
+
+test("destructive endpoints reject missing sessions and malformed inputs without changing data", async () => {
+  const f = await deletionFixture();
+  const before = await deletionState();
+  for (const path of ["/recipes/delete", "/recipes/remove-from-collection"]) {
+    await refuses(path, { session: null, collection: f.first, recipe: f.recipe }, "INVALID_SESSION");
+    expect(await app.invoker.invoke(path, {
+      session: f.owner.session, collection: f.first, recipe: 123,
+    }, { timeoutMs: 2000 })).toMatchObject({ ok: false, error: { kind: "framework", code: "INVALID_INPUT" } });
+    expect(await deletionState()).toEqual(before);
+  }
 });

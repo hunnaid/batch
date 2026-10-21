@@ -9,7 +9,7 @@ Keep a personal list of saved items and remember when each item was first saved.
 After a user saves an item, it appears in their personal list and can be
 authorized for that user. Saving the same item again preserves its original
 save time without creating a duplicate. Another user's saved list remains
-independent.
+independent. Removing an item everywhere clears its personal references while preserving saves for other items.
 
 ## Types
 
@@ -52,6 +52,14 @@ authorize(user: User, item: Item) : returns ()
   where no Save exists with the given user and item
   then
     refuses ITEM_NOT_SAVED "This item is not in your saved list."
+removeItem(item: Item) : returns ()
+  where true
+  then
+    remove every Save for item across all users
+    preserve all other Saves and their original save times
+    succeed without changes if item has no Saves
+    returns
+
 ```
 
 ## Queries

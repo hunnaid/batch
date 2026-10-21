@@ -93,3 +93,29 @@ Shared.GetSharedRecipe at /recipes/get-shared
 Shared.AddSharedCookingEntry at /entries/add-shared
 Shared.EditSharedCookingEntry at /entries/edit-shared
 ```
+
+## Permanently deleting a recipe
+
+Only the recipe's direct owner can permanently delete it.[delete-recipe]
+The endpoint resolves the session and uses the same ownership rule as sharing.
+A legacy personal saver can initialize ownership when the recipe exists and
+has no direct owner. Established ownership cannot be replaced by another
+personal save, collection ownership, or shared membership.
+
+After authorization, deletion removes the original recipe, every collection
+reference, all cooking entries (including other users' attempts), all personal
+saves, and the direct-sharing resource. Collections themselves and unrelated
+recipes, saves, histories, and permissions remain unchanged. Cleanup actions
+are coordinated here; each concept modifies only its own state.
+
+The recipe page shows "Delete recipe permanently" only to its owner and asks
+for confirmation that includes the loss of shared access and all cooking
+history. After success it returns to the refreshed overview. Repeated or
+unauthorized deletion is refused without changing unrelated state. The actions
+run sequentially; success is returned only after every cleanup completes.
+
+[delete-recipe]: reaction:Shared.DeleteRecipe
+
+```endpoints
+Shared.DeleteRecipe at /recipes/delete
+```
