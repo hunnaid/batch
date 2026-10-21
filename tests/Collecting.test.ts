@@ -1,45 +1,18 @@
-import { afterAll, beforeAll, expect, test } from "bun:test";
-import { MongoClient } from "mongodb";
+import { expect, test } from "bun:test";
+import { testDatabase } from "./helpers/database.ts";
 import {
   CollectingConcept,
   CollectionNotFound,
   InvalidCollectionName,
   ItemAlreadyCollected,
+  InvalidCollectionRename,
+  RenameCollectionNotFound,
+  DeleteCollectionNotFound,
 } from "../src/concepts/Collecting.ts";
 
-const url = process.env.MONGODB_URL;
-
-if (!url) {
-  throw new Error("MONGODB_URL is required to run these tests.");
-}
-
-// Keep this run's records separate from application data.
-const client = new MongoClient(url, {
-  serverSelectionTimeoutMS: 3000,
-});
-
-const db = client.db(
-  `batch_test_collecting_${crypto.randomUUID().replaceAll("-", "")}`
-);
+const db = testDatabase("collecting");
 
 const collecting = new CollectingConcept(db);
-let connected = false;
-
-beforeAll(async () => {
-  await client.connect();
-  connected = true;
-});
-
-// Remove only this run's database, then close the connection.
-afterAll(async () => {
-  try {
-    if (connected) {
-      await db.dropDatabase();
-    }
-  } finally {
-    await client.close();
-  }
-});
 
 test("creates an empty collection with its creator and name", async () => {
   const { collection } = await collecting.create({
@@ -66,35 +39,16 @@ test("creates distinct collections even with the same name", async () => {
   expect(first.collection).not.toBe(second.collection);
 });
 
-test("rejects an empty collection name", async () => {
-  await expect(
-    collecting.create({ creator: "user-1", name: "" })
-  ).rejects.toBeInstanceOf(InvalidCollectionName);
-});
-
-test("rejects a whitespace-only collection name", async () => {
-  await expect(
-    collecting.create({ creator: "user-1", name: "   " })
-  ).rejects.toBeInstanceOf(InvalidCollectionName);
-});
-
-test("adds items and retrieves them in sorted order", async () => {
-  const { collection } = await collecting.create({
-    creator: "user-1",
-    name: "Dinner",
+for (const name of ["", " \t\n"]) {
+  test(`rejects blank collection name ${JSON.stringify(name)} without creating a collection`, async () => {
+    await collecting.create({ creator: "owner", name: "Keep me" });
+    const stored = db.collection("collecting.collections");
+    const before = await stored.find().toArray();
+    await expect(collecting.create({ creator: "owner", name }))
+      .rejects.toBeInstanceOf(InvalidCollectionName);
+    expect(await stored.find().toArray()).toEqual(before);
   });
-
-  await collecting.add({ collection, item: "recipe-z" });
-  await collecting.add({ collection, item: "recipe-a" });
-
-  expect(await collecting._get({ collection })).toEqual([
-    {
-      creator: "user-1",
-      name: "Dinner",
-      items: ["recipe-a", "recipe-z"],
-    },
-  ]);
-});
+}
 
 test("rejects a duplicate without changing membership", async () => {
   const { collection } = await collecting.create({
@@ -181,6 +135,9 @@ test("lists collection items as separate rows", async () => {
   await collecting.add({ collection, item: "recipe-b" });
   await collecting.add({ collection, item: "recipe-a" });
 
+  expect(await collecting._get({ collection })).toEqual([{
+    creator: "user-1", name: "Family Recipes", items: ["recipe-a", "recipe-b"],
+  }]);
   expect(await collecting._items({ collection })).toEqual([
     { item: "recipe-a" },
     { item: "recipe-b" },
@@ -189,4 +146,48 @@ test("lists collection items as separate rows", async () => {
   expect(
     await collecting._items({ collection: crypto.randomUUID() })
   ).toEqual([]);
+});
+
+test("renaming preserves membership and accepts the current name", async () => {
+  const { collection } = await collecting.create({ creator: "owner", name: "Before" });
+  await collecting.add({ collection, item: "recipe" });
+  const { collection: other } = await collecting.create({ creator: "other", name: "Other" });
+  const otherBefore = await collecting._get({ collection: other });
+  for (let attempt = 0; attempt < 2; attempt++) {
+    expect(await collecting.rename({ collection, name: "After" })).toEqual({});
+    expect(await collecting._get({ collection })).toEqual([
+      { creator: "owner", name: "After", items: ["recipe"] },
+    ]);
+  }
+  expect(await collecting._get({ collection: other })).toEqual(otherBefore);
+});
+
+test("invalid and missing-target renames preserve existing collections", async () => {
+  const { collection } = await collecting.create({ creator: "owner", name: "Keep me" });
+  await collecting.add({ collection, item: "recipe" });
+  const before = await collecting._get({ collection });
+  for (const name of ["", " \t\n"]) {
+    await expect(collecting.rename({ collection, name })).rejects.toBeInstanceOf(InvalidCollectionRename);
+    expect(await collecting._get({ collection })).toEqual(before);
+  }
+  await expect(collecting.rename({ collection: "missing", name: "New" }))
+    .rejects.toBeInstanceOf(RenameCollectionNotFound);
+  expect(await collecting._get({ collection: "missing" })).toEqual([]);
+  expect(await collecting._get({ collection })).toEqual(before);
+});
+
+test("deleting removes only that collection and repeating deletion is refused", async () => {
+  const first = await collecting.create({ creator: "owner", name: "First" });
+  const second = await collecting.create({ creator: "owner", name: "Second" });
+  for (const { collection } of [first, second]) {
+    await collecting.add({ collection, item: "shared-recipe" });
+  }
+  const before = await collecting._get(second);
+  expect(await collecting.delete(first)).toEqual({});
+  expect(await collecting._get(first)).toEqual([]);
+  expect(await collecting._items(first)).toEqual([]);
+  for (const collection of [first.collection, "never-existed"]) {
+    await expect(collecting.delete({ collection })).rejects.toBeInstanceOf(DeleteCollectionNotFound);
+    expect(await collecting._get(second)).toEqual(before);
+  }
 });

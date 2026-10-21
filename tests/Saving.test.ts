@@ -1,55 +1,18 @@
-import {
-    afterAll,
-    beforeAll,
-    beforeEach,
-    expect,
-    test,
-} from "bun:test";
-import { MongoClient } from "mongodb";
+import { afterEach, expect, setSystemTime, test } from "bun:test";
+import { testDatabase } from "./helpers/database.ts";
 import {
     ItemNotSaved,
     SavingConcept,
 } from "../src/concepts/Saving.ts";
 
-const url = process.env.MONGODB_URL;
-
-if (!url) {
-    throw new Error("MONGODB_URL is required to run these tests.");
-}
-
-const client = new MongoClient(url, {
-    serverSelectionTimeoutMS: 3000,
-});
-
-/** Use a temporary database, separate from application data. */
-const db = client.db(
-    `batch_test_saving_${crypto.randomUUID().replaceAll("-", "")}`
-);
+const db = testDatabase("saving");
 
 const saving = new SavingConcept(db);
-let connected = false;
-
-beforeAll(async () => {
-    await client.connect();
-    connected = true;
-});
-
-/** Each test starts with an empty personal saved list. */
-beforeEach(async () => {
-    await db.dropDatabase();
-});
-
-afterAll(async () => {
-    try {
-        if (connected) {
-            await db.dropDatabase();
-        }
-    } finally {
-        await client.close();
-    }
-});
+const now = new Date("2026-01-01T00:00:00.000Z");
+afterEach(() => setSystemTime());
 
 test("saving an item makes it available in the user's personal list", async () => {
+    expect(await saving._forUser({ user: "alice" })).toEqual([]);
     const before = Date.now();
 
     expect(
@@ -74,19 +37,13 @@ test("saving an item makes it available in the user's personal list", async () =
     expect(row.savedAt.getTime()).toBeLessThanOrEqual(after);
 });
 
-test("a user with no saved items has an empty list", async () => {
-    expect(
-        await saving._forUser({ user: "alice" })
-    ).toEqual([]);
-});
-
 test("saving an item again preserves its date and avoids duplicates", async () => {
+    setSystemTime(now);
     await saving.save({ user: "alice", item: "recipe-1" });
 
     const before = await saving._forUser({ user: "alice" });
 
-    // Ensure a mistakenly replaced timestamp would be different.
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    setSystemTime(now.getTime() + 1000);
 
     await saving.save({ user: "alice", item: "recipe-1" });
 
@@ -152,9 +109,10 @@ test("an unsaved item is refused without changing existing saves", async () => {
 });
 
 test("lists newer saves before older saves", async () => {
+    setSystemTime(now);
     await saving.save({ user: "alice", item: "older-recipe" });
 
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    setSystemTime(now.getTime() + 1000);
 
     await saving.save({ user: "alice", item: "newer-recipe" });
 
@@ -167,5 +125,15 @@ test("lists newer saves before older saves", async () => {
 
     expect(rows[0]!.savedAt.getTime()).toBeGreaterThan(
         rows[1]!.savedAt.getTime()
+    );
+});
+
+test("equal save timestamps have a consistent item order independent of insertion order", async () => {
+    setSystemTime(now);
+    for (const item of ["recipe-z", "recipe-a", "recipe-m"]) {
+        await saving.save({ user: "alice", item });
+    }
+    expect(await saving._forUser({ user: "alice" })).toEqual(
+        ["recipe-a", "recipe-m", "recipe-z"].map((item) => ({ item, savedAt: now }))
     );
 });

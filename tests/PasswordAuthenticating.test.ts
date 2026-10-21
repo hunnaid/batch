@@ -1,5 +1,5 @@
-import { afterAll, beforeAll, expect, test } from "bun:test";
-import { MongoClient } from "mongodb";
+import { expect, test } from "bun:test";
+import { testDatabase } from "./helpers/database.ts";
 import {
   InvalidCredentials,
   InvalidRegistration,
@@ -7,65 +7,21 @@ import {
   UsernameTaken,
 } from "../src/concepts/PasswordAuthenticating.ts";
 
-const url = process.env.MONGODB_URL;
-
-if (!url) {
-  throw new Error("MONGODB_URL is required to run these tests.");
-}
-
-// Use a separate database for this test run.
-const client = new MongoClient(url, {
-  serverSelectionTimeoutMS: 3000,
-});
-
-const db = client.db(
-  `batch_test_auth_${crypto.randomUUID().replaceAll("-", "")}`
-);
+const db = testDatabase("auth");
 
 const accounts = new PasswordAuthenticatingConcept(db);
-let connected = false;
 
-beforeAll(async () => {
-  await client.connect();
-  connected = true;
-});
-
-// Delete only this run's database, and always close the connection.
-afterAll(async () => {
-  try {
-    if (connected) {
-      await db.dropDatabase();
-    }
-  } finally {
-    await client.close();
+test("registration and exact username lookup keep users and credentials distinct", async () => {
+  expect(await accounts._byUsername({ username: "Alice" })).toEqual([]);
+  const alice = await accounts.register({ username: "Alice", password: "alice-password" });
+  const bob = await accounts.register({ username: "Bob", password: "bob-password" });
+  expect(alice.user).not.toBe(bob.user);
+  expect(await accounts.authenticate({ username: "Alice", password: "alice-password" })).toEqual(alice);
+  expect(await accounts.authenticate({ username: "Bob", password: "bob-password" })).toEqual(bob);
+  expect(await accounts._byUsername({ username: "Alice" })).toEqual([alice]);
+  for (const username of ["alice", " Alice ", "missing"]) {
+    expect(await accounts._byUsername({ username })).toEqual([]);
   }
-});
-
-test("valid credentials return the registered user", async () => {
-  const credentials = {
-    username: "hunnaid",
-    password: "test-password",
-  };
-
-  const registered = await accounts.register(credentials);
-  const authenticated = await accounts.authenticate(credentials);
-
-  expect(registered.user.length).toBeGreaterThan(0);
-  expect(authenticated).toEqual(registered);
-});
-
-test("different users receive different identifiers", async () => {
-  const first = await accounts.register({
-    username: "first",
-    password: "test-password",
-  });
-
-  const second = await accounts.register({
-    username: "second",
-    password: "test-password",
-  });
-
-  expect(first.user).not.toBe(second.user);
 });
 
 test("duplicate registration preserves the original credentials", async () => {
@@ -96,28 +52,16 @@ test("duplicate registration preserves the original credentials", async () => {
   ).rejects.toBeInstanceOf(InvalidCredentials);
 });
 
-test("rejects an incorrect password", async () => {
-  await accounts.register({
-    username: "wrong-password-test",
-    password: "correct-password",
+for (const username of ["Alice", "missing"]) {
+  test(`refused authentication for ${username} preserves accounts`, async () => {
+    await accounts.register({ username: "Alice", password: "correct-password" });
+    const stored = db.collection("passwordAuthenticating.users");
+    const before = await stored.find().toArray();
+    await expect(accounts.authenticate({ username, password: "incorrect-password" }))
+      .rejects.toBeInstanceOf(InvalidCredentials);
+    expect(await stored.find().toArray()).toEqual(before);
   });
-
-  await expect(
-    accounts.authenticate({
-      username: "wrong-password-test",
-      password: "incorrect-password",
-    })
-  ).rejects.toBeInstanceOf(InvalidCredentials);
-});
-
-test("rejects an unknown username", async () => {
-  await expect(
-    accounts.authenticate({
-      username: "never-registered",
-      password: "test-password",
-    })
-  ).rejects.toBeInstanceOf(InvalidCredentials);
-});
+}
 
 test("preserves spaces in the password", async () => {
   const registered = await accounts.register({
@@ -177,9 +121,24 @@ const invalidCases = [
 ];
 
 for (const { label, username, password } of invalidCases) {
-  test(`rejects ${label}`, async () => {
+  test(`rejects ${label} without inserting an account`, async () => {
     await expect(
       accounts.register({ username, password })
     ).rejects.toBeInstanceOf(InvalidRegistration);
+    expect(await db.collection("passwordAuthenticating.users").countDocuments()).toBe(0);
   });
 }
+
+test("simultaneous registrations of one username yield one account and one domain refusal", async () => {
+  const credentials = { username: "same-user", password: "test-password" };
+  const results = await Promise.allSettled([
+    accounts.register(credentials), accounts.register(credentials),
+  ]);
+  const successes = results.filter((result) => result.status === "fulfilled");
+  const failures = results.filter((result) => result.status === "rejected");
+  expect(successes).toHaveLength(1);
+  expect(failures).toHaveLength(1);
+  expect(failures[0]!.reason).toBeInstanceOf(UsernameTaken);
+  expect(await accounts.authenticate(credentials)).toEqual(successes[0]!.value);
+  expect(await db.collection("passwordAuthenticating.users").countDocuments()).toBe(1);
+});

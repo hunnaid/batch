@@ -1,5 +1,5 @@
-import { afterAll, beforeAll, beforeEach, expect, test } from "bun:test";
-import { MongoClient } from "mongodb";
+import { expect, test } from "bun:test";
+import { testDatabase } from "./helpers/database.ts";
 import { assemble } from "@mit-sdg/sync-engine/assembly";
 import { applicationConceptSet } from "../src/concepts.ts";
 import { PasswordAuthenticatingConcept } from "../src/concepts/PasswordAuthenticating.ts";
@@ -15,10 +15,7 @@ import { composition as Recipes } from "../src/compositions/Recipes.ts";
 import { composition as Shared } from "../src/compositions/Shared.ts";
 import type { BatchWire } from "../generated/wire.ts";
 
-const url = process.env.MONGODB_URL;
-if (!url) throw new Error("MONGODB_URL is required to run these tests.");
-const client = new MongoClient(url, { serverSelectionTimeoutMS: 3000 });
-const db = client.db(`batch_test_shared_${crypto.randomUUID().replaceAll("-", "")}`);
+const db = testDatabase("sharedcomposition", () => app.whenIdle());
 const sessions = new SessioningConcept(db);
 const recording = new RecipeRecordingConcept(db);
 const collecting = new CollectingConcept(db);
@@ -39,18 +36,6 @@ const app = assemble({
     RecipeSharing: recipeSharing,
   },
   composition: { Accounts, Collections, Recipes, Shared },
-});
-
-let connected = false;
-beforeAll(async () => { await client.connect(); connected = true; });
-beforeEach(async () => { await app.whenIdle(); await db.dropDatabase(); });
-afterAll(async () => {
-  try {
-    await app.whenIdle();
-    if (connected) await db.dropDatabase();
-  } finally {
-    await client.close();
-  }
 });
 
 async function call<T = unknown>(path: string, input: Record<string, unknown>): Promise<T> {
@@ -204,6 +189,14 @@ test("direct members read shared history and edit only their own entries on the 
   await refuses("/entries/edit-shared", {
     session: f.member.session, recipe: otherRecipe, entry, changes: "Wrong recipe", result: "",
   }, "ENTRY_NOT_IN_RECIPE");
+  const historyBefore = await cooking._forRecipe({ recipe: f.recipe });
+  await refuses("/entries/add-shared", {
+    session: f.member.session, recipe: f.recipe, changes: " ", result: "",
+  }, "INVALID_COOKING_ENTRY");
+  await refuses("/entries/edit-shared", {
+    session: f.member.session, recipe: f.recipe, entry, changes: "", result: " ",
+  }, "INVALID_COOKING_ENTRY_EDIT");
+  expect(await cooking._forRecipe({ recipe: f.recipe })).toEqual(historyBefore);
   expect(await cooking._get({ entry })).toEqual(edited);
 });
 
@@ -333,4 +326,16 @@ test("shared endpoints require sessions and validate input without changing stat
     session: f.owner.session, recipe: f.recipe, username: 123,
   }, { timeoutMs: 2000 })).toMatchObject({ ok: false, error: { kind: "framework", code: "INVALID_INPUT" } });
   expect(await state(f)).toEqual(before);
+});
+
+test("a dangling personal save cannot establish ownership of a nonexistent recipe", async () => {
+  const owner = await account("owner");
+  const recipe = "never-recorded";
+  await saving.save({ user: owner.user, item: recipe });
+  const before = await saving._forUser({ user: owner.user });
+  expect(await call<{ canManage: boolean }>("/recipes/sharing-status", { session: owner.session, recipe }))
+    .toEqual({ canManage: false });
+  await refuses("/recipes/prepare-sharing", { session: owner.session, recipe }, "OWNER_ACCESS_REQUIRED");
+  expect(await recipeSharing._get({ resource: recipe })).toEqual([]);
+  expect(await saving._forUser({ user: owner.user })).toEqual(before);
 });

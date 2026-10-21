@@ -1,5 +1,5 @@
-import { afterAll, beforeAll, expect, test } from "bun:test";
-import { MongoClient } from "mongodb";
+import { afterEach, expect, setSystemTime, test } from "bun:test";
+import { testDatabase } from "./helpers/database.ts";
 import {
   CookingEntryNotFound,
   CookingEntryNotOwned,
@@ -11,38 +11,10 @@ import {
 /**
  * Use a separate database for this test run so application data is untouched.
  */
-const url = process.env.MONGODB_URL;
-
-if (!url) {
-  throw new Error("MONGODB_URL is required to run these tests.");
-}
-
-const client = new MongoClient(url, {
-  serverSelectionTimeoutMS: 3000,
-});
-
-const db = client.db(
-  `batch_test_cooking_log_${crypto.randomUUID().replaceAll("-", "")}`
-);
+const db = testDatabase("cookinglog");
 
 const log = new CookingLogConcept(db);
-let connected = false;
-
-beforeAll(async () => {
-  await client.connect();
-  connected = true;
-});
-
-// Remove only this run's temporary database and always close the connection.
-afterAll(async () => {
-  try {
-    if (connected) {
-      await db.dropDatabase();
-    }
-  } finally {
-    await client.close();
-  }
-});
+afterEach(() => setSystemTime());
 
 const example = {
   author: "user-1",
@@ -94,7 +66,9 @@ test("allows a result without changes to the original recipe", async () => {
   ]);
 });
 
-test("rejects an entry when both text fields are blank", async () => {
+test("rejects an entry when both text fields are blank without changing history", async () => {
+  await log.record(example);
+  const before = await log._forRecipe({ recipe: example.recipe });
   await expect(
     log.record({
       ...example,
@@ -102,26 +76,13 @@ test("rejects an entry when both text fields are blank", async () => {
       result: "",
     })
   ).rejects.toBeInstanceOf(InvalidCookingEntry);
+  expect(await log._forRecipe({ recipe: example.recipe })).toEqual(before);
 });
 
 test("returns no rows for an unknown entry", async () => {
   expect(
     await log._get({ entry: crypto.randomUUID() })
   ).toEqual([]);
-});
-
-test("another attempt preserves the earlier entry", async () => {
-  const first = await log.record(example);
-  const original = await log._get({ entry: first.entry });
-
-  const second = await log.record({
-    ...example,
-    changes: "Used the original amount of chili.",
-    result: "Too spicy for me.",
-  });
-
-  expect(second.entry).not.toBe(first.entry);
-  expect(await log._get({ entry: first.entry })).toEqual(original);
 });
 
 test("the author can edit text while preserving entry metadata", async () => {
@@ -165,7 +126,10 @@ test("another user cannot edit the entry", async () => {
   expect(await log._get({ entry })).toEqual(original);
 });
 
-test("editing an unknown entry is refused", async () => {
+test("editing an unknown entry is refused without creating or changing entries", async () => {
+  await log.record(example);
+  const stored = db.collection("cookingLog.entries");
+  const before = await stored.find().toArray();
   await expect(
     log.edit({
       author: example.author,
@@ -174,6 +138,7 @@ test("editing an unknown entry is refused", async () => {
       result: example.result,
     })
   ).rejects.toBeInstanceOf(CookingEntryNotFound);
+  expect(await stored.find().toArray()).toEqual(before);
 });
 
 test("an invalid edit leaves the existing entry unchanged", async () => {
@@ -218,7 +183,9 @@ test("editing can leave either text field empty", async () => {
   ]);
 });
 
-test("lists only the entries belonging to the requested recipe", async () => {
+test("lists attempts newest first, preserving earlier entries and excluding other recipes", async () => {
+  const now = new Date("2026-01-01T00:00:00.000Z");
+  setSystemTime(now);
   const recipe = crypto.randomUUID();
 
   expect(await log._forRecipe({ recipe })).toEqual([]);
@@ -228,6 +195,8 @@ test("lists only the entries belonging to the requested recipe", async () => {
     recipe,
   });
 
+  const original = await log._get({ entry: first.entry });
+  setSystemTime(now.getTime() + 1000);
   const second = await log.record({
     ...example,
     recipe,
@@ -242,9 +211,8 @@ test("lists only the entries belonging to the requested recipe", async () => {
   const rows = await log._forRecipe({ recipe });
 
   expect(rows).toHaveLength(2);
-  expect(rows.map((row) => row._id).sort()).toEqual(
-    [first.entry, second.entry].sort()
-  );
+  expect(rows.map((row) => row._id)).toEqual([second.entry, first.entry]);
+  expect(await log._get({ entry: first.entry })).toEqual(original);
 
   expect(rows.every((row) => row.recipe === recipe)).toBe(true);
 

@@ -1,5 +1,5 @@
-import { afterAll, beforeAll, beforeEach, expect, test } from "bun:test";
-import { MongoClient } from "mongodb";
+import { expect, test } from "bun:test";
+import { testDatabase } from "./helpers/database.ts";
 import { assemble } from "@mit-sdg/sync-engine/assembly";
 import {
   createGateway,
@@ -29,19 +29,7 @@ import { composition as recipesComposition } from "../src/compositions/Recipes.t
 import { composition as sharedComposition } from "../src/compositions/Shared.ts";
 
 /** Use a temporary database separate from the application's data. */
-const url = process.env.MONGODB_URL;
-
-if (!url) {
-  throw new Error("MONGODB_URL is required to run these tests.");
-}
-
-const client = new MongoClient(url, {
-  serverSelectionTimeoutMS: 3000,
-});
-
-const db = client.db(
-  `batch_test_composition_${crypto.randomUUID().replaceAll("-", "")}`
-);
+const db = testDatabase("collections", () => app.whenIdle());
 
 const collecting = new CollectingConcept(db);
 const sharing = new SharingConcept(db);
@@ -84,32 +72,6 @@ const app = assemble({
     Shared: sharedComposition,
     Test: { CreateCollection },
   },
-});
-
-let connected = false;
-
-beforeAll(async () => {
-  await client.connect();
-  connected = true;
-});
-
-/** Clear only this test run's temporary database between tests. */
-beforeEach(async () => {
-  await app.whenIdle();
-  await db.dropDatabase();
-});
-
-// Finish pending engine work before deleting this run's database.
-afterAll(async () => {
-  try {
-    await app.whenIdle();
-
-    if (connected) {
-      await db.dropDatabase();
-    }
-  } finally {
-    await client.close();
-  }
 });
 
 test("creating a collection automatically gives its creator access", async () => {
@@ -1335,3 +1297,118 @@ for (const restriction of ["personal save", "destination access"] as const) {
     expect(await personalRecipeTransferState(fixture)).toEqual(before);
   });
 }
+
+/** Read all recipe-related records so refusals cannot hide orphan inserts. */
+async function recipeStorage() {
+  const names = ["recipeRecording.recipes", "saving.items", "recipeSharing.resources",
+    "collecting.collections", "sharing.resources", "cookingLog.entries"];
+  return Promise.all(names.map((name) => db.collection(name).find().sort({ _id: 1 }).toArray()));
+}
+
+async function refuses(path: string, input: Record<string, unknown>, error: string) {
+  expect(await app.invoker.invoke(path, input, { timeoutMs: 2000 })).toEqual({
+    ok: false, error: { kind: "domain", value: error },
+  });
+}
+
+test("refused recipe saves leave no orphan recipes, personal saves, ownership or memberships", async () => {
+  const f = await createSharedCollection();
+  const { session: outsiderSession } = await sessions.start({ user: "outsider" });
+  const valid = { title: "Rice", ingredients: ["Rice"], instructions: ["Cook."] };
+  await invokeSuccessfully("/recipes/save", { session: f.ownerSession, collection: f.collection, ...valid });
+  const before = await recipeStorage();
+
+  for (const path of ["/recipes/save", "/recipes/save-personal"]) {
+    const input = { session: f.memberSession, collection: f.collection, ...valid };
+    await refuses(path, { ...input, title: "  " }, "INVALID_RECIPE");
+    expect(await recipeStorage()).toEqual(before);
+    await refuses(path, { ...input, session: null }, "INVALID_SESSION");
+    expect(await recipeStorage()).toEqual(before);
+    expect(await app.invoker.invoke(path, { ...input, ingredients: [123] }, { timeoutMs: 2000 }))
+      .toMatchObject({ ok: false, error: { kind: "framework", code: "INVALID_INPUT" } });
+    expect(await recipeStorage()).toEqual(before);
+  }
+  await refuses("/recipes/save", {
+    session: outsiderSession, collection: f.collection, ...valid,
+  }, "ACCESS_DENIED");
+  expect(await recipeStorage()).toEqual(before);
+});
+
+test("collection entry editing enforces authorship, recipe membership and revocation", async () => {
+  const f = await createSharedCollection();
+  const { recipe } = await invokeSuccessfully<{ recipe: string }>("/recipes/save", {
+    session: f.ownerSession, collection: f.collection,
+    title: "Rice", ingredients: ["Rice"], instructions: ["Cook."],
+  });
+  const input = { session: f.memberSession, collection: f.collection, recipe,
+    changes: "Less water", result: "" };
+  const { entry } = await invokeSuccessfully<{ entry: string }>("/entries/add", input);
+  const original = await cookingLog._get({ entry });
+  expect(original[0]).toMatchObject({ author: f.member, recipe, changes: input.changes });
+  await invokeSuccessfully("/entries/edit", { ...input, entry, result: "Firmer rice" });
+  expect(await cookingLog._get({ entry }))
+    .toEqual(original.map((row) => ({ ...row, result: "Firmer rice" })));
+
+  const { recipe: otherRecipe } = await invokeSuccessfully<{ recipe: string }>("/recipes/save", {
+    session: f.memberSession, collection: f.collection,
+    title: "Soup", ingredients: ["Water"], instructions: ["Boil."],
+  });
+  const { recipe: privateRecipe } = await invokeSuccessfully<{ recipe: string }>("/recipes/save-personal", {
+    session: f.memberSession, title: "Private", ingredients: ["Water"], instructions: ["Boil."],
+  });
+  const before = await recipeStorage();
+  for (const [overrides, error] of [
+    [{ session: f.ownerSession }, "COOKING_ENTRY_NOT_OWNED"],
+    [{ recipe: otherRecipe }, "ENTRY_NOT_IN_RECIPE"],
+    [{ entry: "missing" }, "ENTRY_NOT_IN_RECIPE"],
+    [{ recipe: privateRecipe }, "RECIPE_NOT_IN_COLLECTION"],
+    [{ changes: "", result: " " }, "INVALID_COOKING_ENTRY_EDIT"],
+  ] as const) {
+    await refuses("/entries/edit", { ...input, entry, ...overrides }, error);
+    expect(await recipeStorage()).toEqual(before);
+  }
+  await refuses("/entries/add", { ...input, recipe: privateRecipe }, "RECIPE_NOT_IN_COLLECTION");
+  await refuses("/entries/add", { ...input, changes: "", result: " " }, "INVALID_COOKING_ENTRY");
+  expect(await recipeStorage()).toEqual(before);
+
+  await sharing.revoke({ resource: f.collection, owner: f.owner, member: f.member });
+  const revoked = await recipeStorage();
+  for (const path of ["/recipes/get", "/entries/add", "/entries/edit"]) {
+    await refuses(path, { ...input, entry }, "ACCESS_DENIED");
+    expect(await recipeStorage()).toEqual(revoked);
+  }
+});
+
+test("collection sharing resolves usernames, enforces ownership and revokes access through the endpoints", async () => {
+  const accounts = new PasswordAuthenticatingConcept(db);
+  const users = [];
+  for (const username of ["owner", "member", "outsider"]) {
+    const { user } = await accounts.register({ username, password: "test-password" });
+    const { session } = await sessions.start({ user });
+    users.push({ user, username, session });
+  }
+  const [owner, member, outsider] = users;
+  const { collection } = await invokeSuccessfully<{ collection: string }>("/collections/create", {
+    session: owner!.session, name: "Family",
+  });
+  const input = { session: owner!.session, collection, username: member!.username };
+  await invokeSuccessfully("/collections/share", input);
+  expect(await visibleCollections(member!.session)).toEqual([collection]);
+  const before = await recipeStorage();
+  for (const [path, overrides, error] of [
+    ["/collections/share", {}, "MEMBER_ALREADY_ADDED"],
+    ["/collections/share", { username: "missing" }, "RECIPIENT_NOT_FOUND"],
+    ["/collections/revoke", { username: "missing" }, "RECIPIENT_NOT_FOUND"],
+    ["/collections/share", { session: member!.session, username: outsider!.username }, "GRANT_NOT_OWNER"],
+    ["/collections/revoke", { session: member!.session, username: owner!.username }, "REVOKE_NOT_OWNER"],
+  ] as const) {
+    await refuses(path, { ...input, ...overrides }, error);
+    expect(await recipeStorage()).toEqual(before);
+  }
+  await invokeSuccessfully("/collections/revoke", input);
+  expect(await visibleCollections(member!.session)).toEqual([]);
+  expect(await visibleCollections(owner!.session)).toEqual([collection]);
+  const after = await recipeStorage();
+  await refuses("/collections/revoke", input, "MEMBER_NOT_ADDED");
+  expect(await recipeStorage()).toEqual(after);
+});

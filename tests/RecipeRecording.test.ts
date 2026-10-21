@@ -1,5 +1,5 @@
-import { afterAll, beforeAll, expect, test } from "bun:test";
-import { MongoClient } from "mongodb";
+import { expect, test } from "bun:test";
+import { testDatabase } from "./helpers/database.ts";
 import {
   InvalidRecipe,
   RecipeRecordingConcept,
@@ -10,39 +10,9 @@ import {
  * Connect to the configured server using a separate test database.
  * This keeps test records separate from the application's data.
  */
-const url = process.env.MONGODB_URL;
-
-if (!url) {
-  throw new Error("MONGODB_URL is required to run these tests.");
-}
-
-const client = new MongoClient(url, {
-  serverSelectionTimeoutMS: 3000,
-});
-
-const db = client.db(
-  `batch_test_recipe_${crypto.randomUUID().replaceAll("-", "")}`
-);
+const db = testDatabase("reciperecording");
 
 const recipes = new RecipeRecordingConcept(db);
-let connected = false;
-
-// Establish the connection before running any tests.
-beforeAll(async () => {
-  await client.connect();
-  connected = true;
-});
-
-// Remove only this run's temporary database, then close the connection.
-afterAll(async () => {
-  try {
-    if (connected) {
-      await db.dropDatabase();
-    }
-  } finally {
-    await client.close();
-  }
-});
 
 const example: RecipeData = {
   title: "Mom's Biryani",
@@ -109,9 +79,13 @@ const invalidCases: [string, Partial<RecipeData>][] = [
 ];
 
 for (const [description, changes] of invalidCases) {
-  test(`rejects ${description}`, async () => {
+  test(`rejects ${description} without changing stored recipes`, async () => {
+    await recipes.record(example);
+    const stored = db.collection("recipeRecording.recipes");
+    const before = await stored.find().toArray();
     await expect(
       recipes.record({ ...example, ...changes })
     ).rejects.toBeInstanceOf(InvalidRecipe);
+    expect(await stored.find().toArray()).toEqual(before);
   });
 }

@@ -1,7 +1,9 @@
-import { afterAll, beforeAll, expect, test } from "bun:test";
-import { MongoClient } from "mongodb";
+import { expect, test } from "bun:test";
+import { testDatabase } from "./helpers/database.ts";
 import {
   AccessDenied,
+  OwnerAccessRequired,
+  CannotUninitializeResource,
   CannotGrantOwner,
   CannotRevokeOwner,
   GrantNotOwner,
@@ -15,38 +17,9 @@ import {
 } from "../src/concepts/Sharing.ts";
 
 /** Keep this run's records separate from application data and other tests. */
-const url = process.env.MONGODB_URL;
-
-if (!url) {
-  throw new Error("MONGODB_URL is required to run these tests.");
-}
-
-const client = new MongoClient(url, {
-  serverSelectionTimeoutMS: 3000,
-});
-
-const db = client.db(
-  `batch_test_sharing_${crypto.randomUUID().replaceAll("-", "")}`
-);
+const db = testDatabase("sharing");
 
 const sharing = new SharingConcept(db);
-let connected = false;
-
-beforeAll(async () => {
-  await client.connect();
-  connected = true;
-});
-
-// Remove only this run's temporary database and always close the connection.
-afterAll(async () => {
-  try {
-    if (connected) {
-      await db.dropDatabase();
-    }
-  } finally {
-    await client.close();
-  }
-});
 
 /** Give each test a separate resource owned by the same example user. */
 async function createResource(): Promise<string> {
@@ -54,14 +27,6 @@ async function createResource(): Promise<string> {
   await sharing.initialize({ resource, owner: "owner" });
   return resource;
 }
-
-test("initialization gives the owner access", async () => {
-  const resource = await createResource();
-
-  expect(
-    await sharing.authorize({ resource, user: "owner" })
-  ).toEqual({});
-});
 
 test("a nonmember cannot access an initialized resource", async () => {
   const resource = await createResource();
@@ -82,6 +47,7 @@ test("an unknown resource cannot be accessed", async () => {
 
 test("the owner can grant access and later revoke it", async () => {
   const resource = await createResource();
+  expect(await sharing.authorize({ resource, user: "owner" })).toEqual({});
 
   expect(
     await sharing.grant({
@@ -137,122 +103,31 @@ test("reinitialization preserves the original owner and members", async () => {
   ).rejects.toBeInstanceOf(AccessDenied);
 });
 
-test("a member cannot grant access to another user", async () => {
-  const resource = await createResource();
-
-  await sharing.grant({
-    owner: "owner",
-    resource,
-    member: "friend",
+// Each rejection is independent and must leave ownership and every membership intact.
+for (const scenario of [
+  { label: "member granting access", action: "grant", owner: "friend", member: "outsider", error: GrantNotOwner },
+  { label: "member revoking access", action: "revoke", owner: "friend", member: "other-friend", error: RevokeNotOwner },
+  { label: "granting to the owner", action: "grant", owner: "owner", member: "owner", error: CannotGrantOwner },
+  { label: "revoking the owner", action: "revoke", owner: "owner", member: "owner", error: CannotRevokeOwner },
+  { label: "duplicate grant", action: "grant", owner: "owner", member: "friend", error: MemberAlreadyAdded },
+  { label: "revoking a nonmember", action: "revoke", owner: "owner", member: "outsider", error: MemberNotAdded },
+  { label: "granting an unknown resource", action: "grant", owner: "owner", member: "friend", missing: true, error: GrantResourceNotFound },
+  { label: "revoking an unknown resource", action: "revoke", owner: "owner", member: "friend", missing: true, error: RevokeResourceNotFound },
+] as const) {
+  test(`refuses ${scenario.label} without changing sharing state`, async () => {
+    const resource = await createResource();
+    for (const member of ["friend", "other-friend"]) {
+      await sharing.grant({ owner: "owner", resource, member });
+    }
+    const stored = db.collection("sharing.resources");
+    const before = await stored.find().toArray();
+    await expect(sharing[scenario.action]({
+      resource: "missing" in scenario ? "missing" : resource,
+      owner: scenario.owner, member: scenario.member,
+    })).rejects.toBeInstanceOf(scenario.error);
+    expect(await stored.find().toArray()).toEqual(before);
   });
-
-  await expect(
-    sharing.grant({
-      owner: "friend",
-      resource,
-      member: "outsider",
-    })
-  ).rejects.toBeInstanceOf(GrantNotOwner);
-
-  await expect(
-    sharing.authorize({ resource, user: "outsider" })
-  ).rejects.toBeInstanceOf(AccessDenied);
-});
-
-test("a member cannot revoke another member's access", async () => {
-  const resource = await createResource();
-
-  for (const member of ["friend", "other-friend"]) {
-    await sharing.grant({ owner: "owner", resource, member });
-  }
-
-  await expect(
-    sharing.revoke({
-      owner: "friend",
-      resource,
-      member: "other-friend",
-    })
-  ).rejects.toBeInstanceOf(RevokeNotOwner);
-
-  expect(
-    await sharing.authorize({ resource, user: "other-friend" })
-  ).toEqual({});
-});
-
-test("the owner cannot be added as a member", async () => {
-  const resource = await createResource();
-
-  await expect(
-    sharing.grant({
-      owner: "owner",
-      resource,
-      member: "owner",
-    })
-  ).rejects.toBeInstanceOf(CannotGrantOwner);
-});
-
-test("the owner's access cannot be revoked", async () => {
-  const resource = await createResource();
-
-  await expect(
-    sharing.revoke({
-      owner: "owner",
-      resource,
-      member: "owner",
-    })
-  ).rejects.toBeInstanceOf(CannotRevokeOwner);
-
-  expect(
-    await sharing.authorize({ resource, user: "owner" })
-  ).toEqual({});
-});
-
-test("a duplicate grant is refused without removing access", async () => {
-  const resource = await createResource();
-  const input = { owner: "owner", resource, member: "friend" };
-
-  await sharing.grant(input);
-
-  await expect(
-    sharing.grant(input)
-  ).rejects.toBeInstanceOf(MemberAlreadyAdded);
-
-  expect(
-    await sharing.authorize({ resource, user: "friend" })
-  ).toEqual({});
-});
-
-test("revoking a nonmember is refused", async () => {
-  const resource = await createResource();
-
-  await expect(
-    sharing.revoke({
-      owner: "owner",
-      resource,
-      member: "outsider",
-    })
-  ).rejects.toBeInstanceOf(MemberNotAdded);
-});
-
-test("granting access to an unknown resource is refused", async () => {
-  await expect(
-    sharing.grant({
-      owner: "owner",
-      resource: crypto.randomUUID(),
-      member: "friend",
-    })
-  ).rejects.toBeInstanceOf(GrantResourceNotFound);
-});
-
-test("revoking access to an unknown resource is refused", async () => {
-  await expect(
-    sharing.revoke({
-      owner: "owner",
-      resource: crypto.randomUUID(),
-      member: "friend",
-    })
-  ).rejects.toBeInstanceOf(RevokeResourceNotFound);
-});
+}
 
 test("membership changes stay within their resource", async () => {
   const first = await createResource();
@@ -353,4 +228,49 @@ test("separate sharing instances do not share ownership or memberships", async (
   expect(await sharing._shared({ user: "direct-member" })).toEqual([]);
   expect(await direct._shared({ user: "direct-member" }))
     .toEqual([{ resource, owner: "recipe-owner" }]);
+});
+
+test("owner authorization rejects members, outsiders and missing resources without mutations", async () => {
+  const resource = await createResource();
+  await sharing.grant({ resource, owner: "owner", member: "friend" });
+  const stored = db.collection("sharing.resources");
+  const before = await stored.find().toArray();
+  expect(await sharing.authorizeOwner({ resource, user: "owner" })).toEqual({});
+  for (const input of [
+    { resource, user: "friend" }, { resource, user: "outsider" },
+    { resource: "missing", user: "owner" },
+  ]) {
+    await expect(sharing.authorizeOwner(input)).rejects.toBeInstanceOf(OwnerAccessRequired);
+    expect(await stored.find().toArray()).toEqual(before);
+  }
+});
+
+test("only the owner can uninitialize; removal clears access without affecting other resources", async () => {
+  const resource = await createResource();
+  const other = await createResource();
+  for (const id of [resource, other]) {
+    await sharing.grant({ resource: id, owner: "owner", member: "friend" });
+  }
+  const stored = db.collection("sharing.resources");
+  const before = await stored.find().sort({ _id: 1 }).toArray();
+  for (const owner of ["friend", "outsider"]) {
+    await expect(sharing.uninitialize({ resource, owner })).rejects.toBeInstanceOf(CannotUninitializeResource);
+    expect(await stored.find().sort({ _id: 1 }).toArray()).toEqual(before);
+  }
+  expect(await sharing.uninitialize({ resource, owner: "owner" })).toEqual({});
+  expect(await sharing._get({ resource })).toEqual([]);
+  const remaining = await stored.find().toArray();
+  for (const id of [resource, "missing"]) {
+    await expect(sharing.uninitialize({ resource: id, owner: "owner" }))
+      .rejects.toBeInstanceOf(CannotUninitializeResource);
+    expect(await stored.find().toArray()).toEqual(remaining);
+  }
+  for (const user of ["owner", "friend"]) {
+    await expect(sharing.authorize({ resource, user })).rejects.toBeInstanceOf(AccessDenied);
+    expect(await sharing._accessible({ user })).toEqual([{ resource: other, owner: "owner" }]);
+    expect(await sharing._shared({ user })).toEqual([{ resource: other, owner: "owner" }]);
+  }
+  await sharing.initialize({ resource, owner: "replacement" });
+  expect(await sharing.authorizeOwner({ resource, user: "replacement" })).toEqual({});
+  await expect(sharing.authorize({ resource, user: "friend" })).rejects.toBeInstanceOf(AccessDenied);
 });
