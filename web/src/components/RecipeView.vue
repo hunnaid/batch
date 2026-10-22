@@ -7,6 +7,7 @@ import SharingForm from "./SharingForm.vue";
 import RoleBadge from "./RoleBadge.vue";
 import UserAvatar from "./UserAvatar.vue";
 import ReturnButton from "./ReturnButton.vue";
+import ConfirmationDialog from "./ConfirmationDialog.vue";
 
 type RecipeDetails = NonNullable<
   BatchWireHttp["/recipes/get"]["output"]["recipe"]
@@ -70,6 +71,21 @@ const canManageSharing = ref(false);
 const currentCollection = ref<CollectionSummary | null>(null);
 const managingRecipe = ref(false);
 const managementError = ref("");
+const pendingManagementAction = ref<"remove" | "delete" | null>(null);
+
+function confirmManagement(action: "remove" | "delete") {
+  if (managingRecipe.value || addingToCollection.value || showEntryForm.value || !details.value) return;
+  if (action === "remove" && (!props.collection || currentCollection.value?.owner !== props.user)) return;
+  if (action === "delete" && !canManageSharing.value) return;
+  managementError.value = "";
+  pendingManagementAction.value = action;
+}
+
+function cancelManagement() {
+  if (managingRecipe.value) return;
+  pendingManagementAction.value = null;
+  managementError.value = "";
+}
 
 /** The server checks ownership again; visible controls are only a convenience. */
 async function manageRecipe(action: "remove" | "delete") {
@@ -77,14 +93,7 @@ async function manageRecipe(action: "remove" | "delete") {
   const removing = action === "remove";
   if (removing && (!props.collection || currentCollection.value?.owner !== props.user)) return;
   if (!removing && !canManageSharing.value) return;
-
-  const message = removing
-    ? `Remove “${details.value.title}” from “${currentCollection.value!.name}”?\n\n` +
-      "The recipe stays in its owner's My recipes, other collections, and direct shares. Its cooking history is kept."
-    : `Permanently delete “${details.value.title}”?\n\n` +
-      "This removes it from My recipes, every collection, and Shared for everyone. " +
-      "All cooking entries, including other people's attempts, will be deleted. This cannot be undone.";
-  if (!window.confirm(message)) return;
+  if (pendingManagementAction.value !== action) return;
 
   managingRecipe.value = true;
   managementError.value = "";
@@ -527,14 +536,14 @@ onMounted(loadDestinations);
 
       <details v-if="canManageSharing || currentCollection?.owner === user">
         <summary>Manage recipe</summary>
-        <p v-if="managementError" role="alert">{{ managementError }}</p>
+        <p v-if="managementError && !pendingManagementAction" role="alert">{{ managementError }}</p>
         <p v-if="showEntryForm">Save or cancel your cooking entry before managing this recipe.</p>
         <div class="management-actions">
           <button
             v-if="currentCollection?.owner === user"
             type="button"
             :disabled="managingRecipe || addingToCollection || showEntryForm"
-            @click="manageRecipe('remove')"
+            @click="confirmManagement('remove')"
           >
             Remove from collection
           </button>
@@ -543,14 +552,29 @@ onMounted(loadDestinations);
             type="button"
             class="delete-recipe"
             :disabled="managingRecipe || addingToCollection || showEntryForm"
-            @click="manageRecipe('delete')"
+            @click="confirmManagement('delete')"
           >
             Delete recipe permanently
           </button>
         </div>
       </details>
     </div>
-    <p v-if="managingRecipe" role="status">Updating recipe…</p>
+    <ConfirmationDialog
+      v-if="pendingManagementAction && details"
+      :title="pendingManagementAction === 'remove'
+        ? `Remove “${details.title}” from “${currentCollection?.name}”?`
+        : `Delete “${details.title}” permanently?`"
+      :description="pendingManagementAction === 'remove'
+        ? 'This removes the recipe from this collection only. Personal saves, other collections, direct shares, and cooking history are kept.'
+        : 'This deletes the recipe from everyone’s saved recipes and collections, along with all cooking entries—including other cooks’ attempts.'"
+      :warning="pendingManagementAction === 'delete' ? 'This cannot be undone.' : undefined"
+      :confirm-label="pendingManagementAction === 'remove' ? 'Remove from collection' : 'Delete recipe'"
+      :busy-label="pendingManagementAction === 'remove' ? 'Removing recipe…' : 'Deleting recipe…'"
+      :busy="managingRecipe"
+      :error="managementError"
+      @cancel="cancelManagement"
+      @confirm="manageRecipe(pendingManagementAction)"
+    />
   </section>
 </template>
 

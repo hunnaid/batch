@@ -6,6 +6,7 @@ import RecipeForm from "./RecipeForm.vue";
 import SharingForm from "./SharingForm.vue";
 import RoleBadge from "./RoleBadge.vue";
 import RefreshButton from "./RefreshButton.vue";
+import ConfirmationDialog from "./ConfirmationDialog.vue";
 
 /** Derive screen data directly from the generated API contract. */
 type CollectionSummary =
@@ -53,6 +54,20 @@ const matchingCollectionIds = computed(() => {
 
 /** Prevent overlapping rename/delete requests. */
 const managing = ref(false);
+const deletingCollection = ref<CollectionSummary | null>(null);
+
+function confirmCollectionDeletion(collection: CollectionSummary) {
+  if (managing.value || loading.value || creating.value || addingTo.value !== null || renaming.value !== null) return;
+  if (collection.owner !== props.user) return;
+  error.value = "";
+  deletingCollection.value = collection;
+}
+
+function cancelCollectionDeletion() {
+  if (managing.value) return;
+  deletingCollection.value = null;
+  error.value = "";
+}
 
 async function beginCreateCollection() {
   addingCollection.value = true;
@@ -228,16 +243,10 @@ async function renameCollection(collection: CollectionSummary) {
 }
 
 /** Delete a collection after the owner confirms the scope of deletion. */
-async function deleteCollection(collection: CollectionSummary) {
+async function deleteCollection() {
   if (managing.value) return;
-
-  const confirmed = window.confirm(
-    `Delete "${collection.name}" and remove everyone's access to this collection?\n\n` +
-    "Recipes and cooking entries are kept. Personally saved recipes remain " +
-    "in My recipes; other collections and direct shares are unchanged."
-  );
-
-  if (!confirmed) return;
+  const collection = deletingCollection.value;
+  if (!collection || collection.owner !== props.user) return;
 
   managing.value = true;
   error.value = "";
@@ -255,11 +264,16 @@ async function deleteCollection(collection: CollectionSummary) {
       addingTo.value = null;
     }
 
+    deletingCollection.value = null;
     await loadCollections();
   } catch (cause) {
     reportError(cause);
   } finally {
     managing.value = false;
+    if (!deletingCollection.value) {
+      await nextTick();
+      createCollectionButton.value?.focus();
+    }
   }
 }
 
@@ -348,7 +362,7 @@ onMounted(loadCollections);
 
       </div>
 
-      <p v-if="error" role="alert">{{ error }}</p>
+      <p v-if="error && !deletingCollection" role="alert">{{ error }}</p>
 
       <p v-if="loading" role="status">Loading collections…</p>
 
@@ -470,7 +484,7 @@ onMounted(loadCollections);
                 managing || loading || creating ||
                 addingTo !== null || renaming !== null
               "
-              @click="deleteCollection(collection)"
+              @click="confirmCollectionDeletion(collection)"
             >
               Delete collection
             </button>
@@ -479,6 +493,18 @@ onMounted(loadCollections);
         </article>
       </template>
     </template>
+    <ConfirmationDialog
+      v-if="deletingCollection"
+      :title="`Delete “${deletingCollection.name}”?`"
+      description="Everyone will lose access to this collection. Recipes and cooking entries are kept. Personally saved recipes remain in My recipes; other collections and direct shares are unchanged."
+      warning="This collection cannot be restored."
+      confirm-label="Delete collection"
+      busy-label="Deleting collection…"
+      :busy="managing"
+      :error="error"
+      @cancel="cancelCollectionDeletion"
+      @confirm="deleteCollection"
+    />
   </section>
 </template>
 
