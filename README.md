@@ -249,9 +249,9 @@ The [tests](tests/) cover all eight concepts and composition flows, including un
 
 ### P3 submission materials
 
-- **Beta user journey and narrated recording:** Links to be added when updated.
+- **Beta user journey and narrated recording:** [User Journey](design/docs/p3-user-journey.md), [User Journey Narrated](https://youtu.be/v7i8ic0bSIc)
 - **Visual design study:** [Color](design/visual-study/visual-study-colors.jpg), [Typography](design/visual-study/visual-study-typography.jpg)
-- **Saved test execution output:** Link to be added.
+- **Saved test execution output:** [Saved P3 test output](test-results/p3-tests.txt).
 
 ### Remaining limitations
 
@@ -259,4 +259,3 @@ The [tests](tests/) cover all eight concepts and composition flows, including un
 - Changes from another user's session appear when data is reloaded through navigation or Refresh. There are no live updates between sessions.
 - Unsaved recipe and cooking-entry drafts can be lost when navigating away. Profile edits have a discard confirmation.
 - Add a feature to be able to have batches of ingredients and instructions for different parts of the recipe. Some recipes have multiple ingredients lists for different parts of the recipe (such as cake recipes) and different sets of instructions for different parts as well.
-
