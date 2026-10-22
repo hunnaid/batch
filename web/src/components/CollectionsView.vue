@@ -2,7 +2,8 @@
 import { computed, nextTick, onMounted, ref } from "vue";
 import { api, ApiError } from "../api";
 import type { BatchWireHttp } from "../../../generated/wire";
-import RecipeForm from "./RecipeForm.vue";
+import CollectionRecipeAdder from "./CollectionRecipeAdder.vue";
+import type { RecipeSummary } from "../collection-recipes";
 import SharingForm from "./SharingForm.vue";
 import RoleBadge from "./RoleBadge.vue";
 import RefreshButton from "./RefreshButton.vue";
@@ -182,18 +183,16 @@ async function createCollection() {
   }
 }
 
-/** Show the recipe form separately, retaining its destination collection. */
+/** Show recipe options separately, retaining the destination collection. */
 const addingTo = ref<string | null>(null);
 const recipeDestinationName = computed(() =>
   ownedCollections.value.find((collection) => collection.collection === addingTo.value)?.name ?? ""
 );
 
-async function beginAddRecipe(collection: string) {
+function beginAddRecipe(collection: string) {
   if (loading.value || creating.value || managing.value) return;
   addingTo.value = collection;
   error.value = "";
-  await nextTick();
-  document.getElementById("recipe-title")?.focus();
 }
 
 async function cancelAddRecipe() {
@@ -207,6 +206,14 @@ async function cancelAddRecipe() {
 function recipeSaved(collection: string, recipe: string) {
   addingTo.value = null;
   emit("openRecipe", collection, recipe);
+}
+
+/** Reflect a confirmed addition without losing the picker's current search. */
+function recipeAdded(recipe: RecipeSummary) {
+  const collection = collections.value.find((item) => item.collection === addingTo.value);
+  if (collection && !collection.recipes.some((item) => item.recipe === recipe.recipe)) {
+    collection.recipes.push(recipe);
+  }
 }
 
 /** Rename a collection without changing its recipes or members. */
@@ -298,11 +305,12 @@ onMounted(loadCollections);
     </div>
 
     <div v-if="addingTo !== null">
-      <p>Adding to <strong dir="auto">{{ recipeDestinationName }}</strong></p>
-      <RecipeForm
+      <CollectionRecipeAdder
         :key="addingTo"
         :collection="addingTo"
+        :name="recipeDestinationName"
         @saved="recipeSaved(addingTo, $event)"
+        @added="recipeAdded"
         @cancel="cancelAddRecipe"
         @session-expired="emit('sessionExpired')"
       />
