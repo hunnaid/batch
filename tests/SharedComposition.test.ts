@@ -215,6 +215,94 @@ for (const path of ["/recipes/save-personal", "/recipes/save"]) {
   });
 }
 
+for (const path of ["/recipes/save-personal", "/recipes/save"] as const) {
+  test(`${path} saves and edits ordered sections through HTTP and preserves them across all access paths`, async () => {
+    const owner = await account("owner");
+    const member = await account("member");
+    const { collection } = await call<{ collection: string }>("/collections/create", {
+      session: owner.session, name: "Cake recipes",
+    });
+    await call("/collections/share", { session: owner.session, collection, username: member.username });
+    const gateway = createGateway({ application: app });
+    const handler = createHttpHandler({ application: app, gateway, policy });
+    const post = (endpoint: string, input: unknown) => handler(new Request(
+      new URL(`/api${endpoint}`, policy.publicOrigin), {
+        method: "POST", headers: { "Content-Type": "application/json", Cookie: `__Host-batch-session=${owner.session}` },
+        body: JSON.stringify(input),
+      }
+    ));
+    const content = {
+      ...recipeData,
+      ingredients: [{ heading: "Cake", items: ["Flour", "Cocoa"] }, { heading: "Icing", items: ["Butter", "Sugar"] }],
+      instructions: [{ heading: "Make the icing", items: ["Beat butter.", "Add sugar."] }, { items: ["Bake the cake.", "Cool."] }],
+    };
+    const saved = await post(path, { collection, ...content });
+    expect(saved.status).toBe(200);
+    const { recipe } = await saved.json() as { recipe: string };
+    if (path === "/recipes/save-personal") {
+      await call("/recipes/add-personal-to-collection", { session: owner.session, destinationCollection: collection, recipe });
+    }
+    await call("/recipes/share", { session: owner.session, recipe, username: member.username });
+    await call("/entries/add-shared", { session: member.session, recipe, changes: "Less cocoa", result: "Good" });
+    const before = await deletionState();
+    const readEverywhere = async (expectedContent: typeof content) => {
+      for (const [endpoint, session] of [
+        ["/recipes/get-personal", owner.session], ["/recipes/get", member.session], ["/recipes/get-shared", member.session],
+      ] as const) {
+        const result = await call<BatchWire["/recipes/get"]["output"]>(endpoint, { session, collection, recipe });
+        expect(result.recipe).toMatchObject({ recipe, ...expectedContent });
+        expect(result.recipe?.entries).toHaveLength(1);
+      }
+    };
+    await readEverywhere(content);
+    const revision = {
+      ...content,
+      ingredients: [content.ingredients[1]!, content.ingredients[0]!],
+      instructions: [{ heading: "Finish", items: ["Cool the cake.", "Add icing."] }],
+    };
+    const edited = await post("/recipes/edit", { recipe, ...revision });
+    expect(edited.status).toBe(200);
+    expect(await edited.json()).toEqual({ recipe });
+    await readEverywhere(revision);
+    expect(await new RecipeRecordingConcept(db)._get({ recipe })).toEqual([revision]);
+    expect(await deletionState()).toEqual({
+      ...before,
+      "recipeRecording.recipes": before["recipeRecording.recipes"]!.map((row) =>
+        row._id === recipe ? { ...row, ...revision } : row),
+    });
+    await gateway.whenIdle();
+  });
+}
+
+test("save and edit endpoints refuse malformed or empty sections without orphan records or partial updates", async () => {
+  const f = await fixture();
+  const { collection } = await call<{ collection: string }>("/collections/create", {
+    session: f.owner.session, name: "Section validation",
+  });
+  const before = await deletionState();
+  const gateway = createGateway({ application: app });
+  const handler = createHttpHandler({ application: app, gateway, policy });
+  for (const path of ["/recipes/save-personal", "/recipes/save", "/recipes/edit"]) {
+    for (const invalid of [
+      { ingredients: [{ heading: 123, items: ["Rice"] }] },
+      { instructions: [{ heading: "Cook" }] },
+      { instructions: [{ items: [123] }] },
+      { ingredients: ["Rice", { items: ["Water"] }] },
+      { ingredients: [{ heading: "Empty", items: [] }] },
+      { instructions: [{ items: ["Cook"] }, { items: [" "] }] },
+    ]) {
+      const response = await handler(new Request(new URL(`/api${path}`, policy.publicOrigin), {
+        method: "POST", headers: { "Content-Type": "application/json", Cookie: `__Host-batch-session=${f.owner.session}` },
+        body: JSON.stringify({ collection, recipe: f.recipe, ...recipeData, ...invalid }),
+      }));
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: "INVALID_REQUEST" });
+      expect(await deletionState()).toEqual(before);
+    }
+  }
+  await gateway.whenIdle();
+});
+
 test("recipes with absent optional fields remain accessible through every route", async () => {
   const owner = await account("owner");
   const member = await account("member");
@@ -544,6 +632,133 @@ async function deletionFixture() {
   await cooking.record({ author: f.member.user, recipe: keep, changes: "Keep this history", result: "Good" });
   return { ...f, first, second, keep };
 }
+
+test("an owner's HTTP recipe edit updates every access path while preserving history, saves and permissions", async () => {
+  const f = await deletionFixture();
+  const before = await deletionState();
+  const original = await call<BatchWire["/recipes/get-personal"]["output"]>("/recipes/get-personal", {
+    session: f.owner.session, recipe: f.recipe,
+  });
+  const replacement = {
+    title: "Revised rice", ingredients: ["Water", "Rice", "Salt"],
+    instructions: ["Rinse the rice.", "Steam gently.", "Rest before serving."],
+    source: "", notes: "", description: "An updated recipe.\nServe with curry.",
+  };
+  const gateway = createGateway({ application: app });
+  const handler = createHttpHandler({ application: app, gateway, policy });
+  const response = await handler(new Request(new URL("/api/recipes/edit", policy.publicOrigin), {
+    method: "POST", headers: { "Content-Type": "application/json", Cookie: `__Host-batch-session=${f.owner.session}` },
+    body: JSON.stringify({ recipe: f.recipe, ...replacement }),
+  }));
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({ recipe: f.recipe });
+  expect(await deletionState()).toEqual({
+    ...before,
+    "recipeRecording.recipes": before["recipeRecording.recipes"]!.map((row) =>
+      row._id === f.recipe ? { ...row, ...replacement } : row),
+  });
+  const expected = { recipe: { ...original.recipe, ...replacement } };
+  for (const [path, session, collection] of [
+    ["/recipes/get-personal", f.owner.session, undefined],
+    ["/recipes/get-shared", f.member.session, undefined],
+    ["/recipes/get", f.member.session, f.first],
+    ["/recipes/get", f.member.session, f.second],
+  ] as const) {
+    expect(await call<unknown>(path, { session, recipe: f.recipe, collection })).toEqual(expected);
+  }
+  expect(await new RecipeRecordingConcept(db)._get({ recipe: f.recipe })).toEqual([replacement]);
+  const shared = await list(f.member.session);
+  expect(shared.overview.recipes.find((item) => item.recipe === f.recipe)?.title).toBe(replacement.title);
+  for (const collection of shared.overview.collections) {
+    expect(collection.recipes.find((item) => item.recipe === f.recipe)?.title).toBe(replacement.title);
+  }
+  await gateway.whenIdle();
+});
+
+test("collection owners, direct members, other savers and outsiders cannot edit another user's original recipe", async () => {
+  const f = await deletionFixture();
+  // A personal save must not override the established direct owner.
+  await saving.save({ user: f.member.user, item: f.recipe });
+  const before = await deletionState();
+  const input = { recipe: f.recipe, ...recipeData, title: "Unauthorized edit", user: f.owner.user };
+  for (const session of [f.member.session, f.outsider.session]) {
+    await refuses("/recipes/edit", { ...input, session }, "OWNER_ACCESS_REQUIRED");
+    expect(await deletionState()).toEqual(before);
+  }
+  const gateway = createGateway({ application: app });
+  const handler = createHttpHandler({ application: app, gateway, policy });
+  for (const [session, status] of [[undefined, 401], [f.member.session, 403]] as const) {
+    const response = await handler(new Request(new URL("/api/recipes/edit", policy.publicOrigin), {
+      method: "POST", headers: { "Content-Type": "application/json",
+        ...(session ? { Cookie: `__Host-batch-session=${session}` } : {}) },
+      body: JSON.stringify(input),
+    }));
+    expect(response.status).toBe(status);
+    expect(await response.json()).toEqual({ error: status === 401 ? "UNAUTHORIZED" : "FORBIDDEN" });
+    expect(await deletionState()).toEqual(before);
+  }
+  await gateway.whenIdle();
+});
+
+test("recipe edits reject invalid fields, missing sessions and missing recipes without changing stored state", async () => {
+  const f = await fixture();
+  const input = { session: f.owner.session, recipe: f.recipe, ...recipeData };
+  const before = await deletionState();
+  await refuses("/recipes/edit", { ...input, session: null }, "INVALID_SESSION");
+  await refuses("/recipes/edit", { ...input, title: " " }, "INVALID_RECIPE");
+  await refuses("/recipes/edit", { ...input, instructions: [" "] }, "INVALID_RECIPE");
+  for (const invalid of [
+    { title: 123 }, { ingredients: "Rice" }, { instructions: [123] },
+    { notes: 123 }, { description: null }, { source: [] },
+  ]) {
+    expect(await app.invoker.invoke("/recipes/edit", { ...input, ...invalid }, { timeoutMs: 2000 }))
+      .toMatchObject({ ok: false, error: { kind: "framework", code: "INVALID_INPUT" } });
+    expect(await deletionState()).toEqual(before);
+  }
+  expect(await deletionState()).toEqual(before);
+  await refuses("/recipes/edit", { ...input, recipe: "missing" }, "OWNER_ACCESS_REQUIRED");
+  await recording.delete({ recipe: f.recipe });
+  const afterDeletion = await deletionState();
+  await refuses("/recipes/edit", input, "EDIT_RECIPE_NOT_FOUND");
+  expect(await deletionState()).toEqual(afterDeletion);
+});
+
+test("a recipe creator can edit their recipe inside someone else's collection", async () => {
+  const f = await fixture();
+  const { collection } = await call<{ collection: string }>("/collections/create", {
+    session: f.owner.session, name: "Family",
+  });
+  await call("/collections/share", { session: f.owner.session, collection, username: f.member.username });
+  const { recipe } = await call<{ recipe: string }>("/recipes/save", {
+    session: f.member.session, collection, ...recipeData,
+  });
+  const input = { recipe, ...recipeData, title: "Creator's revision" };
+  await refuses("/recipes/edit", { session: f.owner.session, ...input }, "OWNER_ACCESS_REQUIRED");
+  expect(await call<unknown>("/recipes/edit", { session: f.member.session, ...input })).toEqual({ recipe });
+  const read = await call<BatchWire["/recipes/get"]["output"]>("/recipes/get", {
+    session: f.owner.session, collection, recipe,
+  });
+  expect(read.recipe?.title).toBe(input.title);
+  expect(await recipeSharing._get({ resource: recipe })).toEqual([{ owner: f.member.user }]);
+});
+
+test("editing legacy recipes works without initializing ownership and omitted optional fields clear old values", async () => {
+  const owner = await account("legacy-owner");
+  const { recipe } = await recording.record(recipeData);
+  await saving.save({ user: owner.user, item: recipe });
+  const savedBefore = await saving._forUser({ user: owner.user });
+  const input = { session: owner.session, recipe, title: "Legacy revision", ingredients: ["Rice"], instructions: ["Cook."] };
+  expect(await call<unknown>("/recipes/edit", input)).toEqual({ recipe });
+  expect(await recording._get({ recipe })).toEqual([{
+    title: input.title, ingredients: input.ingredients, instructions: input.instructions,
+    source: "", notes: "", description: "",
+  }]);
+  expect(await recipeSharing._get({ resource: recipe })).toEqual([]);
+  expect(await saving._forUser({ user: owner.user })).toEqual(savedBefore);
+  const before = await deletionState();
+  await refuses("/recipes/edit", { ...input, title: " " }, "INVALID_RECIPE");
+  expect(await deletionState()).toEqual(before);
+});
 
 test("collection removal preserves personal access, direct sharing, other collections and cooking history", async () => {
   const f = await deletionFixture();

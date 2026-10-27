@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Keep related items together in named collections so users can find them later.
+Keep related items in named collections so users can find them later.
 
 ## Principle
 
-After a user creates a collection and adds items, they can retrieve the collection and its contents. Adding an item to one collection leaves other collections unchanged, and the same item can belong to multiple collections. Removing an item from one collection preserves it in other collections; removing the item everywhere leaves the collections themselves intact.
+After a user creates a collection and adds items, they can retrieve its name and contents. The same item can belong to several collections. Removing it from one collection leaves the others unchanged. Removing it from every collection leaves the collections themselves in place.
 
 ## Types
 

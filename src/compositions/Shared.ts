@@ -1,6 +1,7 @@
 import { endpoint, receive, respond } from "@mit-sdg/sync-engine/boundary";
 import { each, form, former, no, view, where, whether } from "@mit-sdg/sync-engine/language";
 import { concepts } from "../concepts.ts";
+import { isRecipeContent } from "../recipe-content.ts";
 import { composition as recipes } from "./Recipes.ts";
 
 const {
@@ -203,6 +204,38 @@ const EditSharedCookingEntry = endpoint(
     { validators: { input: inputWith("recipe", "entry", "changes", "result") } }
 );
 
+/** Update the same original recipe through direct ownership or an eligible legacy save. */
+const EditRecipe = endpoint(
+    "/recipes/edit",
+    ({ session, recipe, title, ingredients, instructions, source, notes, description, user }) =>
+        receive({ session, recipe, title, ingredients, instructions, source, notes, description })
+            .then(Sessioning.resolve({ session }).responds({ user }))
+            .then(
+                where(legacyRecipeOwner({ user, recipe }))
+                    .then(RecipeRecording.edit({ recipe, title, ingredients, instructions, source, notes, description }))
+                    .then(respond({ recipe })).named("legacy-owner"),
+                where(no(legacyRecipeOwner({ user, recipe })))
+                    .then(RecipeSharing.authorizeOwner({ user, resource: recipe }))
+                    .then(RecipeRecording.edit({ recipe, title, ingredients, instructions, source, notes, description }))
+                    .then(respond({ recipe })).named("existing-owner")
+            ),
+    {
+        input: {
+            required: ["session", "recipe", "title", "ingredients", "instructions"],
+            defaults: { source: "", notes: "", description: "" },
+        },
+        validators: {
+            input: (value: unknown) => {
+                if (!inputWith("recipe", "title")(value).ok) return { ok: false };
+                const input = value as Record<string, unknown>;
+                return { ok: isRecipeContent(input.ingredients) && isRecipeContent(input.instructions) &&
+                    [input.source, input.notes, input.description].every((item) =>
+                        item === undefined || typeof item === "string") };
+            },
+        },
+    }
+);
+
 /** Permanent deletion uses the same ownership rule as direct sharing, including legacy saves. */
 const DeleteRecipe = endpoint(
     "/recipes/delete",
@@ -228,6 +261,7 @@ const DeleteRecipe = endpoint(
 export const composition = {
     ListShared,
     DeleteRecipe,
+    EditRecipe,
     SharedOverview: sharedOverview,
     RecipeOwner: recipeOwner,
     LegacyRecipeOwner: legacyRecipeOwner,

@@ -6,7 +6,7 @@ import RecipeForm from "./RecipeForm.vue";
 import ReturnButton from "./ReturnButton.vue";
 import RefreshButton from "./RefreshButton.vue";
 
-const props = defineProps<{ collection: string; name: string }>();
+const props = defineProps<{ collection: string; name: string; backLabel?: string }>();
 const emit = defineEmits<{
   cancel: [];
   saved: [recipe: string];
@@ -122,7 +122,7 @@ async function addRecipe(recipe: RecipeCandidate) {
       v-if="mode !== 'new'"
       :disabled="adding !== null || loading"
       @click="mode === 'choose' ? emit('cancel') : chooseMode('choose')"
-    >{{ mode === 'choose' ? 'Return to collections' : 'Return to recipe options' }}</ReturnButton>
+    >{{ mode === 'choose' ? (props.backLabel ?? 'Return to collections') : 'Return to recipe options' }}</ReturnButton>
     <h3 ref="heading" class="adder-heading" tabindex="-1">
       {{ mode === 'choose' ? 'Add recipe' : mode === 'existing' ? 'Add existing recipe' : 'Create new recipe' }}
     </h3>

@@ -1,61 +1,45 @@
 # Collections
 
-When a collection is successfully created, its creator becomes its sharing
-owner, with no additional members.[initialize] This connects collection
-organization to access management while keeping their concepts independent.
+
+## Creating a collection
+
+When a collection is created, its creator becomes its sharing owner, with no other members.[initialize] Collecting stores the collection, while Sharing manages who can access it.
+
+A signed-in user creates a collection through the application endpoint.[create] The session determines the creator. Before returning success, the endpoint waits for the initialization reaction and verifies the creator's access.
 
 [initialize]: reaction:Collections.InitializeCollectionSharing
-
-A signed-in user creates a collection through the application endpoint.[create]
-The session determines the creator. Before returning success, the endpoint
-waits for the initialization reaction and verifies the creator's access.
-
 [create]: reaction:Collections.CreateCollection
 
 ```endpoints
 Collections.CreateCollection at /collections/create
 ```
 
-A collection owner grants access by entering another registered user's
-username.[share] The endpoint resolves the signed-in user, checks collection
-access, and looks up the recipient. Sharing enforces ownership before adding
-the recipient as a member. Unknown usernames produce an error response.
+## Sharing and recipients
+
+The owner shares a collection by entering another registered user's username.[share] The endpoint checks the session and collection access, then looks up the recipient. Sharing checks ownership before adding them. An unknown username produces as error.
+
+Only the owner can retrieve the current recipients.[recipients] The endpoint checks the session and ownership before returning member identifiers and usernames.[recipient-list] It excludes the owner and returns an empty list when nobody has been added. Reading it changes no records. Members and unrelated users cannot retrieve it.
+
+Manage sharing shows a Revoke access button beside each recipient and a username field for adding someone else. The list updates after sharing or revoking access. If it fails to load, the page offers a retry instead of showing an empty list.
+
+The owner can revoke a registered user's access.[revoke] This removes that user from the recipient list while preserving the collection, its recipes, and other recipients. The former member can no longer use that collection, and it disappears from their accessible collections list.
 
 [share]: reaction:Collections.ShareCollection
+[recipients]: reaction:Collections.ListCollectionRecipients
+[recipient-list]: former:Collections.CollectionRecipients
+[revoke]: reaction:Collections.RevokeCollectionAccess
 
 ```endpoints
 Collections.ShareCollection at /collections/share
-```
-
-Only the collection owner can retrieve its current sharing recipients.[recipients]
-The endpoint checks the session and ownership before returning member identifiers
-and registered usernames.[recipient-list] It excludes the owner and returns an
-empty list when nobody has been added. Reading the list changes no records.
-Members and unrelated users cannot retrieve it.
-
-Manage sharing lists these usernames with a Revoke access button beside each.
-The owner can share with another cook through a separate username field.
-Successful grants and revocations update the list without a page refresh.
-If loading fails, the interface offers a retry and does not show an empty list
-as though it had loaded successfully.
-
-[recipients]: reaction:Collections.ListCollectionRecipients
-[recipient-list]: former:Collections.CollectionRecipients
-
-```endpoints
 Collections.ListCollectionRecipients at /collections/recipients
+Collections.RevokeCollectionAccess at /collections/revoke
 ```
 
-A signed-in user lists their accessible collections.[list]
-The collections overview combines owned and shared resources with collection
-names and recipe titles.[overview] Each collection includes its owner so the
-interface can distinguish owned collections from shared ones. Empty lists
-remain visible as empty arrays.
+## Listing collections
 
-The Collections tab shows only collections the signed-in user owns. Its
-search and empty state use this same list. Collections shared with the user
-appear in the Shared tab. Collections the user owns and shares with others
-appear in both tabs.
+A signed-in user can list the collections they own or can access.[list] The overview includes each collection's name, owner, and recipe titles.[overview] Collections without recipes have an empty recipe list.
+
+The collections tab shows only collections the user owns. Its search and empty state use that same list. Incoming shared collections appear in Shared. Owned collections shared with others appear in both tabs.
 
 [list]: reaction:Collections.ListCollections
 [overview]: former:Collections.AccessibleCollections
@@ -64,35 +48,13 @@ appear in both tabs.
 Collections.ListCollections at /collections/list
 ```
 
-The owner can withdraw a registered user's collection access.[revoke]
-Revoking membership leaves the collection and its contents intact. The former
-member can no longer access it through that collection, and it disappears
-from their accessible collections list.
+## Rename and delete
 
-[revoke]: reaction:Collections.RevokeCollectionAccess
+Only the owner can rename a collection.[rename] Renaming keeps its recipes and members unchanged.
 
-```endpoints
-Collections.RevokeCollectionAccess at /collections/revoke
-```
+Only the owner can delete a collection.[delete] The endpoint removed sharing first, then the collection. Recipes, cooking entries, personal saved, and direct recipe sharing remain stored. A recipe can still be opened through another collection, a personal save, or direct sharing. Without any of those, it is no longer accessible through the interface.
 
-Collection endpoints validate input types before invoking concept actions.
-Session inputs accept a token or null for a missing cookie. Collection
-creation requires a string name; sharing and revocation require string
-collection identifiers and usernames.
-
-Only the collection owner can rename a collection.[rename]
-Renaming preserves its recipes and membership.
-
-Only the owner can delete a collection.[delete] Deletion first removes its
-sharing information, then removes the collection.
-
-Deleting a collection preserves recipes, cooking entries, personal saves,
-and direct recipe sharing. A recipe remains accessible through any surviving
-personal save, collection membership, or direct-sharing permission. Stored
-recipes with none of these access paths are inaccessible through the interface.
-
-These steps are not transactional. If collection deletion fails after sharing
-is removed, the collection remains stored without access and requires repair.
+These are separate actions. If deleting the collection fails after sharing has been removed, the collection remains stored without collection access and needs repair.
 
 [rename]: reaction:Collections.RenameCollection
 [delete]: reaction:Collections.DeleteCollection
@@ -101,3 +63,5 @@ is removed, the collection remains stored without access and requires repair.
 Collections.RenameCollection at /collections/rename
 Collections.DeleteCollection at /collections/delete
 ```
+
+Collection endpoints check input types before calling concept actions. Session inputs accept a token or null for a missing cookie. Names, collection identifiers, and recipient usernames must be strings.

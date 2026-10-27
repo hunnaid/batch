@@ -188,7 +188,7 @@ The beta adds personal recipes, direct recipe sharing, profiles, and recipe dele
 - **My recipes:** Save a recipe without choosing a collection. Search by title and sort A-Z, Z-A, newest first, or oldest first.
 - **Collections:** Create, rename, and delete collections you own. Add a new recipe or organize an existing recipe into multiple collections. Each collection has an expandable recipe list.
 - **Shared:** View collections and individual recipes shared with you or by you. Owner and Member labels distinguish user roles. Owners can see recipient usernames and revoke access beside each name.
-- **Recipe details:** Enter ordered ingredients and instructions, an optional source, description, and notes. Ingredients appear beside instructions and notes on wider screens and stack on smaller screens.
+- **Recipe details:** Enter ingredients and instructions in ordered sections with optional headings, plus an optional source, description, and notes. Owners can edit their original recipes while keeping cooking history. Ingredients appear beside instructions and notes on wider screens and stack on smaller screens. Instruction numbering restarts within each section.
 - **Cooking history:** Record adjustments and results without changing the original recipe. Edit your own attempts. Entries show the contributor's current display name and picture.
 - **Profiles:** Set a display name, optional bio, and optional profile picture. Sign out from the profile page. Changing display name does not change the username used for login.
 - **Removal and deletion:** Collection owners can remove a recipe from their collection without permanently deleting it. Recipe owners can permanently delete a recipe, including cooking history, personal saves, collection references, and direct sharing.
@@ -258,4 +258,3 @@ The [tests](tests/) cover all eight concepts and composition flows, including un
 - Recipes are entered manually; website imports are not yet implemented.
 - Changes from another user's session appear when data is reloaded through navigation or Refresh. There are no live updates between sessions.
 - Unsaved recipe and cooking-entry drafts can be lost when navigating away. Profile edits have a discard confirmation.
-- Add a feature to be able to have batches of ingredients and instructions for different parts of the recipe. Some recipes have multiple ingredients lists for different parts of the recipe (such as cake recipes) and different sets of instructions for different parts as well.

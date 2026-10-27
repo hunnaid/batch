@@ -2,13 +2,11 @@
 
 ## Purpose
 
-Help users present themselves and recognize other contributors.
+Keep display names, bios, and pictures so users can recognize one another.
 
 ## Principle
 
-After a user creates a profile with their display name and optional picture,
-the profile identifies them beside their contributions. Updating the profile
-changes that presentation without changing the contributions or user identity.
+After a user creates a profile, they can retrieve their display name, bio, and picture. Updating the profile replaces those details while keeping the same user identity and leaving other profiles unchanged.
 
 ## Types
 

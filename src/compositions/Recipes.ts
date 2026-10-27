@@ -13,6 +13,7 @@ import {
     view,
 } from "@mit-sdg/sync-engine/language";
 import { concepts } from "../concepts.ts";
+import { isRecipeContent } from "../recipe-content.ts";
 
 const {
     Sessioning,
@@ -132,16 +133,12 @@ const SaveRecipe = endpoint(
 
                 const input = value;
 
-                const isStringArray = (items: unknown): items is string[] =>
-                    Array.isArray(items) &&
-                    items.every((item) => typeof item === "string");
-
                 return {
                     ok:
                         typeof input.collection === "string" &&
                         typeof input.title === "string" &&
-                        isStringArray(input.ingredients) &&
-                        isStringArray(input.instructions) &&
+                        isRecipeContent(input.ingredients) &&
+                        isRecipeContent(input.instructions) &&
                         (input.source === undefined ||
                         typeof input.source === "string") &&
                         (input.notes === undefined || typeof input.notes === "string") &&
@@ -474,17 +471,11 @@ const SavePersonalRecipe = endpoint(
                     return { ok: false };
                 }
 
-                const isStringArray = (
-                    items: unknown
-                ): items is string[] =>
-                    Array.isArray(items) &&
-                    items.every((item) => typeof item === "string");
-
                 return {
                     ok:
                         typeof value.title === "string" &&
-                        isStringArray(value.ingredients) &&
-                        isStringArray(value.instructions) &&
+                        isRecipeContent(value.ingredients) &&
+                        isRecipeContent(value.instructions) &&
                         (
                             value.source === undefined ||
                             typeof value.source === "string"

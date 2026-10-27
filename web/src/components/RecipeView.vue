@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import { api, ApiError } from "../api";
 import type { BatchWireHttp } from "../../../generated/wire";
 import CookingEntryForm from "./CookingEntryForm.vue";
@@ -8,6 +8,8 @@ import RoleBadge from "./RoleBadge.vue";
 import UserAvatar from "./UserAvatar.vue";
 import ReturnButton from "./ReturnButton.vue";
 import ConfirmationDialog from "./ConfirmationDialog.vue";
+import RecipeForm from "./RecipeForm.vue";
+import { toRecipeSections } from "../../../src/recipe-content.ts";
 
 type RecipeDetails = NonNullable<
   BatchWireHttp["/recipes/get"]["output"]["recipe"]
@@ -29,6 +31,8 @@ const emit = defineEmits<{
 }>();
 
 const details = ref<RecipeDetails | null>(null);
+const ingredientSections = computed(() => details.value ? toRecipeSections(details.value.ingredients) : []);
+const instructionSections = computed(() => details.value ? toRecipeSections(details.value.instructions) : []);
 const loading = ref(true);
 type Contributor = NonNullable<BatchWireHttp["/profiles/get"]["output"]["identity"]>;
 const contributors = ref<Record<string, Contributor>>({});
@@ -72,6 +76,34 @@ const currentCollection = ref<CollectionSummary | null>(null);
 const managingRecipe = ref(false);
 const managementError = ref("");
 const pendingManagementAction = ref<"remove" | "delete" | null>(null);
+const editingRecipe = ref(false);
+const recipeNotice = ref("");
+const managementDetails = ref<HTMLDetailsElement | null>(null);
+
+async function beginEditRecipe() {
+  if (!details.value || !canManageSharing.value || managingRecipe.value || addingToCollection.value || showEntryForm.value) return;
+  recipeNotice.value = "";
+  managementError.value = "";
+  editingRecipe.value = true;
+  await nextTick();
+  document.getElementById("recipe-title")?.focus();
+}
+
+async function cancelEditRecipe() {
+  editingRecipe.value = false;
+  await nextTick();
+  if (managementDetails.value) managementDetails.value.open = true;
+  document.getElementById("edit-original-recipe")?.focus();
+}
+
+async function originalRecipeSaved() {
+  editingRecipe.value = false;
+  recipeNotice.value = "Recipe updated. Its cooking history is unchanged.";
+  await loadRecipe();
+  await nextTick();
+  if (managementDetails.value) managementDetails.value.open = true;
+  document.getElementById("edit-original-recipe")?.focus();
+}
 
 function confirmManagement(action: "remove" | "delete") {
   if (managingRecipe.value || addingToCollection.value || showEntryForm.value || !details.value) return;
@@ -339,9 +371,11 @@ onMounted(loadDestinations);
 
 <template>
   <section>
-    <ReturnButton :disabled="managingRecipe" @click="emit('back')">
+    <ReturnButton v-if="!editingRecipe" :disabled="managingRecipe" @click="emit('back')">
       {{ props.backLabel ?? "Return to collections" }}
     </ReturnButton>
+
+    <p v-if="recipeNotice" role="status">{{ recipeNotice }}</p>
 
     <p v-if="loading" role="status">Loading recipe…</p>
 
@@ -354,6 +388,15 @@ onMounted(loadDestinations);
       This recipe is no longer available.
     </p>
 
+    <RecipeForm
+      v-else-if="editingRecipe"
+      :recipe="props.recipe"
+      :initial="details"
+      @saved="originalRecipeSaved"
+      @cancel="cancelEditRecipe"
+      @session-expired="emit('sessionExpired')"
+    />
+
     <div v-else :inert="managingRecipe">
       <h2 dir="auto">{{ details.title }}</h2>
       <RoleBadge v-if="props.directShared" :owner="canManageSharing" />
@@ -365,24 +408,24 @@ onMounted(loadDestinations);
       <div class="recipe-card">
         <section class="recipe-ingredients" aria-labelledby="recipe-ingredients-heading">
           <h3 id="recipe-ingredients-heading" class="recipe-section-heading">Ingredients</h3>
-          <ul class="ingredient-list" role="list">
-            <li
-              v-for="(ingredient, index) in details.ingredients"
-              :key="index"
-              class="recipe-text"
-              dir="auto"
-            >{{ ingredient }}</li>
-          </ul>
+          <div v-for="(section, sectionIndex) in ingredientSections" :key="sectionIndex" class="recipe-subsection">
+            <h4 v-if="section.heading?.trim()" class="subsection-heading" dir="auto">{{ section.heading }}</h4>
+            <ul class="ingredient-list">
+              <li v-for="(ingredient, index) in section.items" :key="index" class="recipe-text" dir="auto">{{ ingredient }}</li>
+            </ul>
+          </div>
         </section>
 
         <section class="recipe-preparation" aria-labelledby="recipe-instructions-heading">
           <h3 id="recipe-instructions-heading" class="recipe-section-heading">Instructions</h3>
-          <ol class="instruction-list" role="list">
-            <li v-for="(instruction, index) in details.instructions" :key="index">
-              <strong class="step-label">Step {{ index + 1 }}</strong>
-              <p class="instruction-text recipe-text" dir="auto">{{ instruction }}</p>
-            </li>
-          </ol>
+          <div v-for="(section, sectionIndex) in instructionSections" :key="sectionIndex" class="recipe-subsection">
+            <h4 v-if="section.heading?.trim()" class="subsection-heading" dir="auto">{{ section.heading }}</h4>
+            <ol class="instruction-list" :start="1">
+              <li v-for="(instruction, index) in section.items" :key="index">
+                <p class="instruction-text recipe-text" dir="auto">{{ instruction }}</p>
+              </li>
+            </ol>
+          </div>
 
           <section v-if="details.notes?.trim()" class="recipe-notes" aria-labelledby="recipe-notes-heading">
             <h3 id="recipe-notes-heading">Notes</h3>
@@ -534,11 +577,20 @@ onMounted(loadDestinations);
         />
       </details>
 
-      <details v-if="canManageSharing || currentCollection?.owner === user">
+      <details v-if="canManageSharing || currentCollection?.owner === user" ref="managementDetails">
         <summary>Manage recipe</summary>
         <p v-if="managementError && !pendingManagementAction" role="alert">{{ managementError }}</p>
         <p v-if="showEntryForm">Save or cancel your cooking entry before managing this recipe.</p>
         <div class="management-actions">
+          <button
+            v-if="canManageSharing"
+            id="edit-original-recipe"
+            type="button"
+            :disabled="managingRecipe || addingToCollection || showEntryForm"
+            @click="beginEditRecipe"
+          >
+            Edit recipe
+          </button>
           <button
             v-if="currentCollection?.owner === user"
             type="button"
@@ -598,11 +650,15 @@ onMounted(loadDestinations);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-.ingredient-list, .instruction-list { margin: 0; padding: 0; list-style: none; }
-.ingredient-list li { margin: 0 0 16px; padding: 0; }
-.instruction-list li { margin: 0 0 28px; padding: 0; }
+.recipe-subsection + .recipe-subsection { margin-top: 28px; }
+.subsection-heading { margin: 0 0 12px; font-size: 1rem; font-weight: 650; }
+.ingredient-list, .instruction-list { margin: 0; padding-inline-start: 24px; }
+.ingredient-list { list-style: disc; }
+.instruction-list { list-style: decimal; }
+.ingredient-list li { margin: 0 0 12px; padding-inline-start: 4px; }
+.instruction-list li { margin: 0 0 24px; padding-inline-start: 4px; }
+.instruction-list li::marker { color: var(--green-ink); font-weight: 650; }
 .ingredient-list li:last-child, .instruction-list li:last-child { margin-bottom: 0; }
-.step-label { display: block; margin-bottom: 4px; font-size: 0.95rem; }
 .instruction-text { margin: 0; }
 .recipe-notes { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--border); }
 .recipe-notes h3 {

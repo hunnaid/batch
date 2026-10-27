@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Let owners give other users access to a resource and withdraw that access later.
+Let owners give other users access to a resource and remove that access later.
 
 ## Principle
 
-After a resource is initialized, its owner can grant another user access. Both the owner and that member can then be authorized. Revoking membership prevents that member from being authorized while preserving the owner's access.
+After a resource is initialized, its owner can give another user access. Both the owner and that member pass the access check. Revoking the member's access makes their check fail while leaving the owner's access unchanged.
 
 ## Types
 

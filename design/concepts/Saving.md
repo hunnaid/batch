@@ -2,14 +2,11 @@
 
 ## Purpose
 
-Keep a personal list of saved items and remember when each item was first saved.
+Keep each user's personal list of saved items and the date they first saved each one.
 
 ## Principle
 
-After a user saves an item, it appears in their personal list and can be
-authorized for that user. Saving the same item again preserves its original
-save time without creating a duplicate. Another user's saved list remains
-independent. Removing an item everywhere clears its personal references while preserving saves for other items.
+After a user saves an item, it appears in their personal list and passes the check that they have saved it. Saving it again keeps the original date and does not create a duplicate. Users' lists are separate. Removing an item from all saved lists leaves other items and their save dates unchanged.
 
 ## Types
 

@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Help cooks remember their adjustments and results so they can repeat successful attempts and avoid past mistakes.
+Keep a record of cooking adjustments and results so cooks can remember what worked.
 
 ## Principle
 
-After a cook records an attempt, they can retrieve its changes and result. They can edit their own entry to add results later. Recording another attempt preserves earlier entries. Clearing a recipe’s history removes all its attempts while preserving other recipes’ histories.
+After a cook records an attempt, they can retrieve its changes and result. They can edit their own entry to add the result later. Recording another attempt leaves earlier entries unchanged. Clearing one recipe's history removes its attempts without changing the history of other recipes.
 
 ## Types
 

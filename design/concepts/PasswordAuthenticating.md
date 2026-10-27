@@ -2,13 +2,11 @@
 
 ## Purpose
 
-Identify users by verifying their registered credentials.
+Identify users by checking their username and password.
 
 ## Principle
 
-After a user registers with a unique username and password, authenticating
-with those credentials returns the same user identity. Incorrect credentials
-are refused without changing the stored account.
+After a user registers with a unique username and password, signing in with those credentials returns their user identity. Incorrect credentials are refused without changing the account.
 
 ## Types
 

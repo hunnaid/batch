@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Remember an authenticated user's identity across requests until their session expires or ends.
+Remember a signed-in user's identity until their session expires or ends.
 
 ## Principle
 
-After a session starts for a user, its secret token resolves to that user for seven days unless the session is ended earlier. Ending one session leaves the user's other sessions available.
+After a session starts, its secret token identifies the user for seven days unless the session ends sooner. Using the session does not extend that time. Ending one session leaves the user's other sessions unchanged.
 
 ## Types
 

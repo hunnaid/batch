@@ -1,4 +1,5 @@
 import type { Collection, Db } from "mongodb";
+import { isRecipeContent, toRecipeSections, type RecipeContent } from "../recipe-content.ts";
 
 /**
  * The original recipe details supplied by a cook
@@ -7,8 +8,8 @@ import type { Collection, Db } from "mongodb";
  */
 export type RecipeData = {
   title: string;
-  ingredients: string[];
-  instructions: string[];
+  ingredients: RecipeContent;
+  instructions: RecipeContent;
   source?: string;
   notes?: string;
   description?: string;
@@ -29,6 +30,28 @@ export class InvalidRecipe extends Error{}
 
 /** The recipe to delete does not exist. */
 export class DeleteRecipeNotFound extends Error {}
+export class EditRecipeNotFound extends Error {}
+
+/** Recording and editing accept the same details and preserve optional text. */
+function validatedDetails(input: RecipeData): RecipeData {
+    const { title, ingredients, instructions, source, notes, description } = input;
+    if (!title.trim()) throw new InvalidRecipe("The recipe title cannot be blank.");
+    for (const content of [ingredients, instructions]) {
+        if (!isRecipeContent(content) || content.length === 0) {
+            throw new InvalidRecipe("A recipe needs nonempty ingredient and instruction lists.");
+        }
+        if (toRecipeSections(content).some((section) =>
+            section.items.length === 0 || section.items.some((item) => !item.trim()))) {
+            throw new InvalidRecipe("Each section needs at least one item, with no blank rows.");
+        }
+    }
+    return {
+        title, ingredients, instructions,
+        ...(source !== undefined ? { source } : {}),
+        ...(notes !== undefined ? { notes } : {}),
+        ...(description !== undefined ? { description } : {}),
+    };
+}
 
 /**
  * Stores original recipes independently of collections and cooking entries
@@ -55,50 +78,20 @@ export class RecipeRecordingConcept {
      * @throws InvalidRecipe if the title or recipe lists contain missing details.
      */
     async record(input: RecipeData): Promise<{ recipe: string }> {
-        const { title, ingredients, instructions, source, notes, description } = input;
-
-        if (title.trim().length === 0) {
-            throw new InvalidRecipe("The recipe title cannot be blank.");
-        }
-
-        if (ingredients.length === 0 || instructions.length === 0) {
-            throw new InvalidRecipe(
-            "A recipe needs at least one ingredient and one instruction."
-            );
-        }
-
-        if (
-            ingredients.some((item) => item.trim().length === 0) ||
-            instructions.some((item) => item.trim().length === 0)
-        ) {
-            throw new InvalidRecipe(
-            "Ingredients and instructions cannot contain blank items."
-            );
-        }
-
+        const details = validatedDetails(input);
         const recipe = crypto.randomUUID();
-
-        const document: RecipeDocument = {
-            _id: recipe,
-            title,
-            ingredients,
-            instructions,
-        };
-
-        // Leave the optional field absent when no source was supplied.
-        if (source !== undefined) {
-            document.source = source;
-        }
-        if (notes !== undefined) {
-            document.notes = notes;
-        }
-        if (description !== undefined) {
-            document.description = description;
-        }
-
-        await this.recipes.insertOne(document);
-
+        await this.recipes.insertOne({ _id: recipe, ...details });
         return { recipe };
+    }
+
+    /** Replace one original recipe's details without changing its identifier. */
+    async edit(input: RecipeData & { recipe: string }): Promise<{}> {
+        const details = validatedDetails(input);
+        const result = await this.recipes.replaceOne(
+            { _id: input.recipe }, details
+        );
+        if (result.matchedCount === 0) throw new EditRecipeNotFound("The recipe does not exist.");
+        return {};
     }
 
     /**

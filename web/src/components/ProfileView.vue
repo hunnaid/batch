@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from "vue";
 import { api, ApiError } from "../api";
-import { prepareProfilePicture } from "../profile-picture";
 import UserAvatar from "./UserAvatar.vue";
 import ReturnButton from "./ReturnButton.vue";
+import ProfilePictureCropper from "./ProfilePictureCropper.vue";
 
 const props = defineProps<{ backLabel?: string }>();
 
@@ -16,7 +16,7 @@ const emit = defineEmits<{
 const loading = ref(true);
 const loaded = ref(false);
 const saving = ref(false);
-const preparing = ref(false);
+const cropFile = shallowRef<File | null>(null);
 const signingOut = ref(false);
 const username = ref("");
 const displayName = ref("");
@@ -28,7 +28,7 @@ const saved = ref("");
 const fileInput = ref<HTMLInputElement | null>(null);
 const draft = computed(() => JSON.stringify({ displayName: displayName.value, bio: bio.value, picture: picture.value }));
 const dirty = computed(() => loaded.value && saved.value !== draft.value);
-const busy = computed(() => loading.value || saving.value || preparing.value || signingOut.value);
+const busy = computed(() => loading.value || saving.value || cropFile.value !== null || signingOut.value);
 
 function reportError(cause: unknown) {
   if (cause instanceof ApiError && cause.code === "UNAUTHORIZED") { emit("sessionExpired"); return; }
@@ -59,15 +59,25 @@ async function load() {
   finally { loading.value = false; }
 }
 
-async function selectPicture(event: Event) {
+function selectPicture(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file || busy.value) return;
-  preparing.value = true;
   error.value = notice.value = "";
-  try { picture.value = await prepareProfilePicture(file); }
-  catch (cause) { error.value = cause instanceof Error ? cause.message : "Could not read the picture."; }
-  finally { preparing.value = false; input.value = ""; }
+  cropFile.value = file;
+  input.value = "";
+}
+
+async function closeCrop() {
+  cropFile.value = null;
+  await nextTick();
+  fileInput.value?.focus();
+}
+
+function pictureSelected(selected: string) {
+  picture.value = selected;
+  notice.value = "Picture updated in your preview. Save your profile to keep the change.";
+  void closeCrop();
 }
 
 function removePicture() {
@@ -135,9 +145,8 @@ onBeforeUnmount(() => window.removeEventListener("beforeunload", beforeUnload));
         </div>
         <label for="profile-picture">Profile picture</label>
         <input id="profile-picture" ref="fileInput" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="picture-help" @change="selectPicture" />
-        <p id="picture-help">JPEG, PNG or WebP, up to 5 MB. Pictures are cropped to a square. Save your profile to keep the change.</p>
+        <p id="picture-help">JPEG, PNG or WebP, up to 5 MB. Choose a picture, then drag and zoom to crop it. Save your profile to keep the change.</p>
         <button v-if="picture" type="button" @click="removePicture">Remove picture</button>
-        <p v-if="preparing" role="status">Preparing picture…</p>
         <label for="display-name">Display name</label>
         <input id="display-name" v-model="displayName" maxlength="80" autocomplete="nickname" dir="auto" required />
         <p>Your username for signing in and sharing remains @{{ username }}.</p>
@@ -149,6 +158,7 @@ onBeforeUnmount(() => window.removeEventListener("beforeunload", beforeUnload));
     <footer class="profile-footer">
       <button type="button" :disabled="busy" @click="logout">{{ signingOut ? "Signing out…" : "Sign out" }}</button>
     </footer>
+    <ProfilePictureCropper v-if="cropFile" :file="cropFile" @cancel="closeCrop" @selected="pictureSelected" />
   </section>
 </template>
 

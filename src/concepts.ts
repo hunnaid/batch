@@ -8,6 +8,7 @@ import spec from "@design/concepts/RecipeRecording.md" with {type: "text"};
 import {
     InvalidRecipe,
     DeleteRecipeNotFound,
+    EditRecipeNotFound,
     RecipeRecordingConcept,
 } from "./concepts/RecipeRecording.ts";
 
@@ -98,6 +99,7 @@ const recipeRecording = registerConcept({
     refusals: {
         INVALID_RECIPE: InvalidRecipe,
         DELETE_RECIPE_NOT_FOUND: DeleteRecipeNotFound,
+        EDIT_RECIPE_NOT_FOUND: EditRecipeNotFound,
     },
 });
 
