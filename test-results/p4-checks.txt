@@ -1,0 +1,27 @@
+$ bun run check
+$ sync-engine check && sync-engine artifacts check && tsc --noEmit
+Concept action/query source check passed for 10 concepts.
+Application diagnostic check passed with 48 advisories (use --show-advisories to list them).
+Exit status: 0
+
+$ bun run check:frontend
+$ vue-tsc --noEmit -p web/tsconfig.json
+Exit status: 0
+
+$ bun run build:frontend
+$ bun --bun vite build --config web/vite.config.ts
+vite v8.3.4 building client environment for production...
+transforming...
+[plugin rolldown:vite-resolve] Module "node:crypto" has been externalized for browser compatibility, imported by "/Users/hunnaid/Documents/MIT/Y3/6.1040/batch/node_modules/@mit-sdg/sync-engine/dist/engine/reactions/concepts/concept-spec.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:util" has been externalized for browser compatibility, imported by "/Users/hunnaid/Documents/MIT/Y3/6.1040/batch/node_modules/@mit-sdg/sync-engine/dist/engine/utils/runtime.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:crypto" has been externalized for browser compatibility, imported by "/Users/hunnaid/Documents/MIT/Y3/6.1040/batch/node_modules/@mit-sdg/sync-engine/dist/engine/utils/runtime.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+✓ 253 modules transformed.
+rendering chunks...
+computing gzip size...
+web/dist/index.html                   0.38 kB │ gzip:  0.26 kB
+web/dist/assets/index-w9fcL8Tl.css   21.49 kB │ gzip:  4.68 kB
+web/dist/assets/index-z6m_3bgA.js   150.19 kB │ gzip: 49.35 kB
+
+✓ built in 198ms
+Exit status: 0
+
