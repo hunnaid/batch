@@ -36,9 +36,9 @@ Defined in [Collecting](../design/concepts/Collecting.md), line 1.
 
 #### Instances
 
-- `Collecting` — instance of `Collecting` — [Application types](../design/types.md), line 22.
-  - `Item` is `RecipeRecording.Recipe` — [Application types](../design/types.md), line 24.
-  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 23.
+- `Collecting` — instance of `Collecting` — [Application types](../design/types.md), line 25.
+  - `Item` is `RecipeRecording.Recipe` — [Application types](../design/types.md), line 27.
+  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 26.
 
 ### CookingLog
 
@@ -61,9 +61,9 @@ Defined in [CookingLog](../design/concepts/CookingLog.md), line 1.
 
 #### Instances
 
-- `CookingLog` — instance of `CookingLog` — [Application types](../design/types.md), line 26.
-  - `Recipe` is `RecipeRecording.Recipe` — [Application types](../design/types.md), line 28.
-  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 27.
+- `CookingLog` — instance of `CookingLog` — [Application types](../design/types.md), line 29.
+  - `Recipe` is `RecipeRecording.Recipe` — [Application types](../design/types.md), line 31.
+  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 30.
 
 ### PasswordAuthenticating
 
@@ -84,7 +84,7 @@ Defined in [PasswordAuthenticating](../design/concepts/PasswordAuthenticating.md
 
 #### Instances
 
-- `PasswordAuthenticating` — instance of `PasswordAuthenticating` — [Application types](../design/types.md), line 13.
+- `PasswordAuthenticating` — instance of `PasswordAuthenticating` — [Application types](../design/types.md), line 16.
 
 ### Profiling
 
@@ -105,8 +105,29 @@ Defined in [Profiling](../design/concepts/Profiling.md), line 1.
 
 #### Instances
 
-- `Profiling` — instance of `Profiling` — [Application types](../design/types.md), line 15.
-  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 16.
+- `Profiling` — instance of `Profiling` — [Application types](../design/types.md), line 18.
+  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 19.
+
+### RecipeImporting
+
+Defined in [RecipeImporting](../design/concepts/RecipeImporting.md), line 1.
+
+#### Actions
+
+- `extract(url: String) : returns (draft: ImportedRecipeDraft)`
+  - Refuses `INVALID_IMPORT_URL`: Enter a public recipe page URL.
+  - Refuses `RECIPE_IMPORT_BUSY`: Website import is busy. Try again shortly.
+  - Refuses `NO_RECIPE_FOUND`: A complete recipe could not be read from this page.
+  - Refuses `RECIPE_IMPORT_UNAVAILABLE`: Website import is temporarily unavailable.
+- `extractText(text: String) : returns (draft: ImportedRecipeDraft)`
+  - Refuses `INVALID_IMPORT_TEXT`: Paste the recipe page content. If it is too long, paste just the recipe.
+  - Refuses `RECIPE_IMPORT_BUSY`: Website import is busy. Try again shortly.
+  - Refuses `NO_RECIPE_FOUND`: A complete recipe could not be read from this content.
+  - Refuses `RECIPE_IMPORT_UNAVAILABLE`: Website import is temporarily unavailable.
+
+#### Instances
+
+- `RecipeImporting` — instance of `RecipeImporting` — [Application types](../design/types.md), line 14.
 
 ### RecipeRecording
 
@@ -128,7 +149,7 @@ Defined in [RecipeRecording](../design/concepts/RecipeRecording.md), line 1.
 
 #### Instances
 
-- `RecipeRecording` — instance of `RecipeRecording` — [Application types](../design/types.md), line 11.
+- `RecipeRecording` — instance of `RecipeRecording` — [Application types](../design/types.md), line 12.
 
 ### Saving
 
@@ -147,9 +168,9 @@ Defined in [Saving](../design/concepts/Saving.md), line 1.
 
 #### Instances
 
-- `Saving` — instance of `Saving` — [Application types](../design/types.md), line 18.
-  - `Item` is `RecipeRecording.Recipe` — [Application types](../design/types.md), line 20.
-  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 19.
+- `Saving` — instance of `Saving` — [Application types](../design/types.md), line 21.
+  - `Item` is `RecipeRecording.Recipe` — [Application types](../design/types.md), line 23.
+  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 22.
 
 ### Sessioning
 
@@ -164,8 +185,8 @@ Defined in [Sessioning](../design/concepts/Sessioning.md), line 1.
 
 #### Instances
 
-- `Sessioning` — instance of `Sessioning` — [Application types](../design/types.md), line 38.
-  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 39.
+- `Sessioning` — instance of `Sessioning` — [Application types](../design/types.md), line 41.
+  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 42.
 
 ### Sharing
 
@@ -201,12 +222,12 @@ Defined in [Sharing](../design/concepts/Sharing.md), line 1.
 
 #### Instances
 
-- `RecipeSharing` — instance of `Sharing` — [Application types](../design/types.md), line 34.
-  - `Resource` is `RecipeRecording.Recipe` — [Application types](../design/types.md), line 36.
-  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 35.
-- `Sharing` — instance of `Sharing` — [Application types](../design/types.md), line 30.
-  - `Resource` is `Collecting.Collection` — [Application types](../design/types.md), line 32.
-  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 31.
+- `RecipeSharing` — instance of `Sharing` — [Application types](../design/types.md), line 37.
+  - `Resource` is `RecipeRecording.Recipe` — [Application types](../design/types.md), line 39.
+  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 38.
+- `Sharing` — instance of `Sharing` — [Application types](../design/types.md), line 33.
+  - `Resource` is `Collecting.Collection` — [Application types](../design/types.md), line 35.
+  - `User` is `PasswordAuthenticating.User` — [Application types](../design/types.md), line 34.
 
 ## Views
 
@@ -983,6 +1004,194 @@ then
   RequestBoundary.respond (error: message, requestId)
 ```
 
+### Imports.ImportPersonalRecipe
+
+Authored path: `Imports.ImportPersonalRecipe`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 5.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 13.
+
+```reaction
+when RequestBoundary.request (path: "/recipes/import-personal", requestId, session, url)
+then
+  Sessioning.resolve (session)
+```
+
+### Imports.ImportPersonalRecipe#2
+
+Authored path: `Imports.ImportPersonalRecipe`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 5.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 13.
+
+```reaction
+when Sessioning.resolve (session, user), asked by Imports.ImportPersonalRecipe
+where
+  earlier, RequestBoundary.request (path: "/recipes/import-personal", requestId, session, url)
+then
+  RecipeImporting.extract (url)
+```
+
+### Imports.ImportPersonalRecipe#3
+
+Authored path: `Imports.ImportPersonalRecipe`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 5.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 13.
+
+```reaction
+when RecipeImporting.extract (url, draft), asked by Imports.ImportPersonalRecipe#2
+where
+  earlier, RequestBoundary.request (path: "/recipes/import-personal", requestId, session, url)
+then
+  RequestBoundary.respond (draft, requestId)
+```
+
+### Imports.ImportPersonalRecipeText
+
+Authored path: `Imports.ImportPersonalRecipeText`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 29.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 41.
+
+```reaction
+when RequestBoundary.request (path: "/recipes/import-text-personal", requestId, session, text)
+then
+  Sessioning.resolve (session)
+```
+
+### Imports.ImportPersonalRecipeText#2
+
+Authored path: `Imports.ImportPersonalRecipeText`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 29.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 41.
+
+```reaction
+when Sessioning.resolve (session, user), asked by Imports.ImportPersonalRecipeText
+where
+  earlier, RequestBoundary.request (path: "/recipes/import-text-personal", requestId, session, text)
+then
+  RecipeImporting.extractText (text)
+```
+
+### Imports.ImportPersonalRecipeText#3
+
+Authored path: `Imports.ImportPersonalRecipeText`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 29.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 41.
+
+```reaction
+when RecipeImporting.extractText (text, draft), asked by Imports.ImportPersonalRecipeText#2
+where
+  earlier, RequestBoundary.request (path: "/recipes/import-text-personal", requestId, session, text)
+then
+  RequestBoundary.respond (draft, requestId)
+```
+
+### Imports.ImportRecipeTextToCollection
+
+Authored path: `Imports.ImportRecipeTextToCollection`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 29.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 42.
+
+```reaction
+when RequestBoundary.request (collection, path: "/recipes/import-text", requestId, session, text)
+then
+  Sessioning.resolve (session)
+```
+
+### Imports.ImportRecipeTextToCollection#2
+
+Authored path: `Imports.ImportRecipeTextToCollection`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 29.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 42.
+
+```reaction
+when Sessioning.resolve (session, user), asked by Imports.ImportRecipeTextToCollection
+where
+  earlier, RequestBoundary.request (collection, path: "/recipes/import-text", requestId, session, text)
+then
+  Sharing.authorize (resource: collection, user)
+```
+
+### Imports.ImportRecipeTextToCollection#3
+
+Authored path: `Imports.ImportRecipeTextToCollection`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 29.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 42.
+
+```reaction
+when Sharing.authorize (resource: collection, user), asked by Imports.ImportRecipeTextToCollection#2
+where
+  earlier, RequestBoundary.request (collection, path: "/recipes/import-text", requestId, session, text)
+then
+  RecipeImporting.extractText (text)
+```
+
+### Imports.ImportRecipeTextToCollection#4
+
+Authored path: `Imports.ImportRecipeTextToCollection`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 29.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 42.
+
+```reaction
+when RecipeImporting.extractText (text, draft), asked by Imports.ImportRecipeTextToCollection#3
+where
+  earlier, RequestBoundary.request (collection, path: "/recipes/import-text", requestId, session, text)
+then
+  RequestBoundary.respond (draft, requestId)
+```
+
+### Imports.ImportRecipeToCollection
+
+Authored path: `Imports.ImportRecipeToCollection`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 5.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 14.
+
+```reaction
+when RequestBoundary.request (collection, path: "/recipes/import", requestId, session, url)
+then
+  Sessioning.resolve (session)
+```
+
+### Imports.ImportRecipeToCollection#2
+
+Authored path: `Imports.ImportRecipeToCollection`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 5.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 14.
+
+```reaction
+when Sessioning.resolve (session, user), asked by Imports.ImportRecipeToCollection
+where
+  earlier, RequestBoundary.request (collection, path: "/recipes/import", requestId, session, url)
+then
+  Sharing.authorize (resource: collection, user)
+```
+
+### Imports.ImportRecipeToCollection#3
+
+Authored path: `Imports.ImportRecipeToCollection`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 5.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 14.
+
+```reaction
+when Sharing.authorize (resource: collection, user), asked by Imports.ImportRecipeToCollection#2
+where
+  earlier, RequestBoundary.request (collection, path: "/recipes/import", requestId, session, url)
+then
+  RecipeImporting.extract (url)
+```
+
+### Imports.ImportRecipeToCollection#4
+
+Authored path: `Imports.ImportRecipeToCollection`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 5.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 14.
+
+```reaction
+when RecipeImporting.extract (url, draft), asked by Imports.ImportRecipeToCollection#3
+where
+  earlier, RequestBoundary.request (collection, path: "/recipes/import", requestId, session, url)
+then
+  RequestBoundary.respond (draft, requestId)
+```
+
 ### Profiles.GetMyProfile
 
 Authored path: `Profiles.GetMyProfile`.
@@ -1703,6 +1912,7 @@ then
 ### Recipes.SavePersonalRecipe
 
 Authored path: `Recipes.SavePersonalRecipe`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 49.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 68.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 77.
 
@@ -1715,6 +1925,7 @@ then
 ### Recipes.SavePersonalRecipe#2
 
 Authored path: `Recipes.SavePersonalRecipe`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 49.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 68.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 77.
 
@@ -1729,6 +1940,7 @@ then
 ### Recipes.SavePersonalRecipe#3
 
 Authored path: `Recipes.SavePersonalRecipe`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 49.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 68.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 77.
 
@@ -1743,6 +1955,7 @@ then
 ### Recipes.SavePersonalRecipe#4
 
 Authored path: `Recipes.SavePersonalRecipe`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 49.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 68.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 77.
 
@@ -1755,6 +1968,7 @@ then
 ### Recipes.SavePersonalRecipe#5
 
 Authored path: `Recipes.SavePersonalRecipe`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 49.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 68.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 77.
 
@@ -1769,6 +1983,7 @@ then
 ### Recipes.SaveRecipe
 
 Authored path: `Recipes.SaveRecipe`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 49.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 5.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 24.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 110.
@@ -1782,6 +1997,7 @@ then
 ### Recipes.SaveRecipe#2
 
 Authored path: `Recipes.SaveRecipe`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 49.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 5.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 24.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 110.
@@ -1797,6 +2013,7 @@ then
 ### Recipes.SaveRecipe#3
 
 Authored path: `Recipes.SaveRecipe`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 49.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 5.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 24.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 110.
@@ -1812,6 +2029,7 @@ then
 ### Recipes.SaveRecipe#4
 
 Authored path: `Recipes.SaveRecipe`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 49.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 5.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 24.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 110.
@@ -1827,6 +2045,7 @@ then
 ### Recipes.SaveRecipe#5
 
 Authored path: `Recipes.SaveRecipe`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 49.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 5.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 24.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 110.
@@ -1840,6 +2059,7 @@ then
 ### Recipes.SaveRecipe#6
 
 Authored path: `Recipes.SaveRecipe`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 49.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 5.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 24.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 110.
@@ -1855,6 +2075,7 @@ then
 ### Recipes.SaveRecipe#7
 
 Authored path: `Recipes.SaveRecipe`.
+- Covered by [Website recipe imports](../design/compositions/Imports.md), line 49.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 5.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 24.
 - Covered by [Recipes](../design/compositions/Recipes.md), line 110.
@@ -2702,6 +2923,10 @@ not listed here have no explicit input contract.
 - `/recipes/get` — requires `collection`, `recipe`, `session`
 - `/recipes/get-personal` — requires `recipe`, `session`
 - `/recipes/get-shared` — requires `recipe`, `session`
+- `/recipes/import` — requires `collection`, `session`, `url`
+- `/recipes/import-personal` — requires `session`, `url`
+- `/recipes/import-text` — requires `collection`, `session`, `text`
+- `/recipes/import-text-personal` — requires `session`, `text`
 - `/recipes/mine` — requires `session`
 - `/recipes/prepare-sharing` — requires `recipe`, `session`
 - `/recipes/recipients` — requires `recipe`, `session`

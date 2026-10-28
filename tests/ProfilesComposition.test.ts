@@ -1,3 +1,4 @@
+import { RecipeImportingConcept } from "../src/concepts/RecipeImporting.ts";
 import { ProfilingConcept } from "../src/concepts/Profiling.ts";
 import { expect, test } from "bun:test";
 import { testDatabase } from "./helpers/database.ts";
@@ -32,6 +33,7 @@ const profiling = new ProfilingConcept(db);
 const app = assemble({
   conceptSet: applicationConceptSet,
   instances: {
+    RecipeImporting: new RecipeImportingConcept(),
     Profiling: profiling,
     PasswordAuthenticating: new PasswordAuthenticatingConcept(db),
     Sessioning: sessions,

@@ -13,6 +13,15 @@ await client.connect();
 
 const application = assembleApplication();
 const gateway = createGateway({ application });
+const importPaths = new Set(["/recipes/import", "/recipes/import-personal", "/recipes/import-text", "/recipes/import-text-personal"]);
+
+// The transport verifies this gateway's identity; decorate its method without
+// replacing the registered object. Forward the deadline into the application too.
+const invoke = gateway.invoke.bind(gateway);
+gateway.invoke = (path, input, options) => invoke(path, input, {
+  ...options,
+  timeoutMs: importPaths.has(path) ? 75_000 : options?.timeoutMs,
+});
 
 const handler = createHttpHandler({
   application,
@@ -80,7 +89,7 @@ const server = Bun.serve({
   hostname,
   port,
 
-  async fetch(request) {
+  async fetch(request, server) {
     const { pathname } = new URL(request.url);
 
     // Basic health check: the server started after connecting to MongoDB.
@@ -90,6 +99,7 @@ const server = Bun.serve({
 
     // Keep API requests within the existing HTTP adapter.
     if (pathname === "/api" || pathname.startsWith("/api/")) {
+      if (importPaths.has(pathname.slice(4))) server.timeout(request, 90);
       return handler(request);
     }
 

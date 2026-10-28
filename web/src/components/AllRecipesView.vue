@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
 import { api, ApiError } from "../api";
 import type { BatchWireHttp } from "../../../generated/wire";
 import RecipeForm from "./RecipeForm.vue";
 import RefreshButton from "./RefreshButton.vue";
+import RecipeSourceOptions from "./RecipeSourceOptions.vue";
+import WebsiteRecipeImport from "./WebsiteRecipeImport.vue";
+import ReturnButton from "./ReturnButton.vue";
 
 type RecipeSummary =
   BatchWireHttp["/recipes/mine"]["output"]["overview"]["recipes"][number];
@@ -20,7 +23,19 @@ const search = ref("");
 const sortOrder = ref<SortOrder>("newest");
 const loading = ref(false);
 const addingRecipe = ref(false);
+const creationMethod = ref<"choose" | "manual" | "website">("choose");
 const error = ref("");
+
+function beginAddRecipe() {
+  creationMethod.value = "choose";
+  addingRecipe.value = true;
+}
+
+async function chooseCreation(method: "manual" | "website") {
+  creationMethod.value = method;
+  await nextTick();
+  if (method === "manual") document.getElementById("recipe-title")?.focus();
+}
 
 /** Search personal recipe titles and apply the selected ordering. */
 const matchingRecipes = computed(() => {
@@ -107,20 +122,23 @@ onMounted(loadRecipes);
         type="button"
         class="add-recipe"
         :disabled="loading"
-        @click="addingRecipe = true"
+        @click="beginAddRecipe"
       >
         <span aria-hidden="true">+</span>
         Add recipe
       </button>
     </div>
 
-    <!-- No collection prop: save directly to the personal recipe list. -->
-    <RecipeForm
-      v-if="addingRecipe"
-      @saved="recipeSaved"
-      @cancel="addingRecipe = false"
-      @session-expired="emit('sessionExpired')"
-    />
+    <template v-if="addingRecipe">
+      <RecipeForm v-if="creationMethod === 'manual'" @saved="recipeSaved"
+        @cancel="creationMethod = 'choose'" @session-expired="emit('sessionExpired')" />
+      <WebsiteRecipeImport v-else-if="creationMethod === 'website'" @saved="recipeSaved"
+        @cancel="creationMethod = 'choose'" @session-expired="emit('sessionExpired')" />
+      <template v-else>
+        <ReturnButton @click="addingRecipe = false">Return to my recipes</ReturnButton>
+        <RecipeSourceOptions @manual="chooseCreation('manual')" @website="chooseCreation('website')" />
+      </template>
+    </template>
 
     <template v-else>
       <div class="recipes-toolbar">

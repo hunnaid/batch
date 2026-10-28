@@ -2,6 +2,7 @@
 
 PasswordAuthenticating owns user identities, and RecipeRecording owns
 recipe identities. Saving maintains each user's personal recipe list.
+RecipeImporting reads public websites or pasted page content into unsaved recipe drafts for review.
 Collecting organizes recipes into collections, Sharing controls collection
 access. A separate Sharing instance, RecipeSharing, controls direct recipe
 access. CookingLog records cooking attempts, and Sessioning identifies
@@ -9,6 +10,8 @@ signed-in users. Profiling maintains display names, bios, and pictures independe
 
 ```instances
 instantiate RecipeRecording
+
+instantiate RecipeImporting
 
 instantiate PasswordAuthenticating
 

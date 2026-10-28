@@ -189,6 +189,7 @@ The beta adds personal recipes, direct recipe sharing, profiles, and recipe dele
 - **Collections:** Create, rename, and delete collections you own. Add a new recipe or organize an existing recipe into multiple collections. Each collection has an expandable recipe list.
 - **Shared:** View collections and individual recipes shared with you or by you. Owner and Member labels distinguish user roles. Owners can see recipient usernames and revoke access beside each name.
 - **Recipe details:** Enter ingredients and instructions in ordered sections with optional headings, plus an optional source, description, and notes. Owners can edit their original recipes while keeping cooking history. Ingredients appear beside instructions and notes on wider screens and stack on smaller screens. Instruction numbering restarts within each section.
+- **Website import:** Choose Import from a website when adding a recipe. Enter a public recipe URL, or paste the page's copied text or HTML below the "or" divider. Either option fills an editable form for review before saving to My recipes or the selected collection. URL imports include the source link; pasted imports leave it blank for you to add. Importing alone creates no stored recipe.
 - **Cooking history:** Record adjustments and results without changing the original recipe. Edit your own attempts. Entries show the contributor's current display name and picture.
 - **Profiles:** Set a display name, optional bio, and optional profile picture. Sign out from the profile page. Changing display name does not change the username used for login.
 - **Removal and deletion:** Collection owners can remove a recipe from their collection without permanently deleting it. Recipe owners can permanently delete a recipe, including cooking history, personal saves, collection references, and direct sharing.
@@ -203,11 +204,12 @@ Collections refer to the same recipe, so its original details and cooking histor
 
 ### Current specifications
 
-The beta uses eight concepts. Sharing is instantiated separately for collection permissions and direct recipe permissions.
+The app uses nine concepts. Sharing is instantiated separately for collection permissions and direct recipe permissions.
 
 | Concept | Responsibility |
 | --- | --- |
 | [RecipeRecording](design/concepts/RecipeRecording.md) | Original recipe details, descriptions, and notes |
+| [RecipeImporting](design/concepts/RecipeImporting.md) | Unsaved recipe drafts extracted from public websites or pasted page content |
 | [CookingLog](design/concepts/CookingLog.md) | Cooking attempts, authorship, and results |
 | [Collecting](design/concepts/Collecting.md) | Named collections and recipe memberships |
 | [Saving](design/concepts/Saving.md) | Personal saved lists and addition dates |
@@ -218,7 +220,8 @@ The beta uses eight concepts. Sharing is instantiated separately for collection 
 
 Compositions coordinate these concepts: [Accounts](design/compositions/Accounts.md),
 [Collections](design/compositions/Collections.md), [Recipes](design/compositions/Recipes.md),
-[Shared](design/compositions/Shared.md), and [Profiles](design/compositions/Profiles.md).
+[Shared](design/compositions/Shared.md), [Profiles](design/compositions/Profiles.md),
+and [Imports](design/compositions/Imports.md).
 
 ### Running the beta locally
 
@@ -234,6 +237,14 @@ bun run dev:frontend
 
 Open http://localhost:5173. The backend watches for code changes. Register an account through the interface; a fresh database has no preconfigured users.
 
+### Website import setup
+
+Set `GEMINI_API_KEY` in the backend's untracked `.env` file or deployment environment. Never use a `VITE_` variable for the key. `GEMINI_MODEL` optionally selects a compatible model; the default is `gemini-3.1-flash-lite`. Restart the backend after changing environment settings.
+
+The backend retrieves public recipe HTML, then uses the Google GenAI SDK and structured output to produce a draft. Retrieval checks public DNS addresses, pins the connection to the checked address, and validates redirects. Embedded recipe data and visible headings help preserve sections. Import requires a signed-in session and, for a collection, destination access. Save recipe checks those permissions again. Manual entry works without a Gemini key. Some sites require sign-in or block retrieval; users can enter those recipes manually. HTML retrieval has a 10-second deadline and a 2 MiB limit. Gemini extraction has a shared 60-second deadline and retries temporary gateway or provider-overload errors once after a short delay. Invalid requests, credential errors, quota errors, and unreadable pages are not retried automatically.
+
+Automated import tests inject an extractor and make no paid API calls. A live import requires a valid key with access and quota for the configured model.
+
 ### Validation
 
 With MongoDB running, check the beta using:
@@ -245,7 +256,7 @@ bun run check:frontend
 bun run build:frontend
 ```
 
-The [tests](tests/) cover all eight concepts and composition flows, including unauthorized access, revoked permissions, repeated actions, recipient privacy, deletion cleanup, profile-picture validation, and older recipes without optional fields. Refusal tests check that unrelated state remains unchanged. Fixtures use concept actions, and each suite uses a separate temporary database that is removed afterward.
+The [tests](tests/) cover all nine concepts and composition flows, including unauthorized access, revoked permissions, repeated actions, recipient privacy, deletion cleanup, profile-picture validation, older recipes without optional fields, and importing drafts without saving. Refusal tests check that unrelated state remains unchanged. Fixtures use concept actions, and database-backed suites use separate temporary databases that are removed afterward.
 
 ### P3 submission materials
 
@@ -255,6 +266,6 @@ The [tests](tests/) cover all eight concepts and composition flows, including un
 
 ### Remaining limitations
 
-- Recipes are entered manually; website imports are not yet implemented.
+- Website imports depend on public page access and provider availability. Imported quantities and instructions need review before saving.
 - Changes from another user's session appear when data is reloaded through navigation or Refresh. There are no live updates between sessions.
 - Unsaved recipe and cooking-entry drafts can be lost when navigating away. Profile edits have a discard confirmation.

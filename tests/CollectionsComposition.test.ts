@@ -1,3 +1,4 @@
+import { RecipeImportingConcept } from "../src/concepts/RecipeImporting.ts";
 import { ProfilingConcept } from "../src/concepts/Profiling.ts";
 import { expect, test } from "bun:test";
 import { testDatabase } from "./helpers/database.ts";
@@ -10,6 +11,7 @@ import {
 } from "@mit-sdg/sync-engine/boundary";
 import { createHttpHandler } from "@mit-sdg/sync-engine-http/handler";
 import { policy } from "../src/http-policy.ts";
+import type { BatchWire } from "../generated/wire.ts";
 
 import { applicationConceptSet, concepts } from "../src/concepts.ts";
 import { composition as collectionsComposition } from "../src/compositions/Collections.ts";
@@ -57,6 +59,7 @@ const CreateCollection = endpoint(
 const app = assemble({
   conceptSet: applicationConceptSet,
   instances: {
+    RecipeImporting: new RecipeImportingConcept(),
     Profiling: new ProfilingConcept(db),
     RecipeRecording: recipes,
     PasswordAuthenticating: new PasswordAuthenticatingConcept(db),
@@ -1351,20 +1354,51 @@ test("refused recipe saves leave no orphan recipes, personal saves, ownership or
   expect(await recipeStorage()).toEqual(before);
 });
 
-test("collection entry editing enforces authorship, recipe membership and revocation", async () => {
+test("collection cooking-entry journey preserves the original recipe and enforces authorship, membership and revocation", async () => {
   const f = await createSharedCollection();
+  const recipeData = {
+    title: "Rice",
+    ingredients: [{ heading: "Rice", items: ["Rice", "Water"] }],
+    instructions: [{ heading: "Cook", items: ["Cook.", "Let the rice rest."] }],
+    source: "Family notebook",
+    notes: "Fluff gently before serving.",
+    description: "A family rice recipe.",
+  };
   const { recipe } = await invokeSuccessfully<{ recipe: string }>("/recipes/save", {
-    session: f.ownerSession, collection: f.collection,
-    title: "Rice", ingredients: ["Rice"], instructions: ["Cook."],
+    session: f.ownerSession, collection: f.collection, ...recipeData,
+  });
+  const recipeBefore = await recipes._get({ recipe });
+  expect(recipeBefore).toEqual([recipeData]);
+  const readRecipe = () => invokeSuccessfully<BatchWire["/recipes/get"]["output"]>("/recipes/get", {
+    session: f.memberSession, collection: f.collection, recipe,
   });
   const input = { session: f.memberSession, collection: f.collection, recipe,
     changes: "Less water", result: "" };
   const { entry } = await invokeSuccessfully<{ entry: string }>("/entries/add", input);
-  const original = await cookingLog._get({ entry });
-  expect(original[0]).toMatchObject({ author: f.member, recipe, changes: input.changes });
+  const entryBefore = await cookingLog._get({ entry });
+  expect(entryBefore[0]).toMatchObject({ author: f.member, recipe, changes: input.changes });
+
+  // Retrieve the complete recipe before editing, not just the entry's stored record.
+  const beforeEdit = await readRecipe();
+  expect(beforeEdit.recipe).toMatchObject({
+    recipe, ...recipeData,
+    entries: [{ entry, author: f.member, changes: input.changes, result: "" }],
+  });
+  expect(beforeEdit.recipe!.entries).toHaveLength(1);
+  expect(await recipes._get({ recipe })).toEqual(recipeBefore);
+
   await invokeSuccessfully("/entries/edit", { ...input, entry, result: "Firmer rice" });
   expect(await cookingLog._get({ entry }))
-    .toEqual(original.map((row) => ({ ...row, result: "Firmer rice" })));
+    .toEqual(entryBefore.map((row) => ({ ...row, result: "Firmer rice" })));
+
+  const afterEdit = await readRecipe();
+  expect(afterEdit).toEqual({
+    recipe: {
+      ...beforeEdit.recipe!,
+      entries: [{ ...beforeEdit.recipe!.entries[0]!, result: "Firmer rice" }],
+    },
+  });
+  expect(await recipes._get({ recipe })).toEqual(recipeBefore);
 
   const { recipe: otherRecipe } = await invokeSuccessfully<{ recipe: string }>("/recipes/save", {
     session: f.memberSession, collection: f.collection,
@@ -1375,6 +1409,7 @@ test("collection entry editing enforces authorship, recipe membership and revoca
   });
   const before = await recipeStorage();
   for (const [overrides, error] of [
+    // Even the recipe and collection owner cannot edit another author's attempt.
     [{ session: f.ownerSession }, "COOKING_ENTRY_NOT_OWNED"],
     [{ recipe: otherRecipe }, "ENTRY_NOT_IN_RECIPE"],
     [{ entry: "missing" }, "ENTRY_NOT_IN_RECIPE"],
@@ -1384,6 +1419,7 @@ test("collection entry editing enforces authorship, recipe membership and revoca
     await refuses("/entries/edit", { ...input, entry, ...overrides }, error);
     expect(await recipeStorage()).toEqual(before);
   }
+  expect(await readRecipe()).toEqual(afterEdit);
   await refuses("/entries/add", { ...input, recipe: privateRecipe }, "RECIPE_NOT_IN_COLLECTION");
   await refuses("/entries/add", { ...input, changes: "", result: " " }, "INVALID_COOKING_ENTRY");
   expect(await recipeStorage()).toEqual(before);

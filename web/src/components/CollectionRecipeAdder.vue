@@ -5,6 +5,8 @@ import { collectionRecipeCandidates, type RecipeCandidate, type RecipeSummary } 
 import RecipeForm from "./RecipeForm.vue";
 import ReturnButton from "./ReturnButton.vue";
 import RefreshButton from "./RefreshButton.vue";
+import RecipeSourceOptions from "./RecipeSourceOptions.vue";
+import WebsiteRecipeImport from "./WebsiteRecipeImport.vue";
 
 const props = defineProps<{ collection: string; name: string; backLabel?: string }>();
 const emit = defineEmits<{
@@ -14,7 +16,7 @@ const emit = defineEmits<{
   sessionExpired: [];
 }>();
 
-const mode = ref<"choose" | "new" | "existing">("choose");
+const mode = ref<"choose" | "new" | "existing" | "import">("choose");
 const heading = ref<HTMLHeadingElement | null>(null);
 const searchInput = ref<HTMLInputElement | null>(null);
 const candidates = ref<RecipeCandidate[]>([]);
@@ -30,7 +32,7 @@ onMounted(() => heading.value?.focus());
 const matchingRecipes = computed(() => candidates.value.filter((recipe) =>
   recipe.title.toLocaleLowerCase().includes(search.value.trim().toLocaleLowerCase())));
 
-async function chooseMode(value: "choose" | "new" | "existing") {
+async function chooseMode(value: "choose" | "new" | "existing" | "import") {
   if (adding.value || loading.value) return;
   mode.value = value;
   error.value = "";
@@ -119,25 +121,17 @@ async function addRecipe(recipe: RecipeCandidate) {
 <template>
   <div>
     <ReturnButton
-      v-if="mode !== 'new'"
+      v-if="mode === 'choose' || mode === 'existing'"
       :disabled="adding !== null || loading"
       @click="mode === 'choose' ? emit('cancel') : chooseMode('choose')"
     >{{ mode === 'choose' ? (props.backLabel ?? 'Return to collections') : 'Return to recipe options' }}</ReturnButton>
-    <h3 ref="heading" class="adder-heading" tabindex="-1">
-      {{ mode === 'choose' ? 'Add recipe' : mode === 'existing' ? 'Add existing recipe' : 'Create new recipe' }}
+    <h3 v-if="mode === 'choose' || mode === 'existing'" ref="heading" class="adder-heading" tabindex="-1">
+      {{ mode === 'choose' ? 'Add recipe' : 'Add existing recipe' }}
     </h3>
     <p>Adding to <strong dir="auto">{{ name }}</strong></p>
 
-    <div v-if="mode === 'choose'" class="recipe-options">
-      <button type="button" @click="chooseMode('existing')">
-        <strong>Add existing recipe</strong>
-        <span>Choose from My recipes and your accessible collections.</span>
-      </button>
-      <button type="button" @click="chooseMode('new')">
-        <strong>Create new recipe</strong>
-        <span>Write a recipe and save it to this collection and My recipes.</span>
-      </button>
-    </div>
+    <RecipeSourceOptions v-if="mode === 'choose'" include-existing @existing="chooseMode('existing')"
+      @manual="chooseMode('new')" @website="chooseMode('import')" />
 
     <RecipeForm
       v-else-if="mode === 'new'"
@@ -146,6 +140,9 @@ async function addRecipe(recipe: RecipeCandidate) {
       @cancel="chooseMode('choose')"
       @session-expired="emit('sessionExpired')"
     />
+
+    <WebsiteRecipeImport v-else-if="mode === 'import'" :collection="collection" @saved="emit('saved', $event)"
+      @cancel="chooseMode('choose')" @session-expired="emit('sessionExpired')" />
 
     <template v-else>
       <p id="existing-recipe-help">
@@ -180,10 +177,6 @@ async function addRecipe(recipe: RecipeCandidate) {
 
 <style scoped>
 .adder-heading { margin-top: 0; }
-.recipe-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
-.recipe-options button { display: grid; gap: 8px; padding: 24px; text-align: start; }
-.recipe-options strong { font-size: 1.1rem; }
-.recipe-options span { font-weight: 400; }
 .picker-toolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 20px; margin-block: 24px; }
 .picker-toolbar > div { flex: 1; min-width: min(100%, 240px); display: grid; gap: 8px; }
 .picker-toolbar label { margin: 0; }
@@ -192,7 +185,4 @@ async function addRecipe(recipe: RecipeCandidate) {
 .picker-recipes span { min-width: 0; overflow-wrap: anywhere; }
 .picker-recipes button { flex-shrink: 0; color: var(--on-green); background: var(--green); border-color: var(--green); }
 .picker-recipes button:hover:not(:disabled) { background: var(--green-soft); }
-@media (max-width: 600px) {
-  .recipe-options { grid-template-columns: minmax(0, 1fr); }
-}
 </style>

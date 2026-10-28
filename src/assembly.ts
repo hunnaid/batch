@@ -15,6 +15,8 @@ import { composition as sharedComposition } from "./compositions/Shared.ts";
 import { ProfilingConcept } from "./concepts/Profiling.ts";
 import { composition as profilesComposition } from "./compositions/Profiles.ts";
 import { db } from "./db.ts";
+import { RecipeImportingConcept } from "./concepts/RecipeImporting.ts";
+import { composition as importsComposition } from "./compositions/Imports.ts";
 
 /**
  * Build the application from its registered concepts and compositions.
@@ -25,6 +27,7 @@ export function assembleApplication() {
 
     // Supply the database required by RecipeRecording's constructor.
     instances: {
+      RecipeImporting: new RecipeImportingConcept(),
       Profiling: new ProfilingConcept(db),
       RecipeRecording: new RecipeRecordingConcept(db),
       PasswordAuthenticating: new PasswordAuthenticatingConcept(db),
@@ -38,6 +41,7 @@ export function assembleApplication() {
 
     // Endpoints and reactions will be added here next.
     composition: {
+      Imports: importsComposition,
       Collections: collectionsComposition,
       Accounts: accountsComposition,
       Profiles: profilesComposition,

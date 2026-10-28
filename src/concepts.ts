@@ -79,6 +79,20 @@ import {
 
 import profilingSpec from "@design/concepts/Profiling.md" with { type: "text" };
 import { ProfilingConcept, InvalidProfile, ProfileAlreadyExists, ProfileNotFound } from "./concepts/Profiling.ts";
+import importingSpec from "@design/concepts/RecipeImporting.md" with { type: "text" };
+import { RecipeImportingConcept, InvalidImportUrl, InvalidImportText, NoRecipeFound, RecipeImportBusy, RecipeImportUnavailable } from "./concepts/RecipeImporting.ts";
+
+const recipeImporting = registerConcept({
+    class: RecipeImportingConcept,
+    spec: importingSpec,
+    refusals: {
+        INVALID_IMPORT_URL: InvalidImportUrl,
+        INVALID_IMPORT_TEXT: InvalidImportText,
+        NO_RECIPE_FOUND: NoRecipeFound,
+        RECIPE_IMPORT_BUSY: RecipeImportBusy,
+        RECIPE_IMPORT_UNAVAILABLE: RecipeImportUnavailable,
+    },
+});
 
 const profiling = registerConcept({
     class: ProfilingConcept,
@@ -194,6 +208,7 @@ const saving = registerConcept({
  * Declare the concepts available to the application.
  */
 export const applicationConceptSet = conceptSet({
+    RecipeImporting: recipeImporting,
     Profiling: profiling,
     RecipeRecording: recipeRecording,
     PasswordAuthenticating: passwordAuthenticating,

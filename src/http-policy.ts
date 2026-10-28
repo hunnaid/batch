@@ -24,6 +24,10 @@ export const policy = httpPolicy({
     },
 
     publicErrors: {
+        INVALID_IMPORT_URL: "INVALID_REQUEST",
+        INVALID_IMPORT_TEXT: "INVALID_REQUEST",
+        NO_RECIPE_FOUND: "NOT_FOUND",
+        RECIPE_IMPORT_BUSY: "CONFLICT",
         INVALID_PROFILE: "INVALID_REQUEST",
         PROFILE_ALREADY_EXISTS: "CONFLICT",
         PROFILE_NOT_FOUND: "NOT_FOUND",

@@ -384,6 +384,48 @@ export type BatchWire = {
     };
     error: { error: AppWideError | "ACCESS_DENIED" | "INVALID_INPUT" | "INVALID_SESSION" };
   };
+  "/recipes/import": {
+    input: {
+      "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+      "url": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeImporting"]["extract"]>[0], ["url"]>>;
+    };
+    output: {
+      "draft": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeImporting"]["extract"]>>, ["draft"]>>;
+    };
+    error: { error: AppWideError | "ACCESS_DENIED" | "INVALID_IMPORT_URL" | "INVALID_INPUT" | "INVALID_SESSION" | "NO_RECIPE_FOUND" | "RECIPE_IMPORT_BUSY" | "RECIPE_IMPORT_UNAVAILABLE" };
+  };
+  "/recipes/import-personal": {
+    input: {
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+      "url": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeImporting"]["extract"]>[0], ["url"]>>;
+    };
+    output: {
+      "draft": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeImporting"]["extract"]>>, ["draft"]>>;
+    };
+    error: { error: AppWideError | "INVALID_IMPORT_URL" | "INVALID_INPUT" | "INVALID_SESSION" | "NO_RECIPE_FOUND" | "RECIPE_IMPORT_BUSY" | "RECIPE_IMPORT_UNAVAILABLE" };
+  };
+  "/recipes/import-text": {
+    input: {
+      "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>>;
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+      "text": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeImporting"]["extractText"]>[0], ["text"]>>;
+    };
+    output: {
+      "draft": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeImporting"]["extractText"]>>, ["draft"]>>;
+    };
+    error: { error: AppWideError | "ACCESS_DENIED" | "INVALID_IMPORT_TEXT" | "INVALID_INPUT" | "INVALID_SESSION" | "NO_RECIPE_FOUND" | "RECIPE_IMPORT_BUSY" | "RECIPE_IMPORT_UNAVAILABLE" };
+  };
+  "/recipes/import-text-personal": {
+    input: {
+      "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
+      "text": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeImporting"]["extractText"]>[0], ["text"]>>;
+    };
+    output: {
+      "draft": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeImporting"]["extractText"]>>, ["draft"]>>;
+    };
+    error: { error: AppWideError | "INVALID_IMPORT_TEXT" | "INVALID_INPUT" | "INVALID_SESSION" | "NO_RECIPE_FOUND" | "RECIPE_IMPORT_BUSY" | "RECIPE_IMPORT_UNAVAILABLE" };
+  };
   "/recipes/mine": {
     input: {
       "session": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sessioning"]["resolve"]>[0], ["session"]>>;
@@ -904,6 +946,44 @@ export type BatchWireHttp = {
       } | null;
     };
     error: { error: HttpAppWideError | "FORBIDDEN" | "INVALID_REQUEST" | "UNAUTHORIZED" };
+  };
+  "/recipes/import": {
+    input: {
+      "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>>;
+      "url": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeImporting"]["extract"]>[0], ["url"]>>;
+    };
+    output: {
+      "draft": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeImporting"]["extract"]>>, ["draft"]>>;
+    };
+    error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INTERNAL_ERROR" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/recipes/import-personal": {
+    input: {
+      "url": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeImporting"]["extract"]>[0], ["url"]>>;
+    };
+    output: {
+      "draft": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeImporting"]["extract"]>>, ["draft"]>>;
+    };
+    error: { error: HttpAppWideError | "CONFLICT" | "INTERNAL_ERROR" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/recipes/import-text": {
+    input: {
+      "collection": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["Sharing"]["authorize"]>[0], ["resource"]>>;
+      "text": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeImporting"]["extractText"]>[0], ["text"]>>;
+    };
+    output: {
+      "draft": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeImporting"]["extractText"]>>, ["draft"]>>;
+    };
+    error: { error: HttpAppWideError | "CONFLICT" | "FORBIDDEN" | "INTERNAL_ERROR" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
+  };
+  "/recipes/import-text-personal": {
+    input: {
+      "text": Jsonify<AtPath<Parameters<(typeof ApplicationConceptSet.concepts)["RecipeImporting"]["extractText"]>[0], ["text"]>>;
+    };
+    output: {
+      "draft": Jsonify<AtPath<Awaited<ReturnType<(typeof ApplicationConceptSet.concepts)["RecipeImporting"]["extractText"]>>, ["draft"]>>;
+    };
+    error: { error: HttpAppWideError | "CONFLICT" | "INTERNAL_ERROR" | "INVALID_REQUEST" | "NOT_FOUND" | "UNAUTHORIZED" };
   };
   "/recipes/mine": {
     input: Record<string, never>;
