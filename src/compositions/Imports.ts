@@ -1,16 +1,8 @@
 import { endpoint, receive, respond } from "@mit-sdg/sync-engine/boundary";
 import { concepts } from "../concepts.ts";
+import { sessionInput } from "../input-validation.ts";
 
 const { Sessioning, Sharing, RecipeImporting } = concepts;
-
-function inputWith(...fields: string[]) {
-  return (value: unknown) => {
-    if (typeof value !== "object" || value === null || Array.isArray(value)) return { ok: false };
-    const input = value as Record<string, unknown>;
-    return { ok: (typeof input.session === "string" || input.session === null) &&
-      fields.every((field) => typeof input[field] === "string") };
-  };
-}
 
 const ImportPersonalRecipe = endpoint(
   "/recipes/import-personal",
@@ -18,7 +10,7 @@ const ImportPersonalRecipe = endpoint(
     .then(Sessioning.resolve({ session }).responds({ user }))
     .then(RecipeImporting.extract({ url }).responds({ draft }))
     .then(respond({ draft })),
-  { validators: { input: inputWith("url") } }
+  { validators: { input: sessionInput("url") } }
 );
 
 /** Check the intended destination before spending an external extraction request. */
@@ -29,7 +21,7 @@ const ImportRecipeToCollection = endpoint(
     .then(Sharing.authorize({ user, resource: collection }))
     .then(RecipeImporting.extract({ url }).responds({ draft }))
     .then(respond({ draft })),
-  { validators: { input: inputWith("collection", "url") } }
+  { validators: { input: sessionInput("collection", "url") } }
 );
 
 const ImportPersonalRecipeText = endpoint(
@@ -38,7 +30,7 @@ const ImportPersonalRecipeText = endpoint(
     .then(Sessioning.resolve({ session }).responds({ user }))
     .then(RecipeImporting.extractText({ text }).responds({ draft }))
     .then(respond({ draft })),
-  { validators: { input: inputWith("text") } }
+  { validators: { input: sessionInput("text") } }
 );
 
 const ImportRecipeTextToCollection = endpoint(
@@ -48,7 +40,7 @@ const ImportRecipeTextToCollection = endpoint(
     .then(Sharing.authorize({ user, resource: collection }))
     .then(RecipeImporting.extractText({ text }).responds({ draft }))
     .then(respond({ draft })),
-  { validators: { input: inputWith("collection", "text") } }
+  { validators: { input: sessionInput("collection", "text") } }
 );
 
 export const composition = { ImportPersonalRecipe, ImportRecipeToCollection, ImportPersonalRecipeText, ImportRecipeTextToCollection };

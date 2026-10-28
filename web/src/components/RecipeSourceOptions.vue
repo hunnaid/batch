@@ -15,7 +15,7 @@ const emit = defineEmits<{ existing: []; manual: []; website: [] }>();
     </button>
     <button type="button" @click="emit('website')">
       <strong>Import from a website</strong>
-      <span>Start with a recipe URL, then review and edit before saving.</span>
+      <span>Use a recipe URL or paste page content, then review and edit before saving.</span>
     </button>
   </div>
 </template>

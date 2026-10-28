@@ -13,7 +13,7 @@ import {
     view,
 } from "@mit-sdg/sync-engine/language";
 import { concepts } from "../concepts.ts";
-import { isRecipeContent } from "../recipe-content.ts";
+import { recipeInput, sessionInput } from "../input-validation.ts";
 
 const {
     Sessioning,
@@ -23,9 +23,9 @@ const {
     Collecting,
     CookingLog,
     Saving,
- } = concepts;
+} = concepts;
 
- /** Test membership using the supplied collection and recipe IDs. */
+/** Test membership using the supplied collection and recipe IDs. */
 const recipeInCollection = view(
     "(recipe) belongs to (collection)",
     ({ collection, recipe }) =>
@@ -42,26 +42,6 @@ const entryInRecipe = view(
             CookingLog._get({ entry }).is({ recipe })
         )
 ).holds();
-
-/**
- * Accept a session token or null when the HTTP cookie is missing.
- * Sessioning checks whether the token is valid.
- */
-function hasSessionInput(
-    value: unknown
-): value is Record<string, unknown> {
-    if (
-        typeof value !== "object" ||
-        value === null ||
-        Array.isArray(value)
-    ) {
-        return false;
-    }
-
-    const input = value as Record<string, unknown>;
-
-    return typeof input.session === "string" || input.session === null;
-}
 
 /**
  * Save an original recipe in a collection accessible to the signed-in user.
@@ -121,31 +101,7 @@ const SaveRecipe = endpoint(
                 description: "",
             },
         },
-        validators: {
-            /**
-             * Check incoming JSON types before concept methods use string/array
-             * operations. The concept checks nonblank and nonempty requirements.
-             */
-            input: (value: unknown) => {
-                if (!hasSessionInput(value)) {
-                    return { ok: false };
-                }
-
-                const input = value;
-
-                return {
-                    ok:
-                        typeof input.collection === "string" &&
-                        typeof input.title === "string" &&
-                        isRecipeContent(input.ingredients) &&
-                        isRecipeContent(input.instructions) &&
-                        (input.source === undefined ||
-                        typeof input.source === "string") &&
-                        (input.notes === undefined || typeof input.notes === "string") &&
-                        (input.description === undefined || typeof input.description === "string"),
-                };
-            },
-        },
+        validators: { input: recipeInput("collection") },
     }
 );
 
@@ -222,14 +178,7 @@ const GetRecipe = endpoint(
                 })
             ),
     {
-        validators: {
-            input: (value: unknown) => ({
-                ok:
-                    hasSessionInput(value) &&
-                    typeof value.collection === "string" &&
-                    typeof value.recipe === "string",
-            }),
-        },
+        validators: { input: sessionInput("collection", "recipe") },
     }
 );
 
@@ -261,23 +210,7 @@ const AddCookingEntry = endpoint(
                 .named("recipe-not-in-collection")
         ),
     {
-        validators: {
-            input: (value: unknown) => {
-                if (!hasSessionInput(value)) {
-                    return { ok: false };
-                }
-
-                const input = value;
-
-                return {
-                    ok:
-                        typeof input.collection === "string" &&
-                        typeof input.recipe === "string" &&
-                        typeof input.changes === "string" &&
-                        typeof input.result === "string",
-                };
-            },
-        },
+        validators: { input: sessionInput("collection", "recipe", "changes", "result") },
     }
 );
 
@@ -319,24 +252,7 @@ const EditCookingEntry = endpoint(
                 .named("entry-not-in-recipe")
         ),
     {
-        validators: {
-            input: (value: unknown) => {
-                if (!hasSessionInput(value)) {
-                    return { ok: false };
-                }
-
-                const input = value;
-
-                return {
-                    ok:
-                        typeof input.collection === "string" &&
-                        typeof input.recipe === "string" &&
-                        typeof input.entry === "string" &&
-                        typeof input.changes === "string" &&
-                        typeof input.result === "string",
-                };
-            },
-        },
+        validators: { input: sessionInput("collection", "recipe", "entry", "changes", "result") },
     }
 );
 
@@ -399,15 +315,7 @@ const AddRecipeToCollection = endpoint(
                 .named("recipe-not-in-source")
         ),
     {
-        validators: {
-            input: (value: unknown) => ({
-                ok:
-                    hasSessionInput(value) &&
-                    typeof value.sourceCollection === "string" &&
-                    typeof value.destinationCollection === "string" &&
-                    typeof value.recipe === "string",
-            }),
-        },
+        validators: { input: sessionInput("sourceCollection", "destinationCollection", "recipe") },
     }
 );
 
@@ -465,26 +373,7 @@ const SavePersonalRecipe = endpoint(
                 description: "",
             },
         },
-        validators: {
-            input: (value: unknown) => {
-                if (!hasSessionInput(value)) {
-                    return { ok: false };
-                }
-
-                return {
-                    ok:
-                        typeof value.title === "string" &&
-                        isRecipeContent(value.ingredients) &&
-                        isRecipeContent(value.instructions) &&
-                        (
-                            value.source === undefined ||
-                            typeof value.source === "string"
-                        ) &&
-                        (value.notes === undefined || typeof value.notes === "string") &&
-                        (value.description === undefined || typeof value.description === "string"),
-                };
-            },
-        },
+        validators: { input: recipeInput() },
     }
 );
 
@@ -525,11 +414,7 @@ const ListMyRecipes = endpoint(
                 })
             ),
     {
-        validators: {
-            input: (value: unknown) => ({
-                ok: hasSessionInput(value),
-            }),
-        },
+        validators: { input: sessionInput() },
     }
 );
 
@@ -609,13 +494,7 @@ const GetPersonalRecipe = endpoint(
                 })
             ),
     {
-        validators: {
-            input: (value: unknown) => ({
-                ok:
-                    hasSessionInput(value) &&
-                    typeof value.recipe === "string",
-            }),
-        },
+        validators: { input: sessionInput("recipe") },
     }
 );
 
@@ -639,15 +518,7 @@ const AddPersonalCookingEntry = endpoint(
             )
             .then(respond({ entry })),
     {
-        validators: {
-            input: (value: unknown) => ({
-                ok:
-                    hasSessionInput(value) &&
-                    typeof value.recipe === "string" &&
-                    typeof value.changes === "string" &&
-                    typeof value.result === "string",
-            }),
-        },
+        validators: { input: sessionInput("recipe", "changes", "result") },
     }
 );
 
@@ -680,16 +551,7 @@ const EditPersonalCookingEntry = endpoint(
                     .named("entry-not-in-personal-recipe")
             ),
     {
-        validators: {
-            input: (value: unknown) => ({
-                ok:
-                    hasSessionInput(value) &&
-                    typeof value.recipe === "string" &&
-                    typeof value.entry === "string" &&
-                    typeof value.changes === "string" &&
-                    typeof value.result === "string",
-            }),
-        },
+        validators: { input: sessionInput("recipe", "entry", "changes", "result") },
     }
 );
 
@@ -726,14 +588,7 @@ const AddPersonalRecipeToCollection = endpoint(
                 })
             ),
     {
-        validators: {
-            input: (value: unknown) => ({
-                ok:
-                    hasSessionInput(value) &&
-                    typeof value.destinationCollection === "string" &&
-                    typeof value.recipe === "string",
-            }),
-        },
+        validators: { input: sessionInput("destinationCollection", "recipe") },
     }
 );
 
@@ -746,12 +601,7 @@ const RemoveRecipeFromCollection = endpoint(
         .then(Collecting.remove({ collection, item: recipe }))
         .then(respond({ collection, recipe })),
     {
-        validators: {
-            input: (value: unknown) => ({
-                ok: hasSessionInput(value) &&
-                    typeof value.collection === "string" && typeof value.recipe === "string",
-            }),
-        },
+        validators: { input: sessionInput("collection", "recipe") },
     }
 );
 

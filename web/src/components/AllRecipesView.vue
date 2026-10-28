@@ -120,7 +120,7 @@ onMounted(loadRecipes);
       <button
         v-if="!addingRecipe"
         type="button"
-        class="add-recipe"
+        class="add-recipe button-primary"
         :disabled="loading"
         @click="beginAddRecipe"
       >
@@ -142,7 +142,7 @@ onMounted(loadRecipes);
 
     <template v-else>
       <div class="recipes-toolbar">
-        <div class="toolbar-field recipe-search">
+        <div class="toolbar-field">
           <label for="recipe-search">Search recipes</label>
           <input
             id="recipe-search"
@@ -152,7 +152,7 @@ onMounted(loadRecipes);
           />
         </div>
 
-        <div class="toolbar-field recipe-sort">
+        <div class="toolbar-field">
           <label for="recipe-sort">Sort by</label>
           <select id="recipe-sort" v-model="sortOrder">
             <option value="newest">Date added: newest first</option>
@@ -216,14 +216,6 @@ onMounted(loadRecipes);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--on-green);
-  background: var(--green);
-  border-color: var(--green);
-}
-.add-recipe:hover:not(:disabled) {
-  color: var(--green-ink);
-  background: var(--green-soft);
-  border-color: var(--green);
 }
 .add-recipe > span { font-size: 1.25rem; line-height: 1; }
 .recipes-toolbar {

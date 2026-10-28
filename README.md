@@ -1,85 +1,80 @@
 # Batch
 
-Batch keeps original recipes, cooking adjustments, and results together so home cooks can repeat dishes they enjoyed and share how they actually made them.
+Batch keeps original recipes, cooking adjustments, and results together so home cooks can repeat dishes they enjoyed and share how they actually made them. Each recipe has a shared cooking history, so another cook can learn from earlier attempts without losing the original instructions.
 
-## P1: Design
+**[Try Batch](https://batch.mit-sdg.dev)** - **[Final design summary](design/docs/p4-design-summary.md)** - **[Final narrated user journey]()** - **[Final user journey](design/docs/final-user-journey.md)**
 
-- [Problem framing and stakeholders](design/docs/problem-framing.md)
-- [Application pitch](design/docs/pitch.md)
-- [Concept specifications, essential reactions, and concept roles](design/docs/concepts.md)
-- [UI Sketches and interaction notes](design/docs/ui-sketches.md)
-- [User journey](design/docs/user-journey.md)
+Register an account to try the deployed app. It uses a separate database, so local accounts and recipes will not be available online.
 
-This repository contains the public project design and implementation work. The chronological design notebook is kept separately in a private repository.
+## Using Batch
 
-----
+- **My recipes:** Save a recipe without choosing a collection. Search by title and sort A-Z, Z-A, newest first, or oldest first. Date added means when you first saved the recipe.
+- **Recipe entry and editing:** Enter ingredients and instructions in ordered sections with optional headings, plus a description, source, and notes. Owners can edit the recipe later. Ingredients sit beside instructions on wider screens and stack on smaller screens.
+- **Website import:** Import a public recipe URL or paste copied page text or HTML. Review and edit the filled form before saving to My recipes or the selected collection. URL imports include the source link; paste imports leave it blank for you to add. Importing alone does not save a recipe.
+- **Cooking history:** Record adjustments and results, then edit your own entry after tasting the dish. Entries identify contributors by their current display names and pictures. A cook can read earlier attempts to decide which adjustments to try next.
+- **Shared:** Open collections and individual recipes shared with you or by you. Collection owners and members can contribute recipes and cooking entries. Owners can see recipient usernames and revoke access beside each name.
+- **Profiles:** Set a display name, optional bio, and picture. Crop and preview a picture before saving. Changing your display name leaves your login username unchanged. Sign out from the profile page.
 
-## P2: Working MVP
+My recipes contains personal saves. Receiving shared access does not automatically add a recipe there. Collections shows collections you own. Shared shows shared collections and directly shared recipes, including those you have shared with others.
 
-Batch currently supports:
+## Ownership and access
 
-- Registering, signing in, and signing out.
-- Creating collections and entering recipes manually.
-- Recording cooking adjustments and results.
-- Editing your own cooking entries.
-- Sharing collections with registered users and revoking access.
-- Renaming and deleting collections you own.
+The backend identifies users through their sessions and enforces permissions. Collection owners manage collection names, membership, deletion, and removal of recipes from that collection. A recipe's creator controls its original details, direct sharing, and permanent deletion, including when they created it in someone else's collection. Only a cooking entry's author can edit it, while they retain access to the recipe.
 
-Collection members can read recipes and contribute recipes and cooking entries.
-Only owners can rename or delete collections and manage membership.
-Only an entry's author can edit that entry.
+Collections and direct sharing refer to the same recipe and cooking history. Editing the original updates it everywhere. Existing cooking entries retain their text and are not snapshots of earlier recipe versions.
 
-Deleting a collection removes the collection and its sharing permissions. The original recipes and cooking entries remain stored separately.
+Removal and deletion have different consequences:
 
-## Requirements
+- **Remove from collection** removes only that collection membership.
+- **Delete collection** removes the collection and its sharing permissions while preserving recipes, cooking history, personal saves, and direct recipe sharing.
+- **Delete recipe permanently** removes the recipe, all cooking entries, personal saves, collection references, and direct sharing for everyone.
 
-- Bun (developed and tested with version 1.4.2).
+The interface explains these consequences before confirmation. Revoking one access path preserves any other access the user still has.
+
+## Run locally
+
+### Requirements
+
+- Bun, developed with version 1.4.2.
 - MongoDB 8.0.
-- Podman if running MongoDB in a container.
+- Podman if using the database container below.
+- A Gemini API key with access and quota for the configured model, only for website or pasted-content importing.
 
-The backend uses Bun and sync-engine. The frontend uses Vue and Vite.
+The backend uses Bun, MongoDB, and sync-engine. The frontend uses Vue and Vite.
 
-## Setup
-
-Clone the repository and install dependencies:
+### Install and configure
 
 ```sh
 git clone https://github.com/hunnaid/batch.git
 cd batch
 bun install
-```
-
-For a fresh checkout, copy the environment template:
-
-```sh
 cp .env.example .env
 ```
 
-The local development connection string is:
+Set the database connection in `.env`:
 
 ```env
 MONGODB_URL=mongodb://dev:dev@127.0.0.1:27017/batch?authSource=admin
 ```
 
-Keep `.env` untracked. Adjust it if your MongoDB credentials or address differ.
+Keep `.env` untracked. Change the address or credentials if using a different MongoDB instance.
+
+For importing, also set `GEMINI_API_KEY` in the backend environment. `GEMINI_MODEL` optionally overrides the configured model. Keep the key out of frontend code and variables prefixed with `VITE_`. Restart the backend after changing environment settings. Manual entry and the rest of Batch work without a Gemini key.
 
 ### Start MongoDB
 
-If MongoDB is already running on port 27017 with matching credentials, reuse it and skip the container-creation commands below.
-
-Otherwise, start Podman. On macOS, start your existing Podman machine:
+If MongoDB is already running on port 27017 with matching credentials, use that instance. Otherwise, on macOS, start your Podman machine:
 
 ```sh
 podman machine start
 ```
 
-If you have never created a Podman machine, run `podman machine init` before starting it. If the machine is already running, continue to the next step.
+If no machine exists, run `podman machine init` first. If it is already running, continue.
 
-Create a local database container:
+Create the database container once:
 
 ```sh
 podman volume create batch-mongo-data
-
 podman run -d \
   --name batch-mongo \
   -p 127.0.0.1:27017:27017 \
@@ -89,143 +84,17 @@ podman run -d \
   docker.io/library/mongo:8.0
 ```
 
-The named volume preserves database contents across container restarts. The `dev` credentials are for local development.
-
-If you created the container above, start it on later runs instead of creating it again:
+The volume preserves data across container restarts. These credentials are for local development. On later runs, start the existing container:
 
 ```sh
 podman start batch-mongo
 ```
 
-If you reused an existing MongoDB container, start that container by its own name instead.
+If you use another existing container, start it by its own name.
 
-### Start Batch
+### Start the app
 
-With MongoDB running, use two terminals from the repository root.
-
-Backend:
-
-```sh
-bun run start
-```
-
-Frontend:
-
-```sh
-bun run dev:frontend
-```
-
-Open http://localhost:5173.
-
-The backend listens on port 8080. Vite forwards frontend `/api` requests to it. Use `localhost` consistently for browser session cookies.
-
-Register an account through the interface. A fresh database does not include preconfigured accounts or recipes.
-
-Press Ctrl+C in each application terminal to stop its server.
-
-## Checks and Tests
-
-MongoDB must be running for the database-backed tests.
-
-```sh
-bun test
-bun run check
-bun run check:frontend
-bun run build:frontend
-```
-
-Tests cover the six concepts and selected composition flows. Each test file uses a temporary database and removes it afterward.
-
-After changing concept specifications or compositions, regenerate the application documentation and API contract:
-
-```sh
-bun run generate
-bun run check
-```
-
-The frontend uses the generated HTTP client contract in `generated/wire.ts`.
-
-## Project Organization
-
-- `src/concepts/`: independent concepts and MongoDB storage.
-- `src/compositions/`: endpoints, reactions, and response formers.
-- `src/http-policy.ts`: HTTP error mappings, session cookies, and request origins.
-- `web/src/`: Vue components and the generated-client integration.
-- `design/concepts/`: current concept specifications.
-- `design/compositions/`: composition documentation.
-- `design/docs/`: original P1 design documents.
-- `generated/`: generated application documentation and API types.
-- `tests/`: concept and composition tests.
-- `AGENTS.md`: instructions for coding assistants working on the project.
-
-## Current Limitations
-
-- Recipes are entered manually; website imports are not implemented.
-- Cooking entries refer to the original recipe rather than branching from other entries.
-- The interface does not yet support adding an existing recipe to another collection.
-- Deleting a collection retains its recipes and cooking entries in storage. Recipes that belong only to that collection become inaccessible through the interface; recovery is not implemented.
-- Shared changes appear when data is reloaded; there are no live updates.
-- Unsaved form text can be lost when navigating away or refreshing.
-- The interface is intentionally plain. Visual polish is planned for later.
-
-## Links
-
-- [Narrated MVP demo](https://drive.google.com/file/d/1vGsjhs8QBaca15tqGHWBKg4QrXVZNgVh/view?usp=sharing)
-- [P2 user journey](design/docs/p2-user-journey.md)
-
----
-
-## P3: Beta
-
-- [Live app](https://batch.mit-sdg.dev)
-
-Batch is deployed on the class platform. The deployed app uses a separate MongoDB database, so local accounts and recipes are not available online. Register an account to try it.
-
-The beta adds personal recipes, direct recipe sharing, profiles, and recipe deletion. This section describes the current app. The P1 and P2 sections above describe those earlier milestones.
-
-### Current functionality
-
-- **My recipes:** Save a recipe without choosing a collection. Search by title and sort A-Z, Z-A, newest first, or oldest first.
-- **Collections:** Create, rename, and delete collections you own. Add a new recipe or organize an existing recipe into multiple collections. Each collection has an expandable recipe list.
-- **Shared:** View collections and individual recipes shared with you or by you. Owner and Member labels distinguish user roles. Owners can see recipient usernames and revoke access beside each name.
-- **Recipe details:** Enter ingredients and instructions in ordered sections with optional headings, plus an optional source, description, and notes. Owners can edit their original recipes while keeping cooking history. Ingredients appear beside instructions and notes on wider screens and stack on smaller screens. Instruction numbering restarts within each section.
-- **Website import:** Choose Import from a website when adding a recipe. Enter a public recipe URL, or paste the page's copied text or HTML below the "or" divider. Either option fills an editable form for review before saving to My recipes or the selected collection. URL imports include the source link; pasted imports leave it blank for you to add. Importing alone creates no stored recipe.
-- **Cooking history:** Record adjustments and results without changing the original recipe. Edit your own attempts. Entries show the contributor's current display name and picture.
-- **Profiles:** Set a display name, optional bio, and optional profile picture. Sign out from the profile page. Changing display name does not change the username used for login.
-- **Removal and deletion:** Collection owners can remove a recipe from their collection without permanently deleting it. Recipe owners can permanently delete a recipe, including cooking history, personal saves, collection references, and direct sharing.
-
-The Collections tab shows collections you own. Collections where you are a member appear in Shared. Owned collections shared with others appear in both. My recipes lists personal saves. Receiving shared access does not automatically put a recipe in that list.
-
-### Ownership and access
-
-The backend identifies users through their sessions and enforces permissions. Collection owners manage collection membership, names, and deletion. A recipe's creator owns its direct sharing and permanent deletion, even when the recipe was created in someone else's collection. Members can read recipes and add cooking entries; only an entry's author can edit it.
-
-Collections refer to the same recipe, so its original details and cooking history stay together. Removing one collection membership or revoking direct sharing preserves other access paths. Deleting a collection preserves recipes, cooking entries, personal saves, and direct recipe sharing.
-
-### Current specifications
-
-The app uses nine concepts. Sharing is instantiated separately for collection permissions and direct recipe permissions.
-
-| Concept | Responsibility |
-| --- | --- |
-| [RecipeRecording](design/concepts/RecipeRecording.md) | Original recipe details, descriptions, and notes |
-| [RecipeImporting](design/concepts/RecipeImporting.md) | Unsaved recipe drafts extracted from public websites or pasted page content |
-| [CookingLog](design/concepts/CookingLog.md) | Cooking attempts, authorship, and results |
-| [Collecting](design/concepts/Collecting.md) | Named collections and recipe memberships |
-| [Saving](design/concepts/Saving.md) | Personal saved lists and addition dates |
-| [Sharing](design/concepts/Sharing.md) | Resource ownership and access grants |
-| [PasswordAuthenticating](design/concepts/PasswordAuthenticating.md) | Registration and credential verification |
-| [Sessioning](design/concepts/Sessioning.md) | Login sessions and expiration |
-| [Profiling](design/concepts/Profiling.md) | Display names, bios, and pictures |
-
-Compositions coordinate these concepts: [Accounts](design/compositions/Accounts.md),
-[Collections](design/compositions/Collections.md), [Recipes](design/compositions/Recipes.md),
-[Shared](design/compositions/Shared.md), [Profiles](design/compositions/Profiles.md),
-and [Imports](design/compositions/Imports.md).
-
-### Running the beta locally
-
-Use the dependency and MongoDB setup above, with `MONGODB_URL` configured in an untracked `.env` file. Run these commands in separate terminals:
+Run these in separate terminals from the repository root:
 
 ```sh
 bun run dev:backend
@@ -235,19 +104,19 @@ bun run dev:backend
 bun run dev:frontend
 ```
 
-Open http://localhost:5173. The backend watches for code changes. Register an account through the interface; a fresh database has no preconfigured users.
+Open [http://localhost:5173](http://localhost:5173). The backend listens on port 8080, and Vite forwards `/api` requests to it. Use `localhost` consistently for browser session cookies. Register through the interface; a fresh database has no preconfigured accounts or recipes.
 
-### Website import setup
+Press Ctrl+C in each terminal to stop the servers.
 
-Set `GEMINI_API_KEY` in the backend's untracked `.env` file or deployment environment. Never use a `VITE_` variable for the key. `GEMINI_MODEL` optionally selects a compatible model; the default is `gemini-3.1-flash-lite`. Restart the backend after changing environment settings.
+### Build and deployment configuration
 
-The backend retrieves public recipe HTML, then uses the Google GenAI SDK and structured output to produce a draft. Retrieval checks public DNS addresses, pins the connection to the checked address, and validates redirects. Embedded recipe data and visible headings help preserve sections. Import requires a signed-in session and, for a collection, destination access. Save recipe checks those permissions again. Manual entry works without a Gemini key. Some sites require sign-in or block retrieval; users can enter those recipes manually. HTML retrieval has a 10-second deadline and a 2 MiB limit. Gemini extraction has a shared 60-second deadline and retries temporary gateway or provider-overload errors once after a short delay. Invalid requests, credential errors, quota errors, and unreadable pages are not retried automatically.
+Build the frontend with `bun run build:frontend`. The Bun server serves the built frontend and API; `bun run start` starts it without development watching.
 
-Automated import tests inject an extractor and make no paid API calls. A live import requires a valid key with access and quota for the configured model.
+The deployed backend needs its own `MONGODB_URL` and `PUBLIC_ORIGIN` set to its public origin, such as `https://batch.mit-sdg.dev`. It reads `HOST` and `PORT` from the environment. Set `NODE_ENV=production` for production request-origin handling. Configure `GEMINI_API_KEY` separately in the deployment environment if importing is enabled.
 
-### Validation
+## Testing and validation
 
-With MongoDB running, check the beta using:
+With MongoDB running, run:
 
 ```sh
 bun test
@@ -256,16 +125,77 @@ bun run check:frontend
 bun run build:frontend
 ```
 
-The [tests](tests/) cover all nine concepts and composition flows, including unauthorized access, revoked permissions, repeated actions, recipient privacy, deletion cleanup, profile-picture validation, older recipes without optional fields, and importing drafts without saving. Refusal tests check that unrelated state remains unchanged. Fixtures use concept actions, and database-backed suites use separate temporary databases that are removed afterward.
+The [test suites](tests/) cover concept behavior and composition flows, including recipe saving, adding and editing cooking entries, original-recipe editing, sharing and revocation, permissions, repeated actions, deletion, profiles, and import drafts. Refusal tests check that relevant stored state stays unchanged. Database-backed suites use temporary databases and remove them afterward; fixtures create data through concept actions.
 
-### P3 submission materials
+Automated import tests inject an extractor and make no Gemini requests. They do not establish that a particular website or live provider request works.
 
-- **Beta user journey and narrated recording:** [User Journey](design/docs/p3-user-journey.md), [User Journey Narrated](https://youtu.be/v7i8ic0bSIc)
-- **Visual design study:** [Color](design/visual-study/visual-study-colors.jpg), [Typography](design/visual-study/visual-study-typography.jpg)
-- **Saved test execution output:** [Saved P3 test output](test-results/p3-tests.txt).
+To save the full test output while preserving the test command's exit status:
 
-### Remaining limitations
+```sh
+mkdir -p test-results
+set -o pipefail
+bun test 2>&1 | tee test-results/p4-tests.txt
+```
 
-- Website imports depend on public page access and provider availability. Imported quantities and instructions need review before saving.
-- Changes from another user's session appear when data is reloaded through navigation or Refresh. There are no live updates between sessions.
-- Unsaved recipe and cooking-entry drafts can be lost when navigating away. Profile edits have a discard confirmation.
+See the [P4 test output](test-results/p4-tests.txt) for automated test results and [final design summary](design/docs/p4-design-summary.md) for the validation findings and remaining limitations.
+
+After changing specifications or compositions, regenerate the application documentation and API contract, then check them:
+
+```sh
+bun run generate
+bun run check
+```
+
+The frontend uses `generated/wire.ts`. Generated files are produced from the authored application; update the source specifications and code, then regenerate them.
+
+## Design and project materials
+
+| Material | Link |
+| --- | --- |
+| P4 design summary: final decisions and changes from P1 and P3 | [Final design summary](design/docs/p4-design-summary.md) |
+| P4 narrated video and demonstrated journey | [Final demo](design/docs/p4-demo.md) |
+| P4 saved test execution | [Test output](test-results/p4-tests.txt) |
+| P3 visual design study | [Color](design/visual-study/visual-study-colors.jpg), [Typography](design/visual-study/visual-study-typography.jpg) |
+| Generated application reference | [Application](generated/application.md) |
+
+Current specifications describe nine concepts. Sharing has separate instances for collection permissions and direct recipe permissions.
+
+| Concept | Responsibility |
+| --- | --- |
+| [RecipeRecording](design/concepts/RecipeRecording.md) | Original recipe details and sections, editing, and deletion |
+| [RecipeImporting](design/concepts/RecipeImporting.md) | Extracting unsaved recipe drafts for review |
+| [CookingLog](design/concepts/CookingLog.md) | Cooking attempts, authorship, adjustments, and results |
+| [Collecting](design/concepts/Collecting.md) | Named collections and recipe memberships |
+| [Saving](design/concepts/Saving.md) | Personal saved lists and first-save dates |
+| [Sharing](design/concepts/Sharing.md) | Resource ownership and access grants |
+| [PasswordAuthenticating](design/concepts/PasswordAuthenticating.md) | Registration and credential verification |
+| [Sessioning](design/concepts/Sessioning.md) | Login sessions and expiration |
+| [Profiling](design/concepts/Profiling.md) | Display names, bios, and pictures |
+
+[Accounts](design/compositions/Accounts.md), [Collections](design/compositions/Collections.md), [Recipes](design/compositions/Recipes.md), [Shared](design/compositions/Shared.md), [Profiles](design/compositions/Profiles.md), and [Imports](design/compositions/Imports.md) coordinate the concepts. The chronological design notebook is maintained in the separate private individual repository.
+
+### Earlier milestones
+
+- **P1:** [Problem framing](design/docs/problem-framing.md), [Pitch](design/docs/pitch.md), [Initial concept design](design/docs/concepts.md), [UI sketches](design/docs/ui-sketches.md), [Initial journey](design/docs/user-journey.md).
+- **P2:** [User journey](design/docs/p2-user-journey.md), [Narrated MVP demo](https://drive.google.com/file/d/1vGsjhs8QBaca15tqGHWBKg4QrXVZNgVh/view?usp=sharing).
+- **P3:** [User journey](design/docs/p3-user-journey.md), [Narrated beta demo](https://youtu.be/v7i8ic0bSIc), [Saved test output](test-results/p3-tests.txt).
+
+## Repository structure
+
+- `src/concepts/`: concept implementations and their storage.
+- `src/compositions/`: application endpoints, reactions, views, and response formers.
+- `src/http-policy.ts`: public errors, session cookies, and allowed request origins.
+- `web/src/`: Vue interface and API client integration.
+- `design/concepts/` and `design/compositions/`: current authored specifications.
+- `design/docs/` and `design/visual-study/`: design documents, journeys, and visual references.
+- `generated/`: generated application documentation and API contracts.
+- `tests/` and `test-results/`: automated tests and saved execution output.
+
+## Known limitations
+
+- Imports depend on page access and provider availability. Some websites block retrieval or require login. Imported quantities, instructions, and sections need review before saving.
+- Cooking entries refer to the recipe rather than branching from earlier attempts. Editing the original does not preserve earlier recipe versions.
+- Changes from another session appear after navigation or Refresh; there are no live updates between sessions.
+- Unsaved recipe and cooking-entry drafts can be lost when navigating away or refreshing. Profile edits have a discard confirmation.
+- Permanent deletion runs across concepts in sequence. If a cleanup action fails, earlier deletions are not undone and related records may need repair.
+- Password recovery is not implemented.

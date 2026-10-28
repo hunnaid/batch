@@ -166,7 +166,7 @@ async function addRecipe(recipe: RecipeCandidate) {
         <ul class="picker-recipes" role="list">
           <li v-for="recipe in matchingRecipes" :key="recipe.recipe">
             <span dir="auto">{{ recipe.title }}</span>
-            <button type="button" :disabled="adding !== null" :aria-label="`Add ${recipe.title} to ${name}`"
+            <button type="button" class="button-primary" :disabled="adding !== null" :aria-label="`Add ${recipe.title} to ${name}`"
               @click="addRecipe(recipe)">{{ adding === recipe.recipe ? 'Adding…' : 'Add' }}</button>
           </li>
         </ul>
@@ -183,6 +183,5 @@ async function addRecipe(recipe: RecipeCandidate) {
 .picker-recipes { list-style: none; padding: 0; margin: 0; }
 .picker-recipes li { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0; padding: 14px 0; border-bottom: 1px solid var(--border); }
 .picker-recipes span { min-width: 0; overflow-wrap: anywhere; }
-.picker-recipes button { flex-shrink: 0; color: var(--on-green); background: var(--green); border-color: var(--green); }
-.picker-recipes button:hover:not(:disabled) { background: var(--green-soft); }
+.picker-recipes button { flex-shrink: 0; }
 </style>

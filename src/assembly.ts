@@ -25,7 +25,7 @@ export function assembleApplication() {
   return assemble({
     conceptSet: applicationConceptSet,
 
-    // Supply the database required by RecipeRecording's constructor.
+    // Persistent concepts share a database but manage separate collections.
     instances: {
       RecipeImporting: new RecipeImportingConcept(),
       Profiling: new ProfilingConcept(db),
@@ -39,7 +39,6 @@ export function assembleApplication() {
       Saving: new SavingConcept(db),
     },
 
-    // Endpoints and reactions will be added here next.
     composition: {
       Imports: importsComposition,
       Collections: collectionsComposition,

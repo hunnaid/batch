@@ -548,7 +548,7 @@ onMounted(loadDestinations);
                 </option>
               </select>
 
-              <button type="submit" class="add-to-collection" :disabled="!destination">
+              <button type="submit" :disabled="!destination">
                 {{ addingToCollection ? "Adding…" : "Add to collection" }}
               </button>
             </fieldset>
@@ -671,11 +671,6 @@ onMounted(loadDestinations);
 .recipe-notes p { margin: 0; }
 @media (max-width: 700px) {
   .recipe-card { grid-template-columns: minmax(0, 1fr); gap: 28px; }
-}
-.add-to-collection:hover:not(:disabled) {
-  color: var(--green-ink);
-  background: var(--green-soft);
-  border-color: var(--green);
 }
 .management-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
 .attempt-author { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }

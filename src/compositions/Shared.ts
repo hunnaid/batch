@@ -1,27 +1,13 @@
 import { endpoint, receive, respond } from "@mit-sdg/sync-engine/boundary";
 import { each, form, former, no, view, where, whether } from "@mit-sdg/sync-engine/language";
 import { concepts } from "../concepts.ts";
-import { isRecipeContent } from "../recipe-content.ts";
+import { recipeInput, sessionInput } from "../input-validation.ts";
 import { composition as recipes } from "./Recipes.ts";
 
 const {
     Sessioning, Sharing, RecipeSharing, Collecting,
     RecipeRecording, CookingLog, Saving, PasswordAuthenticating,
 } = concepts;
-
-/** Validate the session and text inputs before invoking concept actions. */
-function inputWith(...fields: string[]) {
-    return (value: unknown) => {
-        if (typeof value !== "object" || value === null || Array.isArray(value)) {
-            return { ok: false };
-        }
-        const input = value as Record<string, unknown>;
-        return {
-            ok: (input.session === null || typeof input.session === "string") &&
-                fields.every((field) => typeof input[field] === "string"),
-        };
-    };
-}
 
 const recipeOwner = view(
     "(user) owns direct sharing of (recipe)",
@@ -61,7 +47,7 @@ const ListShared = endpoint(
     ({ session, user }) => receive({ session })
         .then(Sessioning.resolve({ session }).responds({ user }))
         .then(respond({ overview: sharedOverview({ user }) })),
-    { validators: { input: inputWith() } }
+    { validators: { input: sessionInput() } }
 );
 
 /** Expose only whether this signed-in user may manage direct recipe sharing. */
@@ -77,7 +63,7 @@ const RecipeSharingStatus = endpoint(
             where(no(recipeOwner({ user, recipe })), no(legacyRecipeOwner({ user, recipe })))
                 .then(respond({ canManage: false })).named("not-owner")
         ),
-    { validators: { input: inputWith("recipe") } }
+    { validators: { input: sessionInput("recipe") } }
 );
 
 const recipeRecipients = former(
@@ -101,7 +87,7 @@ const ListRecipeRecipients = endpoint(
                 .then(RecipeSharing.authorizeOwner({ user, resource: recipe }))
                 .then(respond({ sharing: recipeRecipients({ recipe }) })).named("existing-owner")
         ),
-    { validators: { input: inputWith("recipe") } }
+    { validators: { input: sessionInput("recipe") } }
 );
 
 /** Establish ownership for a pre-existing personal recipe without granting access. */
@@ -118,7 +104,7 @@ const PrepareRecipeSharing = endpoint(
                 .then(RecipeSharing.authorizeOwner({ user, resource: recipe }))
                 .then(respond({ recipe })).named("existing-owner")
         ),
-    { validators: { input: inputWith("recipe") } }
+    { validators: { input: sessionInput("recipe") } }
 );
 
 /** Direct access can be granted only by its established owner. */
@@ -134,7 +120,7 @@ const ShareRecipe = endpoint(
             where(no(PasswordAuthenticating._byUsername({ username })))
                 .then(respond({ error: "RECIPIENT_NOT_FOUND" })).named("unknown-recipient")
         ),
-    { validators: { input: inputWith("recipe", "username") } }
+    { validators: { input: sessionInput("recipe", "username") } }
 );
 
 const RevokeRecipeAccess = endpoint(
@@ -149,7 +135,7 @@ const RevokeRecipeAccess = endpoint(
             where(no(PasswordAuthenticating._byUsername({ username })))
                 .then(respond({ error: "RECIPIENT_NOT_FOUND" })).named("unknown-recipient")
         ),
-    { validators: { input: inputWith("recipe", "username") } }
+    { validators: { input: sessionInput("recipe", "username") } }
 );
 
 /** Direct and collection access expose the same original recipe and cooking entries. */
@@ -176,7 +162,7 @@ const GetSharedRecipe = endpoint(
         .then(Sessioning.resolve({ session }).responds({ user }))
         .then(RecipeSharing.authorize({ user, resource: recipe }))
         .then(respond({ recipe: directRecipeDetails({ user, recipe }) })),
-    { validators: { input: inputWith("recipe") } }
+    { validators: { input: sessionInput("recipe") } }
 );
 
 const AddSharedCookingEntry = endpoint(
@@ -186,7 +172,7 @@ const AddSharedCookingEntry = endpoint(
         .then(RecipeSharing.authorize({ user, resource: recipe }))
         .then(CookingLog.record({ author: user, recipe, changes, result }).responds({ entry }))
         .then(respond({ entry })),
-    { validators: { input: inputWith("recipe", "changes", "result") } }
+    { validators: { input: sessionInput("recipe", "changes", "result") } }
 );
 
 const EditSharedCookingEntry = endpoint(
@@ -201,7 +187,7 @@ const EditSharedCookingEntry = endpoint(
             where(no(recipes.EntryInRecipe({ entry, recipe })))
                 .then(respond({ error: "ENTRY_NOT_IN_RECIPE" })).named("entry-not-in-recipe")
         ),
-    { validators: { input: inputWith("recipe", "entry", "changes", "result") } }
+    { validators: { input: sessionInput("recipe", "entry", "changes", "result") } }
 );
 
 /** Update the same original recipe through direct ownership or an eligible legacy save. */
@@ -224,15 +210,7 @@ const EditRecipe = endpoint(
             required: ["session", "recipe", "title", "ingredients", "instructions"],
             defaults: { source: "", notes: "", description: "" },
         },
-        validators: {
-            input: (value: unknown) => {
-                if (!inputWith("recipe", "title")(value).ok) return { ok: false };
-                const input = value as Record<string, unknown>;
-                return { ok: isRecipeContent(input.ingredients) && isRecipeContent(input.instructions) &&
-                    [input.source, input.notes, input.description].every((item) =>
-                        item === undefined || typeof item === "string") };
-            },
-        },
+        validators: { input: recipeInput("recipe") },
     }
 );
 
@@ -255,7 +233,7 @@ const DeleteRecipe = endpoint(
         .then(Saving.removeItem({ item: recipe }))
         .then(RecipeSharing.uninitialize({ resource: recipe, owner: user }))
         .then(respond({ recipe })),
-    { validators: { input: inputWith("recipe") } }
+    { validators: { input: sessionInput("recipe") } }
 );
 
 export const composition = {

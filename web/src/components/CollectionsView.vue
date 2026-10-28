@@ -295,7 +295,7 @@ onMounted(loadCollections);
         v-if="!addingCollection && addingTo === null"
         ref="createCollectionButton"
         type="button"
-        class="create-collection-button"
+        class="create-collection-button button-primary"
         :disabled="loading || creating || managing"
         @click="beginCreateCollection"
       >
@@ -394,13 +394,12 @@ onMounted(loadCollections);
           v-for="collection in ownedCollections"
           :key="collection.collection"
           v-show="matchingCollectionIds.has(collection.collection)"
-          class="collection-card"
         >
           <header class="collection-header">
             <div class="collection-info">
               <div class="collection-title">
                 <h3 dir="auto">{{ collection.name }}</h3>
-                <RoleBadge :owner="collection.owner === user" />
+                <RoleBadge owner />
               </div>
             </div>
 
@@ -438,7 +437,7 @@ onMounted(loadCollections);
             <p v-else class="empty-collection">No recipes yet. Add a recipe to start this collection.</p>
           </details>
 
-          <details v-if="collection.owner === user">
+          <details>
             <summary>Manage sharing</summary>
 
             <SharingForm
@@ -447,7 +446,7 @@ onMounted(loadCollections);
             />
           </details>
 
-          <div v-if="collection.owner === user" class="collection-actions">
+          <div class="collection-actions">
             <button
               v-if="renaming !== collection.collection"
               type="button"
@@ -530,16 +529,6 @@ onMounted(loadCollections);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--on-green);
-  background: var(--green);
-  border-color: var(--green);
-}
-.create-collection-button:hover:not(:disabled),
-.create-controls button[type="submit"]:hover:not(:disabled),
-.rename-actions button[type="submit"]:hover:not(:disabled) {
-  color: var(--green-ink);
-  background: var(--green-soft);
-  border-color: var(--green);
 }
 .collections-toolbar {
   display: grid;

@@ -137,7 +137,7 @@ onBeforeUnmount(() => {
     </template>
     <div class="dialog-actions">
       <button type="button" autofocus :disabled="preparing" @click="emit('cancel')">Cancel</button>
-      <button type="button" class="use-picture" :disabled="loading || preparing || !crop || !!error" @click="usePicture">
+      <button type="button" class="button-primary" :disabled="loading || preparing || !crop || !!error" @click="usePicture">
         {{ preparing ? "Preparing…" : "Use picture" }}
       </button>
     </div>
@@ -157,8 +157,7 @@ h2 { margin-bottom: 12px; font-size: 1.7rem; }
 .zoom-label output, .save-help { color: var(--muted); font-size: 0.85rem; }
 .zoom-slider { padding: 0; border: 0; border-radius: 0; accent-color: var(--green-ink); }
 .dialog-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-.use-picture { color: var(--on-green); background: var(--green); border-color: var(--green); }
-.use-picture:hover:not(:disabled) { color: var(--green-ink); background: var(--green-soft); border-color: var(--green); }
+
 @media (max-width: 480px) {
   dialog { padding: 24px 20px; }
   .dialog-actions > button { flex: 1; }

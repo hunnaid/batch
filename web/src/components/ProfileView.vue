@@ -152,7 +152,7 @@ onBeforeUnmount(() => window.removeEventListener("beforeunload", beforeUnload));
         <p>Your username for signing in and sharing remains @{{ username }}.</p>
         <label for="profile-bio">Bio (optional)</label>
         <textarea id="profile-bio" v-model="bio" maxlength="500" rows="4" dir="auto" placeholder="Tell other cooks a little about yourself." />
-        <button type="submit" class="save-profile">{{ saving ? "Saving…" : "Save profile" }}</button>
+        <button type="submit">{{ saving ? "Saving…" : "Save profile" }}</button>
       </fieldset>
     </form>
     <footer class="profile-footer">
@@ -163,11 +163,6 @@ onBeforeUnmount(() => window.removeEventListener("beforeunload", beforeUnload));
 </template>
 
 <style scoped>
-.save-profile:hover:not(:disabled) {
-  color: var(--green-ink);
-  background: var(--green-soft);
-  border-color: var(--green);
-}
 h2 { margin-top: 24px; }
 .profile-preview { display: flex; align-items: center; gap: 20px; min-width: 0; }
 .profile-preview > div { min-width: 0; overflow-wrap: anywhere; }

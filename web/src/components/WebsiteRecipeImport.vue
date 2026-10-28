@@ -97,7 +97,7 @@ onBeforeUnmount(() => { active = false; controller?.abort(); });
           <input id="website-recipe-url" ref="urlInput" v-model="url" type="url" inputmode="url" required
             placeholder="https://example.com/your-recipe" aria-describedby="website-import-help" />
           <p id="website-import-help">Use a public page containing the full ingredients and instructions. Import cannot use your website login or subscription. You can paste content from a page you can access below.</p>
-          <button type="submit" class="import-recipe">{{ importing === 'url' ? "Importing…" : "Import recipe" }}</button>
+          <button type="submit">{{ importing === 'url' ? "Importing…" : "Import recipe" }}</button>
         </fieldset>
         <p v-if="error && errorMethod === 'url'" role="alert">{{ error }}</p>
       </form>
@@ -110,7 +110,7 @@ onBeforeUnmount(() => { active = false; controller?.abort(); });
           <p id="pasted-content-help">Copy the page's text, including the recipe title, ingredients, and instructions, and paste it below. HTML also works. We'll autofill a recipe form for you to review.</p>
           <textarea id="pasted-website-content" ref="pastedInput" v-model="pastedContent" rows="10" required
             aria-describedby="pasted-content-help" placeholder="Paste the full page text or HTML…" />
-          <button type="submit" class="import-recipe">{{ importing === 'text' ? "Autofilling…" : "Autofill recipe" }}</button>
+          <button type="submit">{{ importing === 'text' ? "Autofilling…" : "Autofill recipe" }}</button>
         </fieldset>
         <p v-if="error && errorMethod === 'text'" role="alert">{{ error }}</p>
       </form>
@@ -126,5 +126,4 @@ onBeforeUnmount(() => { active = false; controller?.abort(); });
 .import-divider { display: flex; align-items: center; gap: 16px; margin-block: 28px; color: var(--muted); }
 .import-divider::before, .import-divider::after { content: ""; height: 1px; flex: 1; background: var(--border); }
 .review-notice { margin-block: 20px; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--green-soft); }
-.import-recipe:hover:not(:disabled) { color: var(--green-ink); background: var(--green-soft); border-color: var(--green); }
 </style>

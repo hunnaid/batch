@@ -60,7 +60,6 @@ async function save() {
   busy.value = true;
   error.value = "";
 
-
   try {
     const input = {
       title: title.value.trim(),
@@ -162,7 +161,7 @@ async function save() {
         placeholder="Extra tips, substitutions, or reminders for this recipe"
       />
 
-      <button type="submit" class="save-recipe">
+      <button type="submit">
         {{ busy ? "Saving…" : props.recipe !== undefined ? "Save changes" : "Save recipe" }}
       </button>
 
@@ -174,16 +173,3 @@ async function save() {
     <p v-if="error" role="alert">{{ error }}</p>
   </form>
 </template>
-
-<style scoped>
-.save-recipe {
-  color: var(--on-green);
-  background: var(--green);
-  border-color: var(--green);
-}
-.save-recipe:hover:not(:disabled) {
-  color: var(--green-ink);
-  background: var(--green-soft);
-  border-color: var(--green);
-}
-</style>

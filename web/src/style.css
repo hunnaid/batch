@@ -10,7 +10,6 @@
   --input-border: #8a8e75;
 
   --green: #8a8e75;
-  --green-hover: #969a81;
   --green-soft: #bec5a4;
   --green-ink: #454938;
   --on-green: #20251d;
@@ -95,10 +94,6 @@ a {
   margin: 12px 0 0;
   color: var(--muted);
   font-size: 0.95rem;
-}
-
-.sign-out {
-  flex-shrink: 0;
 }
 
 .workspace {
@@ -247,15 +242,18 @@ button:hover:not(:disabled) {
   border-color: var(--green);
 }
 
-button[type="submit"] {
+button[type="submit"],
+button.button-primary {
   color: var(--on-green);
   background: var(--green);
   border-color: var(--green);
 }
 
-button[type="submit"]:hover:not(:disabled) {
-  background: var(--green-hover);
-  border-color: var(--green-hover);
+button[type="submit"]:hover:not(:disabled),
+button.button-primary:hover:not(:disabled) {
+  color: var(--green-ink);
+  background: var(--green-soft);
+  border-color: var(--green);
 }
 
 button:disabled {
@@ -302,27 +300,6 @@ li {
   padding-inline-start: 4px;
   margin-block: 8px;
   overflow-wrap: anywhere;
-}
-
-/* Recipe titles inside collection lists read as navigation. */
-article > ul {
-  padding: 0;
-  list-style: none;
-}
-
-article > ul > li {
-  padding: 0;
-}
-
-article > ul > li > button {
-  width: 100%;
-  text-align: start;
-  background: var(--green-soft);
-  border-color: transparent;
-}
-
-article > ul > li > button:hover:not(:disabled) {
-  border-color: var(--green);
 }
 
 details {

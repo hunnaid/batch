@@ -160,7 +160,7 @@ onBeforeUnmount(() => { ++recipientRequest; });
         <legend>Share with another cook</legend>
         <label :for="'share-username-' + (recipe ?? collection)">Registered username</label>
         <input :id="'share-username-' + (recipe ?? collection)" v-model="username" required />
-        <button type="submit" class="share-button">
+        <button type="submit">
           {{ busy && !revoking ? "Sharing…" : recipe !== undefined ? "Share recipe" : "Share collection" }}
         </button>
       </fieldset>
@@ -176,5 +176,4 @@ onBeforeUnmount(() => { ++recipientRequest; });
 .empty-recipients { color: var(--green-ink); }
 .revoke-button { color: var(--error); border-color: var(--error); }
 .revoke-button:hover:not(:disabled) { background: var(--error-soft); border-color: var(--error); }
-.share-button:hover:not(:disabled) { color: var(--green-ink); background: var(--green-soft); border-color: var(--green); }
 </style>

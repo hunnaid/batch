@@ -1,5 +1,5 @@
-export const MAX_PASTED_RECIPE_BYTES = 750_000;
-export const MAX_PASTED_TEXT_CHARACTERS = 100_000;
+const MAX_PASTED_RECIPE_BYTES = 750_000;
+const MAX_PASTED_TEXT_CHARACTERS = 100_000;
 
 export function isRecipeHtml(text: string): boolean {
   return /<(?:!doctype|html|body|h[1-6]|p|ul|ol|div|script|article|section)\b/i.test(text);

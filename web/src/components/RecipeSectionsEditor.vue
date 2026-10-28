@@ -74,7 +74,7 @@ async function removeSection(index: number) {
           placeholder="For example, 2 cups basmati rice" required />
         <textarea v-else :id="row.id" v-model="row.text" :disabled="disabled" rows="3" dir="auto" required />
         <div class="row-actions">
-          <button type="button" class="add-row" :disabled="disabled"
+          <button type="button" class="button-primary" :disabled="disabled"
             :aria-label="`Add below ${rowLabel.toLowerCase()} ${index + 1} in section ${sectionIndex + 1}`"
             @click="addRow(section, index)">Add below</button>
           <button type="button" class="remove-row" :disabled="disabled || section.rows.length === 1"
@@ -113,8 +113,7 @@ async function removeSection(index: number) {
 .row-actions .remove-row { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; padding: 8px; color: var(--error); border-color: var(--error); }
 .remove-row:hover:not(:disabled) { background: var(--error-soft); border-color: var(--error); }
 .remove-row svg { width: 18px; height: 18px; }
-.add-row { color: var(--on-green); background: var(--green); border-color: var(--green); }
-.add-row:hover:not(:disabled) { color: var(--green-ink); background: var(--green-soft); border-color: var(--green); }
+
 @media (max-width: 480px) {
   .row-actions { flex-direction: column; align-items: stretch; }
 }

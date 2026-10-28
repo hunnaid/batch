@@ -1,6 +1,6 @@
 import { toRecipeSections, type RecipeContent, type RecipeSection } from "../../src/recipe-content.ts";
 
-export type RecipeRow = { id: string; text: string };
+type RecipeRow = { id: string; text: string };
 export type EditableRecipeSection = { id: string; heading: string; showHeading: boolean; rows: RecipeRow[] };
 
 export function createRecipeRow(text = ""): RecipeRow {

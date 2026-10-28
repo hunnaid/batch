@@ -1,17 +1,9 @@
 import { endpoint, receive, respond } from "@mit-sdg/sync-engine/boundary";
 import { former, no, where, whether } from "@mit-sdg/sync-engine/language";
 import { concepts } from "../concepts.ts";
+import { sessionInput } from "../input-validation.ts";
 
 const { Profiling, PasswordAuthenticating, Sessioning } = concepts;
-
-function inputWith(...fields: string[]) {
-  return (value: unknown) => {
-    if (typeof value !== "object" || value === null || Array.isArray(value)) return { ok: false };
-    const input = value as Record<string, unknown>;
-    return { ok: (input.session === null || typeof input.session === "string") &&
-      fields.every((field) => typeof input[field] === "string") };
-  };
-}
 
 const profileDetails = former(
   "the profile of (user)",
@@ -33,7 +25,7 @@ const GetMyProfile = endpoint(
   ({ session, user }) => receive({ session })
     .then(Sessioning.resolve({ session }).responds({ user }))
     .then(respond({ identity: identity({ user }) })),
-  { validators: { input: inputWith() } }
+  { validators: { input: sessionInput() } }
 );
 
 /** Signed-in users can recognize other contributors by their public presentation. */
@@ -42,7 +34,7 @@ const GetProfile = endpoint(
   ({ session, user, viewer }) => receive({ session, user })
     .then(Sessioning.resolve({ session }).responds({ user: viewer }))
     .then(respond({ identity: identity({ user }) })),
-  { validators: { input: inputWith("user") } }
+  { validators: { input: sessionInput("user") } }
 );
 
 /** The writable user is always derived from the session, never from submitted profile data. */
@@ -58,7 +50,7 @@ const SaveMyProfile = endpoint(
         .then(Profiling.create({ user, displayName, bio, picture }))
         .then(respond({ identity: identity({ user }) })).named("create-profile")
     ),
-  { validators: { input: inputWith("displayName", "bio", "picture") } }
+  { validators: { input: sessionInput("displayName", "bio", "picture") } }
 );
 
 export const composition = {

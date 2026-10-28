@@ -8,6 +8,7 @@ import {
     where,
 } from "@mit-sdg/sync-engine/language";
 import { concepts } from "../concepts.ts";
+import { sessionInput } from "../input-validation.ts";
 import {
     endpoint,
     receive,
@@ -21,26 +22,6 @@ const {
     PasswordAuthenticating,
     RecipeRecording,
 } = concepts;
-
-/**
- * Accept endpoint input only when it contains a session token or null.
- * The HTTP adapter supplies null when the browser has no session cookie.
- */
-function hasSessionInput(
-    value: unknown
-): value is Record<string, unknown> {
-    if (
-        typeof value !== "object" ||
-        value === null ||
-        Array.isArray(value)
-    ) {
-        return false;
-    }
-
-    const input = value as Record<string, unknown>;
-
-    return typeof input.session === "string" || input.session === null;
-}
 
 /**
  * Give each newly created collection an owner and an empty membership set.
@@ -72,11 +53,7 @@ const CreateCollection = endpoint(
         .then(Sharing.authorize({ user, resource: collection }))
         .then(respond({ collection })),
     {
-        validators: {
-            input: (value: unknown) => ({
-                ok: hasSessionInput(value) && typeof value.name === "string",
-            }),
-        },
+        validators: { input: sessionInput("name") },
     }
 );
 
@@ -110,14 +87,7 @@ const ShareCollection = endpoint(
                 .named("unknown-recipient")
         ),
     {
-        validators: {
-            input: (value: unknown) => ({
-                ok:
-                    hasSessionInput(value) &&
-                    typeof value.collection === "string" &&
-                    typeof value.username === "string",
-            }),
-        },
+        validators: { input: sessionInput("collection", "username") },
     }
 );
 
@@ -169,11 +139,7 @@ const ListCollectionRecipients = endpoint(
         .then(Sharing.authorizeOwner({ user, resource: collection }))
         .then(respond({ sharing: collectionRecipients({ collection }) })),
     {
-        validators: {
-            input: (value: unknown) => ({
-                ok: hasSessionInput(value) && typeof value.collection === "string",
-            }),
-        },
+        validators: { input: sessionInput("collection") },
     }
 );
 
@@ -189,11 +155,7 @@ const ListCollections = endpoint(
             })
         ),
     {
-        validators: {
-            input: (value: unknown) => ({
-                ok: hasSessionInput(value),
-            }),
-        },
+        validators: { input: sessionInput() },
     }
 );
 
@@ -227,14 +189,7 @@ const RevokeCollectionAccess = endpoint(
                     .named("unknown-recipient")
         ),
     {
-        validators: {
-            input: (value: unknown) => ({
-                ok:
-                    hasSessionInput(value) &&
-                    typeof value.collection === "string" &&
-                    typeof value.username === "string",
-            }),
-        },
+        validators: { input: sessionInput("collection", "username") },
     }
 );
 
@@ -248,14 +203,7 @@ const RenameCollection = endpoint(
         .then(Collecting.rename({ collection, name }))
         .then(respond({ collection })),
     {
-        validators: {
-            input: (value: unknown) => ({
-                ok:
-                    hasSessionInput(value) &&
-                    typeof value.collection === "string" &&
-                    typeof value.name === "string",
-            }),
-        },
+        validators: { input: sessionInput("collection", "name") },
     }
 );
 
@@ -277,13 +225,7 @@ const DeleteCollection = endpoint(
         .then(Collecting.delete({ collection }))
         .then(respond({ collection })),
     {
-        validators: {
-            input: (value: unknown) => ({
-                ok:
-                hasSessionInput(value) &&
-                typeof value.collection === "string",
-            }),
-        },
+        validators: { input: sessionInput("collection") },
     }
 );
 
