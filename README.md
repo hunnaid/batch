@@ -2,7 +2,7 @@
 
 Batch keeps original recipes, cooking adjustments, and results together so home cooks can repeat dishes they enjoyed and share how they actually made them. Each recipe has a shared cooking history, so another cook can learn from earlier attempts without losing the original instructions.
 
-**[Try Batch](https://batch.mit-sdg.dev)** - **[Final design summary](design/docs/p4-design-summary.md)** - **[Final narrated user journey]()** - **[Final user journey](design/docs/final-user-journey.md)**
+**[Try Batch](https://batch.mit-sdg.dev)** - **[Final design summary](design/docs/p4-design-summary.md)** - **[Final narrated user journey](https://youtu.be/MkoYtk0NH3o)** - **[Final user journey](design/docs/final-user-journey.md)**
 
 Register an account to try the deployed app. It uses a separate database, so local accounts and recipes will not be available online.
 
