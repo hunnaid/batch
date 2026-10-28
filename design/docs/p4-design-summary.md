@@ -40,7 +40,7 @@ Concept and composition tests cover validation, permissions, repeated actions, s
 
 Testing caught a membership check that returned an error while still adding a different recipe. I changed it to check the identifiers supplied by the request and verified that the refusal leaves the destination unchanged. This showed why testing stored state matters alongside checking the responses.
 
-For P3, I also tested the interface with 2 accounts, including persistence after refresh, sharing and revocation, entry authorship, invalid inputs, and mobile use. Automated import tests use an injected extractor. Live website extraction needs separate validation.
+For P4, I also tested the interface similar to P3 with 2 accounts, including persistence after refresh, sharing and revocation, entry authorship, invalid inputs, and mobile use. Automated import tests use an injected extractor. Live website extraction needs separate validation.
 
 ## Remaining limitations
 

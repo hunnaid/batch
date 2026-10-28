@@ -112,7 +112,7 @@ Press Ctrl+C in each terminal to stop the servers.
 
 Build the frontend with `bun run build:frontend`. The Bun server serves the built frontend and API; `bun run start` starts it without development watching.
 
-The deployed backend needs its own `MONGODB_URL` and `PUBLIC_ORIGIN` set to its public origin, such as `https://batch.mit-sdg.dev`. It reads `HOST` and `PORT` from the environment. Set `NODE_ENV=production` for production request-origin handling. Configure `GEMINI_API_KEY` separately in the deployment environment if importing is enabled.
+The deployed backend needs its own MongoDB connection string in `MONGODB_URL`. Set `PUBLIC_ORIGIN` to the app's public origin, such as `https://batch.mit-sdg.dev`. It reads `HOST` and `PORT` from the environment. Set `NODE_ENV=production` for production request-origin handling. Configure `GEMINI_API_KEY` separately in the deployment environment if importing is enabled.
 
 ## Testing and validation
 
@@ -137,7 +137,7 @@ set -o pipefail
 bun test 2>&1 | tee test-results/p4-tests.txt
 ```
 
-See the [P4 test output](test-results/p4-tests.txt) for automated test results and [final design summary](design/docs/p4-design-summary.md) for the validation findings and remaining limitations.
+See the [P4 test output](test-results/p4-tests.txt) for automated test results, [P4 check](test-results/p4-checks.txt) for the check/build results, and [final design summary](design/docs/p4-design-summary.md) for the validation findings and remaining limitations.
 
 After changing specifications or compositions, regenerate the application documentation and API contract, then check them:
 
@@ -153,7 +153,7 @@ The frontend uses `generated/wire.ts`. Generated files are produced from the aut
 | Material | Link |
 | --- | --- |
 | P4 design summary: final decisions and changes from P1 and P3 | [Final design summary](design/docs/p4-design-summary.md) |
-| P4 narrated video and demonstrated journey | [Final demo](design/docs/p4-demo.md) |
+| P4 narrated video and demonstrated journey | [Final demo](https://youtu.be/MkoYtk0NH3o), [User journey](design/docs/final-user-journey.md) |
 | P4 saved test execution | [Test output](test-results/p4-tests.txt) |
 | P3 visual design study | [Color](design/visual-study/visual-study-colors.jpg), [Typography](design/visual-study/visual-study-typography.jpg) |
 | Generated application reference | [Application](generated/application.md) |
